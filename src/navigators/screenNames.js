@@ -7,5 +7,6 @@ export const SCREEN_NAMES = {
   
   EditStudentProfile: "EditStudentProfile",
   EditTeacherProfile: "EditTeacherProfile",
+  TeacherAvailability: "TeacherAvailability",
   ScheduleLecture: "ScheduleLecture",
 };

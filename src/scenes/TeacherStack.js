@@ -2,6 +2,7 @@ import React from "react";
 import { createStackNavigator } from "@react-navigation/stack";
 import TeacherDashboard from "./TeacherDashboard";
 import EditTeacherProfile from "./Teacher/EditTeacherProfile";
+import TeacherAvailability from "./Teacher/TeacherAvailability";
 import ScheduleLecture from "./Teacher/ScheduleLecture";
 import Join from "./join";
 import Meeting from "./meeting";
@@ -19,6 +20,10 @@ export default function TeacherStack() {
       <RootStack.Screen 
         name={SCREEN_NAMES.EditTeacherProfile} 
         component={EditTeacherProfile}
+      />
+      <RootStack.Screen 
+        name={SCREEN_NAMES.TeacherAvailability} 
+        component={TeacherAvailability}
       />
       <RootStack.Screen 
         name={SCREEN_NAMES.ScheduleLecture} 

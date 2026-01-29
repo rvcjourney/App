@@ -40,13 +40,16 @@ import MenuItem from "../meeting/Components/MenuItem";
 import { ROBOTO_FONTS } from "../../styles/fonts";
 import Modal from "react-native-modal";
 
-export default function Join({ navigation }) {
+export default function Join({ navigation, route }) {
   console.log('Join component mounted');
+  const { booking, isTeacher, meetingId: routeMeetingId, bookingId, studentId, name: routeName } = route?.params || {};
+  console.log('Join route params:', { booking, isTeacher, routeMeetingId, bookingId, studentId, routeName });
+  
   const [tracks, setTrack] = useState(null);
   const [micOn, setMicon] = useState(true);
   const [videoOn, setVideoOn] = useState(true);
-  const [name, setName] = useState("");
-  const [meetingId, setMeetingId] = useState("");
+  const [name, setName] = useState(routeName || "");
+  const [meetingId, setMeetingId] = useState(routeMeetingId || "");
   const [isAudioListVisible, setAudioListVisible] = useState(false);
   const [facingMode, setFacingMode] = useState("user");
   const [audioList, setAudioList] = useState([]);
@@ -115,6 +118,63 @@ export default function Join({ navigation }) {
   useEffect(() => {
     getTrack();
   }, [facingMode]);
+
+  // Auto-join meeting if student is coming from dashboard with meeting_id
+  useEffect(() => {
+    const autoJoinMeeting = async () => {
+      if (routeMeetingId && routeName && !isTeacher) {
+        console.log('📱 Auto-joining meeting for student...');
+        
+        // Slight delay to ensure UI is ready
+        setTimeout(async () => {
+          try {
+            const hasPermission = await requestCameraAndMicPermissions();
+            if (!hasPermission) return;
+
+            console.log('🟡 [Join] Getting token for student...');
+            const token = await getToken();
+            if (!token) {
+              Toast.show("❌ Failed to get authentication token");
+              return;
+            }
+            console.log('✅ [Join] Token received');
+
+            console.log('🟡 [Join] Validating meeting...');
+            const valid = await validateMeeting({ token, meetingId: routeMeetingId.trim() });
+            
+            if (!valid) {
+              Toast.show("❌ Invalid meeting code");
+              return;
+            }
+            console.log('✅ [Join] Meeting validated');
+
+            disposeVideoTrack();
+            console.log('🟡 [Join] Navigating to meeting screen...');
+            
+            navigation.navigate(SCREEN_NAMES.Meeting, {
+              name: routeName.trim(),
+              token,
+              meetingId: routeMeetingId.trim(),
+              micEnabled: micOn,
+              webcamEnabled: videoOn,
+              meetingType: meetingType.key,
+              defaultCamera: facingMode === "user" ? "front" : "back",
+              bookingId: bookingId,
+              isTeacher: false,
+              studentId: studentId,
+            });
+            
+            console.log('✅ [Join] Navigation complete');
+          } catch (error) {
+            console.error('🔴 [Join] Error auto-joining meeting:', error);
+            Toast.show(`❌ Error: ${error.message}`);
+          }
+        }, 500);
+      }
+    };
+
+    autoJoinMeeting();
+  }, [routeMeetingId, routeName, isTeacher]);
 
   // ---------------- Audio Devices ----------------
   const fetchAudioDevices = async () => {
@@ -342,6 +402,9 @@ export default function Join({ navigation }) {
                         webcamEnabled: videoOn,
                         meetingType: meetingType.key,
                         defaultCamera: facingMode === "user" ? "front" : "back",
+                        bookingId: booking?.id,
+                        isTeacher: isTeacher,
+                        studentId: booking?.student_id,
                       });
                       
                       console.log('✅ [Join] Navigation complete');

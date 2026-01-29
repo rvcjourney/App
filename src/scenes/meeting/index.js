@@ -8,6 +8,7 @@ import {
 } from "@videosdk.live/react-native-sdk";
 import MeetingContainer from "./MeetingContainer";
 import { SCREEN_NAMES } from "../../navigators/screenNames";
+import { supabase } from "../../../supabase";
 const { ForegroundServiceModule } = NativeModules;
 
 // const requestPermissions = async () => {
@@ -81,6 +82,9 @@ export default function Meeting({ navigation, route }) {
     name,
     meetingType,
     defaultCamera,
+    bookingId,
+    isTeacher,
+    studentId,
   } = route?.params || {};
 
   if (!token || !meetingId || !name) {
@@ -109,6 +113,47 @@ export default function Meeting({ navigation, route }) {
   }, []);
 
   const handleMeetingJoined = async () => {
+    console.log('📞 Meeting joined! Teacher:', isTeacher, 'BookingId:', bookingId);
+    
+    // If teacher is starting the meeting, notify the student
+    if (isTeacher && bookingId) {
+      try {
+        // Get current user (teacher)
+        const { data: { user } } = await supabase.auth.getUser();
+        const teacherId = user?.id;
+        
+        console.log('📱 Notifying student about meeting start... BookingId:', bookingId, 'TeacherId:', teacherId);
+        
+        const backendUrl = process.env.REACT_APP_AUTH_URL || 'http://localhost:3000';
+        console.log('🌐 Backend URL:', backendUrl);
+        
+        const response = await fetch(`${backendUrl}/api/meetings/start`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            bookingId: bookingId,
+            teacherId: teacherId,
+            meetingId: meetingId,
+          })
+        });
+
+        console.log('📤 Backend response status:', response.status);
+        
+        const data = await response.json();
+        console.log('📨 Backend response data:', JSON.stringify(data, null, 2));
+        
+        if (data.success) {
+          console.log('✅ Student notified successfully with meeting ID:', data.meetingId);
+        } else {
+          console.error('⚠️ Failed to notify student - Error:', data.error, '| Message:', data.message);
+        }
+      } catch (error) {
+        console.error('🔴 Error notifying student - Fetch error:', error.message);
+        console.error('🔴 Error stack:', error);
+        // Continue anyway - meeting is running
+      }
+    }
+    
     if (permissionsGranted) {
       if (Platform.OS === "android") {
         setTimeout(async () => {

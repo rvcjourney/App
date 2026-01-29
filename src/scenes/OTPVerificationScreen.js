@@ -127,7 +127,10 @@ export default function OTPVerificationScreen({ navigation, route }) {
       
       // Add small delay to ensure database is updated before navigation
       await new Promise(resolve => setTimeout(resolve, 500));
-      navigation.replace('RootNavigator');
+      
+      // Email is now verified, RootNavigator will automatically detect and route appropriately
+      // Just close this screen or navigate back - auth state change will trigger re-render
+      navigation.goBack();
     } catch (error) {
       console.error('❌ OTP verification error:', error);
 

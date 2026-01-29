@@ -60,6 +60,8 @@ import {
   TouchableOpacity,
   ImageBackground,
 } from 'react-native';
+import Briefcase from '../assets/icons/Briefcase';
+import GraduationCap from '../assets/icons/GraduationCap';
 
 export default function RoleSelectScreen({ navigation }) {
   return (
@@ -75,14 +77,20 @@ export default function RoleSelectScreen({ navigation }) {
           style={styles.card}
           onPress={() => navigation.navigate('Login', { role: 'teacher' })}
         >
-          <Text style={styles.cardText}>👨‍🏫 Teacher</Text>
+          <View style={styles.cardContent}>
+            <Briefcase width={40} height={40} fill="#6CA0FF" />
+            <Text style={styles.cardText}>Teacher</Text>
+          </View>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.card}
           onPress={() => navigation.navigate('Login', { role: 'student' })}
         >
-          <Text style={styles.cardText}>👩‍🎓 Student</Text>
+          <View style={styles.cardContent}>
+            <GraduationCap width={40} height={40} fill="#6CA0FF" />
+            <Text style={styles.cardText}>Student</Text>
+          </View>
         </TouchableOpacity>
       </View>
     </ImageBackground>
@@ -115,10 +123,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
+  cardContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
   cardText: {
     color: '#6CA0FF',
     fontSize: 20,
     fontWeight: '600',
-    // padding:20,
+    marginTop: 12,
   },
 });

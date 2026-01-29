@@ -15,6 +15,20 @@ import Toast from 'react-native-simple-toast';
 import { SCREEN_NAMES } from '../navigators/screenNames';
 import { supabase } from '../../supabase';
 import { getTeacherProfile, getTeacherBookings } from '../database/database';
+import Home from '../assets/icons/Home';
+import DollarSign from '../assets/icons/DollarSign';
+import Phone from '../assets/icons/Phone';
+import Settings from '../assets/icons/Settings';
+import BookOpen from '../assets/icons/BookOpen';
+import Play from '../assets/icons/Play';
+import Calendar from '../assets/icons/Calendar';
+import Video from '../assets/icons/Video';
+import Clock from '../assets/icons/Clock';
+import Star from '../assets/icons/Star';
+import Users from '../assets/icons/Users';
+import ChevronRight from '../assets/icons/ChevronRight';
+import User from '../assets/icons/User';
+import CheckCircle from '../assets/icons/CheckCircle';
 
 // Mock data for teacher earnings
 const mockEarnings = {
@@ -95,9 +109,14 @@ export default function TeacherDashboard({ navigation }) {
 
         // Get upcoming bookings
         const bookingsData = await getTeacherBookings(user.id);
-        if (bookingsData) {
+        console.log('📚 [TeacherDashboard] Bookings fetched:', bookingsData?.length, bookingsData);
+        if (bookingsData && bookingsData.length > 0) {
           const upcoming = bookingsData.filter(b => new Date(b.booked_date) > new Date() && b.status !== 'cancelled');
+          console.log('📅 [TeacherDashboard] Upcoming bookings filtered:', upcoming.length, upcoming);
           setUpcomingBookings(upcoming);
+        } else {
+          console.log('⚠️ [TeacherDashboard] No bookings found for teacher:', user.id);
+          setUpcomingBookings([]);
         }
       }
       
@@ -121,6 +140,53 @@ export default function TeacherDashboard({ navigation }) {
     }, [])
   );
 
+  // Set up real-time subscription for bookings updates (for fresh notifications)
+  useEffect(() => {
+    let subscription;
+    
+    const setupSubscription = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        console.log('🔵 [TeacherDashboard] Setting up real-time subscription...');
+        
+        // Subscribe to changes on bookings table for this teacher
+        subscription = supabase
+          .channel(`bookings:teacher_${user.id}`)
+          .on(
+            'postgres_changes',
+            {
+              event: 'INSERT',
+              schema: 'public',
+              table: 'bookings',
+              filter: `teacher_id=eq.${user.id}`,
+            },
+            (payload) => {
+              console.log('📡 New booking received:', payload.new);
+              Toast.show('📚 New booking received!');
+              // Refresh bookings
+              loadTeacherProfile();
+            }
+          )
+          .subscribe();
+        
+        console.log('✅ [TeacherDashboard] Real-time subscription started');
+      } catch (error) {
+        console.error('🔴 Error setting up subscription:', error);
+      }
+    };
+    
+    setupSubscription();
+    
+    // Cleanup on unmount
+    return () => {
+      if (subscription) {
+        supabase.removeChannel(subscription);
+      }
+    };
+  }, []);
+
   // HOME TAB
   if (activeTab === 'home') {
     return (
@@ -128,14 +194,19 @@ export default function TeacherDashboard({ navigation }) {
         <ScrollView showsVerticalScrollIndicator={false}>
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.welcome}>Welcome Back 👋</Text>
+            <View style={styles.welcomeContainer}>
+              <Text style={styles.welcome}>Welcome Back</Text>
+              <Text style={styles.welcomeWave}>👋</Text>
+            </View>
             <Text style={styles.teacherName}>{teacherName}</Text>
           </View>
 
           {/* Dashboard Overview */}
           <View style={styles.overviewCard}>
             <View style={styles.profileSection}>
-              <Text style={styles.profileImage}>👨‍🏫</Text>
+              <View style={styles.profileImageContainer}>
+                <Users width={48} height={48} fill="#5568FE" />
+              </View>
               <View style={styles.profileInfo}>
                 <Text style={styles.profileName}>{teacherName}</Text>
                 <Text style={styles.profileSubtitle}>{specializations || 'Tutor'}</Text>
@@ -167,36 +238,36 @@ export default function TeacherDashboard({ navigation }) {
             style={[styles.actionCard, styles.scheduleCard]}
             onPress={() => navigation.navigate(SCREEN_NAMES.ScheduleLecture)}
           >
-            <Text style={styles.actionIcon}>📚</Text>
+            <BookOpen width={32} height={32} fill="#2ECC71" style={{ marginRight: 12 }} />
             <View style={styles.actionContent}>
               <Text style={styles.actionTitle}>Schedule Lecture</Text>
               <Text style={styles.actionSubtitle}>Plan a group class</Text>
             </View>
-            <Text style={styles.actionArrow}>→</Text>
+            <ChevronRight width={24} height={24} fill="#666" />
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.actionCard, styles.availableCard]}
             onPress={() => navigation.navigate(SCREEN_NAMES.Join)}
           >
-            <Text style={styles.actionIcon}>📹</Text>
+            <Video width={32} height={32} fill="#FF6B6B" style={{ marginRight: 12 }} />
             <View style={styles.actionContent}>
               <Text style={styles.actionTitle}>Go Live</Text>
               <Text style={styles.actionSubtitle}>Start teaching now</Text>
             </View>
-            <Text style={styles.actionArrow}>→</Text>
+            <ChevronRight width={24} height={24} fill="#666" />
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.actionCard, styles.upcomingCard]}
             onPress={() => Alert.alert('Upcoming Calls', `You have ${upcomingBookings.length} sessions scheduled`)}
           >
-            <Text style={styles.actionIcon}>📅</Text>
+            <Calendar width={32} height={32} fill="#4ECDC4" style={{ marginRight: 12 }} />
             <View style={styles.actionContent}>
               <Text style={styles.actionTitle}>Upcoming Calls</Text>
               <Text style={styles.actionSubtitle}>{upcomingBookings.length} sessions scheduled</Text>
             </View>
-            <Text style={styles.actionArrow}>→</Text>
+            <ChevronRight width={24} height={24} fill="#666" />
           </TouchableOpacity>
 
           {/* Today's Earnings */}
@@ -229,13 +300,22 @@ export default function TeacherDashboard({ navigation }) {
               <TouchableOpacity
                 key={booking.id}
                 style={styles.activityCard}
-                onPress={() => Alert.alert(booking.subject, `Student: ${booking.student?.profile?.full_name}\nTime: ${new Date(booking.booked_date).toLocaleString()}`)}
+                onPress={() => navigation.navigate(SCREEN_NAMES.Join, {
+                  booking: booking,
+                  isTeacher: true,
+                })}
               >
                 <View style={styles.activityDot} />
                 <View style={styles.activityContent}>
                   <Text style={styles.activityTitle}>{booking.subject}</Text>
                   <Text style={styles.activitySubtitle}>{booking.student?.profile?.full_name || 'Student'}</Text>
                   <Text style={styles.activityTime}>{new Date(booking.booked_date).toLocaleString()}</Text>
+                  {booking.meeting_id && (
+                    <View style={styles.meetingStartedBadgeContainer}>
+                      <CheckCircle width={16} height={16} fill="#2ECC71" />
+                      <Text style={styles.meetingStartedBadge}>Meeting Started - ID: {booking.meeting_id}</Text>
+                    </View>
+                  )}
                 </View>
                 <Text style={styles.activityPrice}>₹{pricePerCall}</Text>
               </TouchableOpacity>
@@ -249,7 +329,7 @@ export default function TeacherDashboard({ navigation }) {
             style={[styles.navItem, activeTab === 'home' && styles.navItemActive]}
             onPress={() => setActiveTab('home')}
           >
-            <Text style={styles.navIcon}>🏠</Text>
+            <Home width={24} height={24} fill={activeTab === 'home' ? '#5568FE' : '#999'} />
             <Text style={styles.navLabel}>Home</Text>
           </TouchableOpacity>
 
@@ -257,7 +337,7 @@ export default function TeacherDashboard({ navigation }) {
             style={[styles.navItem, activeTab === 'earnings' && styles.navItemActive]}
             onPress={() => setActiveTab('earnings')}
           >
-            <Text style={styles.navIcon}>💰</Text>
+            <DollarSign width={24} height={24} fill={activeTab === 'earnings' ? '#5568FE' : '#999'} />
             <Text style={styles.navLabel}>Earnings</Text>
           </TouchableOpacity>
 
@@ -265,7 +345,7 @@ export default function TeacherDashboard({ navigation }) {
             style={[styles.navItem, activeTab === 'calls' && styles.navItemActive]}
             onPress={() => setActiveTab('calls')}
           >
-            <Text style={styles.navIcon}>📞</Text>
+            <Phone width={24} height={24} fill={activeTab === 'calls' ? '#5568FE' : '#999'} />
             <Text style={styles.navLabel}>Calls</Text>
           </TouchableOpacity>
 
@@ -273,7 +353,7 @@ export default function TeacherDashboard({ navigation }) {
             style={[styles.navItem, activeTab === 'settings' && styles.navItemActive]}
             onPress={() => setActiveTab('settings')}
           >
-            <Text style={styles.navIcon}>⚙️</Text>
+            <Settings width={24} height={24} fill={activeTab === 'settings' ? '#5568FE' : '#999'} />
             <Text style={styles.navLabel}>Settings</Text>
           </TouchableOpacity>
         </View>
@@ -297,7 +377,10 @@ export default function TeacherDashboard({ navigation }) {
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <ScrollView showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
-            <Text style={styles.welcome}>Earnings Analytics 💰</Text>
+            <View style={styles.welcomeContainer}>
+              <Text style={styles.welcome}>Earnings Analytics</Text>
+              <DollarSign width={20} height={20} fill="#5568FE" style={{ marginLeft: 8 }} />
+            </View>
           </View>
 
           {/* Total Earnings */}
@@ -369,7 +452,7 @@ export default function TeacherDashboard({ navigation }) {
             style={styles.navItem}
             onPress={() => setActiveTab('home')}
           >
-            <Text style={styles.navIcon}>🏠</Text>
+            <Home width={22} height={22} fill={activeTab === 'home' ? '#5568FE' : '#999'} />
             <Text style={styles.navLabel}>Home</Text>
           </TouchableOpacity>
 
@@ -377,7 +460,7 @@ export default function TeacherDashboard({ navigation }) {
             style={[styles.navItem, styles.navItemActive]}
             onPress={() => setActiveTab('earnings')}
           >
-            <Text style={styles.navIcon}>💰</Text>
+            <DollarSign width={22} height={22} fill={activeTab === 'earnings' ? '#5568FE' : '#999'} />
             <Text style={styles.navLabel}>Earnings</Text>
           </TouchableOpacity>
 
@@ -385,7 +468,7 @@ export default function TeacherDashboard({ navigation }) {
             style={styles.navItem}
             onPress={() => setActiveTab('calls')}
           >
-            <Text style={styles.navIcon}>📞</Text>
+            <Phone width={22} height={22} fill={activeTab === 'calls' ? '#5568FE' : '#999'} />
             <Text style={styles.navLabel}>Calls</Text>
           </TouchableOpacity>
 
@@ -393,7 +476,7 @@ export default function TeacherDashboard({ navigation }) {
             style={styles.navItem}
             onPress={() => setActiveTab('settings')}
           >
-            <Text style={styles.navIcon}>⚙️</Text>
+            <Settings width={22} height={22} fill={activeTab === 'settings' ? '#5568FE' : '#999'} />
             <Text style={styles.navLabel}>Settings</Text>
           </TouchableOpacity>
         </View>
@@ -403,30 +486,78 @@ export default function TeacherDashboard({ navigation }) {
 
   // CALLS TAB
   if (activeTab === 'calls') {
+    // Show all confirmed bookings as scheduled lectures (no pending/confirmation step)
+    const confirmedBookings = upcomingBookings.filter(b => b.status === 'confirmed');
+    const ongoingBookings = upcomingBookings.filter(b => b.status === 'ongoing' && b.meeting_id);
+    const liveBookings = confirmedBookings.filter(b => b.meeting_id); // Meetings that have started
+
     return (
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <ScrollView>
           <View style={styles.header}>
-            <Text style={styles.welcome}>My Calls 📞</Text>
+            <View style={styles.welcomeContainer}>
+              <Text style={styles.welcome}>My Calls</Text>
+              <Phone width={20} height={20} fill="#5568FE" style={{ marginLeft: 8 }} />
+            </View>
           </View>
 
-          {/* Upcoming Calls */}
+          {/* Live Now */}
+          {liveBookings.length > 0 && (
+            <>
+              <View style={styles.sectionHeader}>
+                <Text style={[styles.sectionTitle, { color: '#FF6B6B' }]}>🔴 LIVE NOW</Text>
+              </View>
+              {liveBookings.map(booking => (
+                <TouchableOpacity
+                  key={booking.id}
+                  style={[styles.callCard, { borderLeftColor: '#FF6B6B', borderLeftWidth: 4 }]}
+                  onPress={() => navigation.navigate(SCREEN_NAMES.Join, {
+                    booking: booking,
+                    isTeacher: true,
+                  })}
+                >
+                  <View style={[styles.callTime, { backgroundColor: '#FF6B6B' }]}>
+                    <Text style={styles.callTimeText}>🔴 LIVE</Text>
+                  </View>
+                  <View style={styles.callContent}>
+                    <Text style={styles.callStudent}>{booking.student?.profile?.full_name || 'Student'}</Text>
+                    <Text style={styles.callSubject}>{booking.subject}</Text>
+                    <View style={styles.callMeta}>
+                      <Clock width={12} height={12} fill="#999" style={{ marginRight: 4 }} />
+                      <Text style={styles.callDuration}>{booking.duration_minutes} min</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 12 }}>
+                        <DollarSign width={12} height={12} fill="#2ECC71" style={{ marginRight: 4 }} />
+                        <Text style={styles.callPrice}>₹{pricePerCall}</Text>
+                      </View>
+                    </View>
+                    <Text style={{ fontSize: 11, color: '#666', marginTop: 5 }}>Meeting ID: {booking.meeting_id}</Text>
+                  </View>
+                  <Text style={styles.callArrow}>→</Text>
+                </TouchableOpacity>
+              ))}
+            </>
+          )}
+
+          {/* Upcoming Calls - Scheduled Lectures */}
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Upcoming Sessions</Text>
+            <Text style={styles.sectionTitle}>📌 Scheduled Lectures</Text>
           </View>
 
-          {upcomingBookings.length === 0 ? (
+          {confirmedBookings.filter(b => !b.meeting_id).length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyIcon}>📭</Text>
-              <Text style={styles.emptyText}>No upcoming calls</Text>
-              <Text style={styles.emptySubtext}>Waiting for students to book sessions</Text>
+              <Text style={styles.emptyText}>No scheduled lectures</Text>
+              <Text style={styles.emptySubtext}>Student bookings will appear here</Text>
             </View>
           ) : (
-            upcomingBookings.map(booking => (
+            confirmedBookings.filter(b => !b.meeting_id).map(booking => (
               <TouchableOpacity
                 key={booking.id}
                 style={styles.callCard}
-                onPress={() => navigation.navigate(SCREEN_NAMES.Join)}
+                onPress={() => navigation.navigate(SCREEN_NAMES.Join, {
+                  booking: booking,
+                  isTeacher: true,
+                })}
               >
                 <View style={styles.callTime}>
                   <Text style={styles.callTimeText}>{new Date(booking.booked_date).toLocaleTimeString()}</Text>
@@ -435,8 +566,12 @@ export default function TeacherDashboard({ navigation }) {
                   <Text style={styles.callStudent}>{booking.student?.profile?.full_name || 'Student'}</Text>
                   <Text style={styles.callSubject}>{booking.subject}</Text>
                   <View style={styles.callMeta}>
-                    <Text style={styles.callDuration}>⏱️ {booking.duration_minutes} min</Text>
-                    <Text style={styles.callPrice}>💵 ₹{pricePerCall}</Text>
+                    <Clock width={12} height={12} fill="#999" style={{ marginRight: 4 }} />
+                    <Text style={styles.callDuration}>{booking.duration_minutes} min</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 12 }}>
+                      <DollarSign width={12} height={12} fill="#2ECC71" style={{ marginRight: 4 }} />
+                      <Text style={styles.callPrice}>₹{pricePerCall}</Text>
+                    </View>
                   </View>
                 </View>
                 <Text style={styles.callArrow}>→</Text>
@@ -450,7 +585,7 @@ export default function TeacherDashboard({ navigation }) {
           </View>
 
           <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>📊</Text>
+            <Video width={48} height={48} fill="#999" />
             <Text style={styles.emptyText}>No history yet</Text>
             <Text style={styles.emptySubtext}>Complete a session to see it here</Text>
           </View>
@@ -461,7 +596,7 @@ export default function TeacherDashboard({ navigation }) {
             style={styles.navItem}
             onPress={() => setActiveTab('home')}
           >
-            <Text style={styles.navIcon}>🏠</Text>
+            <Home width={22} height={22} fill={activeTab === 'home' ? '#5568FE' : '#999'} />
             <Text style={styles.navLabel}>Home</Text>
           </TouchableOpacity>
 
@@ -469,7 +604,7 @@ export default function TeacherDashboard({ navigation }) {
             style={styles.navItem}
             onPress={() => setActiveTab('earnings')}
           >
-            <Text style={styles.navIcon}>💰</Text>
+            <DollarSign width={22} height={22} fill={activeTab === 'earnings' ? '#5568FE' : '#999'} />
             <Text style={styles.navLabel}>Earnings</Text>
           </TouchableOpacity>
 
@@ -477,7 +612,7 @@ export default function TeacherDashboard({ navigation }) {
             style={[styles.navItem, styles.navItemActive]}
             onPress={() => setActiveTab('calls')}
           >
-            <Text style={styles.navIcon}>📞</Text>
+            <Phone width={22} height={22} fill={activeTab === 'calls' ? '#5568FE' : '#999'} />
             <Text style={styles.navLabel}>Calls</Text>
           </TouchableOpacity>
 
@@ -485,7 +620,7 @@ export default function TeacherDashboard({ navigation }) {
             style={styles.navItem}
             onPress={() => setActiveTab('settings')}
           >
-            <Text style={styles.navIcon}>⚙️</Text>
+            <Settings width={22} height={22} fill={activeTab === 'settings' ? '#5568FE' : '#999'} />
             <Text style={styles.navLabel}>Settings</Text>
           </TouchableOpacity>
         </View>
@@ -499,12 +634,17 @@ export default function TeacherDashboard({ navigation }) {
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <ScrollView>
           <View style={styles.header}>
-            <Text style={styles.welcome}>Settings ⚙️</Text>
+            <View style={styles.settingsHeaderContainer}>
+              <Text style={styles.welcome}>Settings</Text>
+              <Settings width={24} height={24} fill="#5568FE" />
+            </View>
           </View>
 
           {/* Profile Section */}
           <View style={styles.profileSettingsCard}>
-            <Text style={styles.profileImage}>👨‍🏫</Text>
+            <View style={styles.profileImageContainer}>
+              <Users width={64} height={64} fill="#5568FE" />
+            </View>
             <Text style={styles.settingName}>{teacherName}</Text>
             <Text style={styles.settingSubtitle}>{specializations || 'Tutor'}</Text>
           </View>
@@ -515,33 +655,54 @@ export default function TeacherDashboard({ navigation }) {
               style={styles.settingItem} 
               onPress={() => navigation.navigate(SCREEN_NAMES.EditTeacherProfile)}
             >
-              <Text style={styles.settingIcon}>✏️</Text>
+              <View style={styles.settingIconContainer}>
+                <User width={20} height={20} fill="#5568FE" />
+              </View>
               <Text style={styles.settingText}>Edit Profile</Text>
-              <Text style={styles.settingArrow}>→</Text>
+              <ChevronRight width={16} height={16} fill="#999999" />
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.settingItem} onPress={() => Alert.alert('Set Price', `Current: ₹${pricePerCall}/call`)}>
-              <Text style={styles.settingIcon}>💵</Text>
+              <View style={styles.settingIconContainer}>
+                <DollarSign width={20} height={20} fill="#5568FE" />
+              </View>
               <Text style={styles.settingText}>Set Hourly Rate</Text>
               <Text style={styles.settingValue}>₹{pricePerCall}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.settingItem} onPress={() => Alert.alert('Bank Account')}>
-              <Text style={styles.settingIcon}>🏦</Text>
+              <View style={styles.settingIconContainer}>
+                <Users width={20} height={20} fill="#5568FE" />
+              </View>
               <Text style={styles.settingText}>Bank Account</Text>
-              <Text style={styles.settingArrow}>→</Text>
+              <ChevronRight width={16} height={16} fill="#999999" />
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.settingItem} onPress={() => Alert.alert('Notifications')}>
-              <Text style={styles.settingIcon}>🔔</Text>
+              <View style={styles.settingIconContainer}>
+                <Clock width={20} height={20} fill="#5568FE" />
+              </View>
               <Text style={styles.settingText}>Notifications</Text>
-              <Text style={styles.settingArrow}>→</Text>
+              <ChevronRight width={16} height={16} fill="#999999" />
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.settingItem} 
+              onPress={() => navigation.navigate(SCREEN_NAMES.TeacherAvailability)}
+            >
+              <View style={styles.settingIconContainer}>
+                <Calendar width={20} height={20} fill="#5568FE" />
+              </View>
+              <Text style={styles.settingText}>Set Availability</Text>
+              <ChevronRight width={16} height={16} fill="#999999" />
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.settingItem} onPress={() => Alert.alert('Privacy')}>
-              <Text style={styles.settingIcon}>🔒</Text>
+              <View style={styles.settingIconContainer}>
+                <User width={20} height={20} fill="#5568FE" />
+              </View>
               <Text style={styles.settingText}>Privacy & Security</Text>
-              <Text style={styles.settingArrow}>→</Text>
+              <ChevronRight width={16} height={16} fill="#999999" />
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.settingItem} onPress={() => Alert.alert('Help')}>
@@ -568,7 +729,7 @@ export default function TeacherDashboard({ navigation }) {
             style={styles.navItem}
             onPress={() => setActiveTab('home')}
           >
-            <Text style={styles.navIcon}>🏠</Text>
+            <Home width={22} height={22} fill={activeTab === 'home' ? '#5568FE' : '#999'} />
             <Text style={styles.navLabel}>Home</Text>
           </TouchableOpacity>
 
@@ -576,7 +737,7 @@ export default function TeacherDashboard({ navigation }) {
             style={styles.navItem}
             onPress={() => setActiveTab('earnings')}
           >
-            <Text style={styles.navIcon}>💰</Text>
+            <DollarSign width={22} height={22} fill={activeTab === 'earnings' ? '#5568FE' : '#999'} />
             <Text style={styles.navLabel}>Earnings</Text>
           </TouchableOpacity>
 
@@ -584,7 +745,7 @@ export default function TeacherDashboard({ navigation }) {
             style={styles.navItem}
             onPress={() => setActiveTab('calls')}
           >
-            <Text style={styles.navIcon}>📞</Text>
+            <Phone width={22} height={22} fill={activeTab === 'calls' ? '#5568FE' : '#999'} />
             <Text style={styles.navLabel}>Calls</Text>
           </TouchableOpacity>
 
@@ -592,7 +753,7 @@ export default function TeacherDashboard({ navigation }) {
             style={[styles.navItem, styles.navItemActive]}
             onPress={() => setActiveTab('settings')}
           >
-            <Text style={styles.navIcon}>⚙️</Text>
+            <Settings width={22} height={22} fill={activeTab === 'settings' ? '#5568FE' : '#999'} />
             <Text style={styles.navLabel}>Settings</Text>
           </TouchableOpacity>
         </View>
@@ -613,9 +774,18 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     marginTop: 10,
   },
+  welcomeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
   welcome: {
     color: '#ccc',
     fontSize: 14,
+    marginRight: 8,
+  },
+  welcomeWave: {
+    fontSize: 20,
   },
   teacherName: {
     color: '#fff',
@@ -635,6 +805,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 20,
+  },
+  profileImageContainer: {
+    width: 60,
+    height: 60,
+    backgroundColor: '#2E2E5E',
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 15,
   },
   profileImage: {
     fontSize: 50,
@@ -705,10 +884,6 @@ const styles = StyleSheet.create({
   upcomingCard: {
     backgroundColor: '#3D5A80',
   },
-  actionIcon: {
-    fontSize: 32,
-    marginRight: 15,
-  },
   actionContent: {
     flex: 1,
   },
@@ -721,10 +896,6 @@ const styles = StyleSheet.create({
     color: '#ccc',
     fontSize: 12,
     marginTop: 2,
-  },
-  actionArrow: {
-    color: '#fff',
-    fontSize: 18,
   },
 
   // Earnings Card
@@ -788,6 +959,22 @@ const styles = StyleSheet.create({
     color: '#999',
     fontSize: 12,
     marginTop: 2,
+  },
+  activitySubtitle: {
+    color: '#999',
+    fontSize: 12,
+    marginTop: 2,
+  },
+  meetingStartedBadgeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 6,
+  },
+  meetingStartedBadge: {
+    color: '#2ECC71',
+    fontSize: 11,
+    marginLeft: 6,
+    fontWeight: 'bold',
   },
   activityEarning: {
     color: '#2ECC71',
@@ -1049,6 +1236,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#4A1C1C',
     marginTop: 15,
   },
+  settingIconContainer: {
+    width: 32,
+    height: 32,
+    backgroundColor: '#2E2E5E',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
   settingIcon: {
     fontSize: 20,
     marginRight: 12,
@@ -1065,6 +1261,11 @@ const styles = StyleSheet.create({
   settingArrow: {
     color: '#999',
     fontSize: 16,
+  },
+  settingsHeaderContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
 
   // Pricing Section
@@ -1135,23 +1336,96 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 10,
     flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 8,
   },
   navItemActive: {
     borderTopWidth: 3,
     borderTopColor: '#5568FE',
   },
-  navIcon: {
-    fontSize: 24,
-    marginBottom: 3,
-  },
   navLabel: {
     color: '#ccc',
     fontSize: 11,
+    marginTop: 4,
   },
   emptyText: {
     color: '#fffdfd',
   },
   emptySubtext: {
     color: '#ffffff',
+  },
+
+  // Pending Booking Card
+  pendingBookingCard: {
+    marginHorizontal: 20,
+    marginVertical: 12,
+    backgroundColor: '#2a2d4a',
+    borderLeftWidth: 4,
+    borderLeftColor: '#FF9800',
+    padding: 15,
+    borderRadius: 10,
+  },
+  bookingInfo: {
+    marginBottom: 12,
+  },
+  studentName: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 6,
+  },
+  bookingDate: {
+    color: '#aaa',
+    fontSize: 12,
+    marginBottom: 4,
+  },
+  bookingSubject: {
+    color: '#ccc',
+    fontSize: 12,
+    marginBottom: 4,
+  },
+  bookingDuration: {
+    color: '#999',
+    fontSize: 11,
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  confirmBtn: {
+    flex: 1,
+    backgroundColor: '#4CAF50',
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  confirmBtnText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  declineBtn: {
+    flex: 1,
+    backgroundColor: '#f44336',
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  declineBtnText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  badge: {
+    backgroundColor: '#FF9800',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  badgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
 });

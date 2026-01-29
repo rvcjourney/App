@@ -53,8 +53,9 @@ export default function LoginScreen({ navigation, route }) {
           isSignup: false,
         });
       } else {
-        // Email already verified, continue
-        navigation.replace('RootNavigator');
+        // Email already verified
+        // RootNavigator will automatically detect the new session and route accordingly
+        // No need to navigate - auth state change will trigger re-render
       }
     } catch (err) {
       Alert.alert('Error', err.message);

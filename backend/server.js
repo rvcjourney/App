@@ -18,9 +18,16 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const nodemailer = require('nodemailer');
+const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
 
 const app = express();
+
+// Initialize Supabase
+const supabaseUrl = process.env.SUPABASE_URL || 'https://your-project.supabase.co';
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Store OTPs in memory (in production, use Redis or database)
 const otpStore = new Map();
@@ -367,6 +374,303 @@ app.post('/validate-token', (req, res) => {
 });
 
 // ==========================================
+// BOOKING MANAGEMENT ENDPOINTS
+// ==========================================
+// MEETINGS
+// ==========================================
+
+/**
+ * POST /api/meetings/start
+ * 
+ * Start a meeting - teacher initiates the call
+ * Generates meeting ID, updates booking, notifies student
+ * 
+ * Request Body:
+ * {
+ *   "bookingId": "uuid",
+ *   "teacherId": "uuid"
+ * }
+ */
+app.post('/api/meetings/start', async (req, res) => {
+  try {
+    const { bookingId, teacherId, meetingId } = req.body;
+
+    if (!bookingId || !teacherId || !meetingId) {
+      return res.status(400).json({
+        success: false,
+        error: 'bookingId, teacherId, and meetingId are required',
+      });
+    }
+
+    console.log('🔵 Starting meeting for booking:', bookingId, 'with meetingId:', meetingId);
+
+    // Don't generate a new ID - use the one the teacher is already in!
+    // Generate meeting token using VideoSDK (using the existing meetingId)
+    const meetingToken = generateVideoSDKToken(VIDEOSDK_API_KEY, VIDEOSDK_SECRET_KEY);
+
+    // Get booking details
+    console.log('🔵 Fetching booking details for ID:', bookingId);
+    const { data: bookingData, error: bookingError } = await supabase
+      .from('bookings')
+      .select('*')
+      .eq('id', bookingId)
+      .single();
+
+    if (bookingError) {
+      console.error('🔴 Booking fetch error:', JSON.stringify(bookingError));
+      throw new Error(`Booking not found: ${bookingError?.message}`);
+    }
+    
+    if (!bookingData) {
+      console.error('🔴 No booking data returned');
+      throw new Error('Booking not found - no data returned');
+    }
+    
+    console.log('✅ Booking found:', {
+      id: bookingData.id,
+      student_id: bookingData.student_id,
+      teacher_id: bookingData.teacher_id,
+      status: bookingData.status,
+      hasStudentId: !!bookingData.student_id,
+    });
+
+    // Get teacher profile
+    console.log('🔵 Fetching teacher profile...');
+    const { data: teacherProfile, error: teacherError } = await supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', bookingData.teacher_id)
+      .single();
+
+    if (teacherError) console.warn('⚠️ Teacher profile error:', teacherError);
+
+    // Update booking with meeting ID
+    console.log('🔵 Updating booking with meeting ID...');
+    const { error: updateError } = await supabase
+      .from('bookings')
+      .update({
+        meeting_id: meetingId,
+      })
+      .eq('id', bookingId);
+
+    if (updateError) {
+      console.error('🔴 Update error:', updateError);
+      throw updateError;
+    }
+    console.log('✅ Booking updated');
+
+    // Create meeting log
+    console.log('🔵 Creating meeting log...');
+    const { error: logError } = await supabase
+      .from('meeting_logs')
+      .insert([{
+        booking_id: bookingId,
+        meeting_id: meetingId,
+        started_at: new Date().toISOString(),
+        teacher_joined: true,
+      }]);
+
+    if (logError) console.warn('⚠️ Meeting log error:', logError);
+
+    // Send notification to student with meeting ID
+    console.log('🔵 Sending notification to student ID:', bookingData.student_id);
+    const notificationPayload = {
+      user_id: bookingData.student_id,
+      notification_type: 'meeting_started',
+      title: '📞 Class is Starting!',
+      message: `Your class with ${teacherProfile?.full_name || 'Teacher'} is starting now! Meeting ID: ${meetingId}. Copy this ID and join the meeting.`,
+      booking_id: bookingId,
+      is_read: false,
+    };
+    console.log('📋 Notification payload:', JSON.stringify(notificationPayload));
+    
+    const { data: notifData, error: notifError } = await supabase
+      .from('notifications')
+      .insert([notificationPayload])
+      .select();
+
+    if (notifError) {
+      console.error('🔴 Notification insertion error:', JSON.stringify(notifError));
+      throw notifError;
+    }
+    
+    console.log('✅ Notification sent, ID:', notifData?.[0]?.id);
+
+    console.log(`✅ Meeting started: ${bookingId}, Meeting ID: ${meetingId}`);
+
+    res.json({
+      success: true,
+      message: 'Meeting started',
+      meetingToken: meetingToken,
+      meetingId: meetingId,
+      bookingId: bookingId,
+    });
+  } catch (error) {
+    console.error('🔴 Error starting meeting:', error.message, error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to start meeting',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * POST /api/meetings/end
+ * 
+ * End a meeting and mark booking as completed
+ * 
+ * Request Body:
+ * {
+ *   "bookingId": "uuid",
+ *   "duration": "number (minutes)"
+ * }
+ */
+app.post('/api/meetings/end', async (req, res) => {
+  try {
+    const { bookingId, duration } = req.body;
+
+    if (!bookingId) {
+      return res.status(400).json({
+        success: false,
+        error: 'bookingId is required',
+      });
+    }
+
+    // Get booking details
+    const { data: bookingData } = await supabase
+      .from('bookings')
+      .select('*')
+      .eq('id', bookingId)
+      .single();
+
+    // Update booking with meeting ended time
+    const { error: updateError } = await supabase
+      .from('bookings')
+      .update({
+        status: 'completed',
+        meeting_ended_at: new Date().toISOString(),
+      })
+      .eq('id', bookingId);
+
+    if (updateError) throw updateError;
+
+    // Update meeting log
+    await supabase
+      .from('meeting_logs')
+      .update({
+        ended_at: new Date().toISOString(),
+        duration_minutes: duration || 60,
+      })
+      .eq('booking_id', bookingId);
+
+    // Create notification for both
+    await supabase
+      .from('notifications')
+      .insert([
+        {
+          user_id: bookingData.student_id,
+          notification_type: 'meeting_started',
+          title: '✅ Session Completed',
+          message: `Your session with ${bookingData.teacher_id} has been completed.`,
+          booking_id: bookingId,
+          is_read: false,
+        },
+        {
+          user_id: bookingData.teacher_id,
+          notification_type: 'meeting_started',
+          title: '✅ Session Completed',
+          message: `Your session has been completed. Duration: ${duration || 60} minutes.`,
+          booking_id: bookingId,
+          is_read: false,
+        },
+      ]);
+
+    console.log(`✅ Meeting ended: ${bookingId}`);
+
+    res.json({
+      success: true,
+      message: 'Meeting ended',
+      bookingId: bookingId,
+    });
+  } catch (error) {
+    console.error('🔴 Error ending meeting:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to end meeting',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * POST /api/notifications/send-reminder
+ * 
+ * Send meeting reminder notification
+ * Called 5 minutes before scheduled meeting time
+ * 
+ * Request Body:
+ * {
+ *   "bookingId": "uuid"
+ * }
+ */
+app.post('/api/notifications/send-reminder', async (req, res) => {
+  try {
+    const { bookingId } = req.body;
+
+    if (!bookingId) {
+      return res.status(400).json({
+        success: false,
+        error: 'bookingId is required',
+      });
+    }
+
+    // Get booking details
+    const { data: bookingData } = await supabase
+      .from('bookings')
+      .select('*')
+      .eq('id', bookingId)
+      .single();
+
+    // Send reminders to both teacher and student
+    await supabase
+      .from('notifications')
+      .insert([
+        {
+          user_id: bookingData.teacher_id,
+          notification_type: 'meeting_reminder',
+          title: '⏰ Meeting Reminder',
+          message: 'Your class is starting in 5 minutes!',
+          booking_id: bookingId,
+          is_read: false,
+        },
+        {
+          user_id: bookingData.student_id,
+          notification_type: 'meeting_reminder',
+          title: '⏰ Meeting Reminder',
+          message: 'Your class is starting in 5 minutes!',
+          booking_id: bookingId,
+          is_read: false,
+        },
+      ]);
+
+    console.log(`✅ Reminder sent for booking: ${bookingId}`);
+
+    res.json({
+      success: true,
+      message: 'Reminder sent',
+    });
+  } catch (error) {
+    console.error('🔴 Error sending reminder:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to send reminder',
+      message: error.message,
+    });
+  }
+});
+
+// ==========================================
 // Error Handling
 // ==========================================
 
@@ -380,6 +684,9 @@ app.use((req, res) => {
       'GET /get-token',
       'GET /health',
       'POST /validate-token',
+      'POST /api/meetings/start',
+      'POST /api/meetings/end',
+      'POST /api/notifications/send-reminder',
     ],
   });
 });

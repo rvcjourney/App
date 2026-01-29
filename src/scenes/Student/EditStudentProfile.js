@@ -13,6 +13,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-simple-toast';
 import { supabase } from '../../../supabase';
 import { updateStudentProfile } from '../../../database/database';
+import User from '../../assets/icons/User';
+import ChevronRight from '../../assets/icons/ChevronRight';
 
 export default function EditStudentProfile({ navigation }) {
   const [fullName, setFullName] = useState('');
@@ -123,69 +125,96 @@ export default function EditStudentProfile({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <ScrollView>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.backButton}>← Back</Text>
+          <TouchableOpacity 
+            style={styles.backButtonContainer}
+            onPress={() => navigation.goBack()}
+          >
+            <ChevronRight width={24} height={24} fill="#5568FE" style={{ transform: [{ rotate: '180deg' }] }} />
           </TouchableOpacity>
           <Text style={styles.title}>Edit Profile</Text>
+          <View style={{ width: 40 }} />
         </View>
 
         <View style={styles.content}>
           {/* Profile Avatar */}
           <View style={styles.avatarSection}>
-            <Text style={styles.avatar}>👤</Text>
+            <View style={styles.avatarContainer}>
+              <User width={56} height={56} fill="#5568FE" />
+            </View>
+            <Text style={styles.profileHint}>Profile Information</Text>
           </View>
 
           {/* Full Name */}
           <View style={styles.fieldSection}>
-            <Text style={styles.label}>Full Name *</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter your full name"
-              placeholderTextColor="#999"
-              value={fullName}
-              onChangeText={setFullName}
-            />
+            <View style={styles.labelContainer}>
+              <Text style={styles.label}>Full Name</Text>
+              <Text style={styles.required}>*</Text>
+            </View>
+            <View style={styles.inputContainer}>
+              <User width={18} height={18} fill="#5568FE" style={{ marginRight: 10 }} />
+              <TextInput
+                style={styles.input}
+                placeholder="Enter your full name"
+                placeholderTextColor="#666"
+                value={fullName}
+                onChangeText={setFullName}
+              />
+            </View>
           </View>
 
           {/* Email */}
           <View style={styles.fieldSection}>
-            <Text style={styles.label}>Email</Text>
-            <View style={[styles.input, styles.readonlyInput]}>
+            <View style={styles.labelContainer}>
+              <Text style={styles.label}>Email Address</Text>
+            </View>
+            <View style={[styles.inputContainer, styles.disabledInput]}>
               <Text style={styles.readonlyText}>{email}</Text>
+              <Text style={styles.emailHint}>(Cannot be changed)</Text>
             </View>
           </View>
 
           {/* Grade Level */}
           <View style={styles.fieldSection}>
-            <Text style={styles.label}>Grade Level</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g., Class 10, Grade 8"
-              placeholderTextColor="#999"
-              value={gradeLevel}
-              onChangeText={setGradeLevel}
-            />
+            <View style={styles.labelContainer}>
+              <Text style={styles.label}>Grade Level</Text>
+            </View>
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g., Class 10, Grade 8"
+                placeholderTextColor="#666"
+                value={gradeLevel}
+                onChangeText={setGradeLevel}
+              />
+            </View>
           </View>
 
           {/* Subjects Interested */}
           <View style={styles.fieldSection}>
-            <Text style={styles.label}>Subjects Interested</Text>
-            <TextInput
-              style={[styles.input, styles.multilineInput]}
-              placeholder="e.g., Math, Physics, Chemistry (comma separated)"
-              placeholderTextColor="#999"
-              value={subjectsInterested}
-              onChangeText={setSubjectsInterested}
-              multiline
-              numberOfLines={3}
-            />
+            <View style={styles.labelContainer}>
+              <Text style={styles.label}>Subjects Interested</Text>
+            </View>
+            <View style={[styles.inputContainer, styles.multilineContainer]}>
+              <TextInput
+                style={styles.multilineInput}
+                placeholder="e.g., Math, Physics, Chemistry (comma separated)"
+                placeholderTextColor="#666"
+                value={subjectsInterested}
+                onChangeText={setSubjectsInterested}
+                multiline
+                numberOfLines={3}
+              />
+            </View>
           </View>
 
           {/* Preferred Language */}
           <View style={styles.fieldSection}>
-            <Text style={styles.label}>Preferred Language</Text>
+            <View style={styles.labelContainer}>
+              <Text style={styles.label}>Preferred Language</Text>
+            </View>
             <View style={styles.languageButtons}>
               {['English', 'Hindi', 'Marathi'].map(lang => (
                 <TouchableOpacity
@@ -211,15 +240,25 @@ export default function EditStudentProfile({ navigation }) {
         </View>
 
         {/* Save Button */}
-        <TouchableOpacity
-          style={[styles.saveButton, saving && styles.saveButtonDisabled]}
-          onPress={handleSave}
-          disabled={saving}
-        >
-          <Text style={styles.saveButtonText}>
-            {saving ? 'Saving...' : '💾 Save Changes'}
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity
+            style={[styles.cancelButton]}
+            onPress={() => navigation.goBack()}
+            disabled={saving}
+          >
+            <Text style={styles.cancelButtonText}>Cancel</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.saveButton, saving && styles.saveButtonDisabled]}
+            onPress={handleSave}
+            disabled={saving}
+          >
+            <Text style={styles.saveButtonText}>
+              {saving ? 'Saving...' : 'Save Changes'}
+            </Text>
+          </TouchableOpacity>
+        </View>
 
         <View style={{ marginBottom: 30 }} />
       </ScrollView>
@@ -236,82 +275,127 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 20,
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 18,
     borderBottomColor: '#1C1F4A',
     borderBottomWidth: 1,
   },
 
-  backButton: {
-    color: '#1E90FF',
-    fontSize: 16,
-    fontWeight: '600',
-    marginRight: 10,
+  backButtonContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: '#1C1F4A',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
   title: {
     color: '#fff',
     fontSize: 20,
     fontWeight: 'bold',
-    flex: 1,
   },
 
   content: {
     paddingHorizontal: 20,
-    paddingVertical: 20,
+    paddingVertical: 24,
   },
 
   avatarSection: {
     alignItems: 'center',
-    marginBottom: 30,
+    marginBottom: 32,
   },
 
-  avatar: {
-    fontSize: 64,
+  avatarContainer: {
+    width: 80,
+    height: 80,
+    backgroundColor: '#1C1F4A',
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+
+  profileHint: {
+    color: '#999',
+    fontSize: 13,
+    fontWeight: '500',
   },
 
   fieldSection: {
-    marginBottom: 20,
+    marginBottom: 22,
+  },
+
+  labelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
   },
 
   label: {
     color: '#fff',
     fontSize: 14,
     fontWeight: '600',
-    marginBottom: 8,
   },
 
-  input: {
+  required: {
+    color: '#FF6B6B',
+    marginLeft: 4,
+    fontWeight: 'bold',
+  },
+
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#1C1F4A',
     borderColor: '#2A2D5A',
     borderWidth: 1,
-    borderRadius: 10,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 4,
+  },
+
+  input: {
+    flex: 1,
     color: '#fff',
     fontSize: 14,
-    paddingHorizontal: 16,
     paddingVertical: 12,
   },
 
-  readonlyInput: {
-    justifyContent: 'center',
+  disabledInput: {
     opacity: 0.6,
   },
 
   readonlyText: {
     color: '#999',
     fontSize: 14,
+    flex: 1,
+  },
+
+  emailHint: {
+    color: '#666',
+    fontSize: 11,
+    marginLeft: 8,
+  },
+
+  multilineContainer: {
+    alignItems: 'flex-start',
+    paddingVertical: 0,
+    minHeight: 100,
   },
 
   multilineInput: {
+    flex: 1,
+    color: '#fff',
+    fontSize: 14,
     paddingVertical: 12,
-    paddingTop: 12,
-    minHeight: 80,
-    textAlignVertical: 'top',
+    paddingRight: 8,
+    maxHeight: 100,
   },
 
   languageButtons: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     gap: 10,
   },
 
@@ -319,15 +403,16 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#1C1F4A',
     borderColor: '#2A2D5A',
-    borderWidth: 1,
-    borderRadius: 10,
+    borderWidth: 1.5,
+    borderRadius: 12,
     paddingVertical: 12,
     alignItems: 'center',
+    justifyContent: 'center',
   },
 
   langBtnActive: {
-    backgroundColor: '#1E90FF',
-    borderColor: '#1E90FF',
+    backgroundColor: '#5568FE',
+    borderColor: '#5568FE',
   },
 
   langBtnText: {
@@ -338,15 +423,44 @@ const styles = StyleSheet.create({
 
   langBtnTextActive: {
     color: '#fff',
+    fontWeight: '600',
+  },
+
+  buttonContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+
+  cancelButton: {
+    flex: 1,
+    borderColor: '#2A2D5A',
+    borderWidth: 1.5,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  cancelButtonText: {
+    color: '#5568FE',
+    fontSize: 15,
+    fontWeight: '600',
   },
 
   saveButton: {
-    marginHorizontal: 20,
-    marginVertical: 20,
-    backgroundColor: '#1E90FF',
-    borderRadius: 10,
-    paddingVertical: 15,
+    flex: 1,
+    backgroundColor: '#5568FE',
+    borderRadius: 12,
+    paddingVertical: 14,
     alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#5568FE',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
 
   saveButtonDisabled: {
@@ -355,7 +469,7 @@ const styles = StyleSheet.create({
 
   saveButtonText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
   },
 });
