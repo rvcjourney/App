@@ -10,12 +10,13 @@ import {
 } from 'react-native';
 
 export default function SignupScreen({ navigation, route }) {
-  const { role } = route.params;
-
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  // Role from params (Teacher path -> Login with role=teacher -> Signup with role=teacher)
+  const roleParam = route.params?.role;
+  const role = roleParam === 'teacher' ? 'teacher' : 'student';
 
   const handleSignup = async () => {
     if (!fullName || !email || !password) {
@@ -39,8 +40,9 @@ export default function SignupScreen({ navigation, route }) {
       }
 
       console.log('✅ Signup successful, user ID:', data.user.id);
+      console.log('✅ Creating profile with role:', role);
 
-      // Save user profile with error handling
+      // Save user profile with the role they selected (teacher or student)
       const { error: profileError } = await supabase.from('profiles').insert({
         id: data.user.id,
         full_name: fullName,

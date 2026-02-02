@@ -58,6 +58,9 @@ export default function StudentDashboard({ navigation }) {
   const [bookingSubject, setBookingSubject] = useState('');
   const [bookingInProgress, setBookingInProgress] = useState(false);
 
+  // UI state: show favorites section on home dashboard
+  const [showHomeFavorites, setShowHomeFavorites] = useState(true);
+
   // Fetch user info and teachers on mount
   useEffect(() => {
     const initialize = async () => {
@@ -682,8 +685,22 @@ export default function StudentDashboard({ navigation }) {
           <ScrollView showsVerticalScrollIndicator={false}>
             {/* Header */}
             <View style={styles.header}>
-              <Text style={styles.welcome}>Welcome 👋</Text>
-              <Text style={styles.studentName}>{studentName}</Text>
+              <View>
+                <Text style={styles.welcome}>Welcome 👋</Text>
+                <Text style={styles.studentName}>{studentName}</Text>
+              </View>
+              {favoriteTeachers.length > 0 && (
+                <TouchableOpacity
+                  style={styles.headerFavoriteBtn}
+                  onPress={() =>
+                    navigation.navigate(SCREEN_NAMES.FavoriteTeachers, {
+                      favoriteTeachers,
+                    })
+                  }
+                >
+                  <Heart width={20} height={20} fill="#FF6B6B" />
+                </TouchableOpacity>
+              )}
             </View>
 
             {/* Search Bar */}
@@ -701,6 +718,51 @@ export default function StudentDashboard({ navigation }) {
               </View>
 
             </View>
+
+            {/* Favorites on Home (toggle by heart icon) */}
+            {favoriteTeachers.length > 0 && showHomeFavorites && (
+              <>
+                <View style={styles.sectionHeader}>
+                  <Text style={styles.sectionTitle}>My Favorite Teachers</Text>
+                  <Heart width={18} height={18} fill="#FF6B6B" />
+                </View>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.homeFavScroll}
+                  style={styles.homeFavContainer}
+                >
+                  {favoriteTeachers.map(teacher => (
+                    <TouchableOpacity
+                      key={teacher.id}
+                      style={styles.homeFavCard}
+                      onPress={() => {
+                        setSelectedTeacher(teacher);
+                        setShowBookingModal(true);
+                      }}
+                    >
+                      <View style={styles.homeFavAvatarWrapper}>
+                        <User width={36} height={36} fill="#5568FE" />
+                        <View
+                          style={[
+                            styles.homeFavStatusDot,
+                            { backgroundColor: teacherStatusColor(teacher.availability_status) }
+                          ]}
+                        />
+                      </View>
+                      <Text style={styles.homeFavName} numberOfLines={1}>
+                        {teacher.profile?.full_name || 'Teacher'}
+                      </Text>
+                      <Text style={styles.homeFavSubject} numberOfLines={1}>
+                        {typeof teacher.specializations === 'string'
+                          ? teacher.specializations.split(',')[0].trim()
+                          : 'Subject'}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </>
+            )}
 
             {/* Categories */}
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }} style={styles.categoryScroll}>
@@ -1293,6 +1355,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 20,
     marginBottom: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
 
   welcomeContainer: {
@@ -1316,6 +1381,12 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 24,
     fontWeight: 'bold',
+  },
+
+  headerFavoriteBtn: {
+    padding: 6,
+    borderRadius: 20,
+    backgroundColor: '#1C1F4A',
   },
 
   searchContainer: {
@@ -1457,6 +1528,52 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     borderWidth: 2,
     borderColor: '#1C1F4A',
+  },
+
+  homeFavContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 10,
+  },
+
+  homeFavScroll: {
+    paddingVertical: 5,
+  },
+
+  homeFavCard: {
+    width: 120,
+    backgroundColor: '#1C1F4A',
+    borderRadius: 12,
+    padding: 10,
+    marginRight: 12,
+    alignItems: 'center',
+  },
+
+  homeFavAvatarWrapper: {
+    position: 'relative',
+    marginBottom: 6,
+  },
+
+  homeFavStatusDot: {
+    position: 'absolute',
+    bottom: 0,
+    right: -2,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#1C1F4A',
+  },
+
+  homeFavName: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+
+  homeFavSubject: {
+    color: '#999',
+    fontSize: 11,
+    marginTop: 2,
   },
 
   favTeacherActions: {

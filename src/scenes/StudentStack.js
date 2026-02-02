@@ -2,6 +2,7 @@ import React from "react";
 import { createStackNavigator } from "@react-navigation/stack";
 import StudentDashboard from "./StudentDashboard";import EditStudentProfile from "./Student/EditStudentProfile";import Join from "./join";
 import Meeting from "./meeting";
+import FavoriteTeachersScreen from "./Student/FavoriteTeachersScreen";
 import { SCREEN_NAMES } from "../navigators/screenNames";
 
 const Stack = createStackNavigator();
@@ -16,6 +17,10 @@ export default function StudentStack() {
       <Stack.Screen 
         name={SCREEN_NAMES.EditStudentProfile} 
         component={EditStudentProfile}
+      />
+      <Stack.Screen 
+        name={SCREEN_NAMES.FavoriteTeachers} 
+        component={FavoriteTeachersScreen}
       />
       <Stack.Screen 
         name={SCREEN_NAMES.Join} 

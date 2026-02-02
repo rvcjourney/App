@@ -9,7 +9,9 @@ import {
 } from 'react-native';
 import { supabase } from '../../supabase';
 
-const BACKEND_URL = process.env.REACT_APP_AUTH_URL || 'http://10.95.219.226:3000';
+// Backend IP/port used by the mobile app
+// Keep this in sync with REACT_APP_AUTH_URL in the root .env
+const BACKEND_URL = process.env.REACT_APP_AUTH_URL || 'http://192.168.0.183:3000';
 
 export default function OTPVerificationScreen({ navigation, route }) {
   const { email, fullName, role, userId, isSignup } = route.params;
