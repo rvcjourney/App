@@ -73,6 +73,7 @@ export default function TeacherDashboard({ navigation }) {
   const [specializations, setSpecializations] = useState('');
   const [upcomingBookings, setUpcomingBookings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [teacherStatus, setTeacherStatus] = useState('offline'); // 'online' | 'away' | 'offline'
 
   // Function to load teacher profile data
   const loadTeacherProfile = async () => {
@@ -105,6 +106,10 @@ export default function TeacherDashboard({ navigation }) {
           setRating(teacherData.rating || 4.8);
           setFollowers(teacherData.followers || 0);
           setSpecializations(teacherData.specializations || '');
+          const status = teacherData.availability_status;
+          if (status === 'online' || status === 'away' || status === 'offline') {
+            setTeacherStatus(status);
+          }
         }
 
         // Get upcoming bookings
@@ -127,6 +132,53 @@ export default function TeacherDashboard({ navigation }) {
       setLoading(false);
     }
   };
+
+  // Change status (online / away / offline) – manual only
+  const handleStatusPress = () => {
+    // Show options dynamically based on current status:
+    // - If Online → show Away + Offline
+    // - If Offline → show Away + Online
+    // - If Away → show Online + Offline
+    let options = [];
+
+    if (teacherStatus === 'online') {
+      options = [
+        { text: 'Away', onPress: () => setStatusAndSave('away') },
+        { text: 'Offline', onPress: () => setStatusAndSave('offline') },
+      ];
+    } else if (teacherStatus === 'offline') {
+      options = [
+        { text: 'Online', onPress: () => setStatusAndSave('online') },
+        { text: 'Away', onPress: () => setStatusAndSave('away') },
+      ];
+    } else {
+      // current = away
+      options = [
+        { text: 'Online', onPress: () => setStatusAndSave('online') },
+        { text: 'Offline', onPress: () => setStatusAndSave('offline') },
+      ];
+    }
+
+    Alert.alert('Set your status', 'Choose your new status:', options);
+  };
+
+  const setStatusAndSave = async (newStatus) => {
+    setTeacherStatus(newStatus);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase
+          .from('teacher_profiles')
+          .update({ availability_status: newStatus })
+          .eq('id', user.id);
+      }
+    } catch (e) {
+      Toast.show('Failed to update status');
+    }
+  };
+
+  const statusColor = { online: '#22c55e', away: '#eab308', offline: '#6b7280' };
+  const statusLabel = { online: 'Online', away: 'Away', offline: 'Offline' };
 
   // Fetch teacher profile data on mount
   useEffect(() => {
@@ -204,12 +256,16 @@ export default function TeacherDashboard({ navigation }) {
           {/* Dashboard Overview */}
           <View style={styles.overviewCard}>
             <View style={styles.profileSection}>
-              <View style={styles.profileImageContainer}>
-                <Users width={48} height={48} fill="#5568FE" />
-              </View>
+              <TouchableOpacity onPress={handleStatusPress} style={styles.profileImageWrapper} activeOpacity={0.8}>
+                <View style={styles.profileImageContainer}>
+                  <Users width={48} height={48} fill="#5568FE" />
+                </View>
+                <View style={[styles.statusDot, { backgroundColor: statusColor[teacherStatus] }]} />
+              </TouchableOpacity>
               <View style={styles.profileInfo}>
                 <Text style={styles.profileName}>{teacherName}</Text>
                 <Text style={styles.profileSubtitle}>{specializations || 'Tutor'}</Text>
+                <Text style={styles.statusLabel}>{statusLabel[teacherStatus]}</Text>
               </View>
             </View>
 
@@ -642,11 +698,15 @@ export default function TeacherDashboard({ navigation }) {
 
           {/* Profile Section */}
           <View style={styles.profileSettingsCard}>
-            <View style={styles.profileImageContainer}>
-              <Users width={64} height={64} fill="#5568FE" />
-            </View>
+            <TouchableOpacity onPress={handleStatusPress} style={styles.profileImageWrapperSettings} activeOpacity={0.8}>
+              <View style={[styles.profileImageContainer, styles.profileImageContainerSettings]}>
+                <Users width={64} height={64} fill="#5568FE" />
+              </View>
+              <View style={[styles.statusDot, styles.statusDotSettings, { backgroundColor: statusColor[teacherStatus] }]} />
+            </TouchableOpacity>
             <Text style={styles.settingName}>{teacherName}</Text>
             <Text style={styles.settingSubtitle}>{specializations || 'Tutor'}</Text>
+            <Text style={styles.settingStatusLabel}>{statusLabel[teacherStatus]}</Text>
           </View>
 
           {/* Profile Settings */}
@@ -713,7 +773,16 @@ export default function TeacherDashboard({ navigation }) {
 
             <TouchableOpacity 
               style={[styles.settingItem, styles.logoutItem]} 
-              onPress={() => Alert.alert('Logout', 'Are you sure you want to logout?')}
+              onPress={() =>
+                Alert.alert(
+                  'Logout',
+                  'Are you sure you want to log out?',
+                  [
+                    { text: 'No', style: 'cancel', onPress: () => {} },
+                    { text: 'Yes', onPress: async () => { await supabase.auth.signOut(); } },
+                  ]
+                )
+              }
             >
               <Text style={styles.settingIcon}>🚪</Text>
               <Text style={styles.settingText}>Logout</Text>
@@ -806,6 +875,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 20,
   },
+  profileImageWrapper: {
+    position: 'relative',
+    marginRight: 15,
+  },
   profileImageContainer: {
     width: 60,
     height: 60,
@@ -813,7 +886,43 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 15,
+  },
+  statusDot: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 3,
+    borderColor: '#1C1F4A',
+  },
+  statusLabel: {
+    color: '#999',
+    fontSize: 12,
+    marginTop: 2,
+  },
+  profileImageWrapperSettings: {
+    alignSelf: 'center',
+    marginBottom: 8,
+  },
+  profileImageContainerSettings: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+  },
+  statusDotSettings: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 3,
+    borderColor: '#1C1F4A',
+  },
+  settingStatusLabel: {
+    color: '#999',
+    fontSize: 13,
+    marginTop: 4,
+    textAlign: 'center',
   },
   profileImage: {
     fontSize: 50,

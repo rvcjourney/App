@@ -36,14 +36,36 @@ export default function LoginScreen({ navigation, route }) {
         return;
       }
 
-      // Check if email is verified
-      const { data: profile } = await supabase
+      // Fetch profile to check role and email verification
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('email_verified')
+        .select('role, email_verified')
         .eq('id', data.user.id)
         .single();
 
-      if (!profile?.email_verified) {
+      if (profileError || !profile) {
+        await supabase.auth.signOut();
+        Alert.alert('Error', 'Could not load your profile. Please try again.');
+        setLoading(false);
+        return;
+      }
+
+      // Ensure user is logging in from the correct section (teacher vs student)
+      const profileRole = (profile.role || '').toLowerCase();
+      const selectedRole = (role || '').toLowerCase();
+      if (profileRole !== selectedRole) {
+        await supabase.auth.signOut();
+        const actualLabel = profileRole === 'teacher' ? 'Teacher' : 'Student';
+        Alert.alert(
+          'Wrong login section',
+          `You are registered as a ${actualLabel}. Please go back and use the "${actualLabel}" login option.`
+        );
+        setLoading(false);
+        return;
+      }
+
+      // Check if email is verified
+      if (!profile.email_verified) {
         // Send OTP for verification
         navigation.navigate('OTPVerification', {
           email,

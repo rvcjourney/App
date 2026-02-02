@@ -451,11 +451,20 @@ export default function StudentDashboard({ navigation }) {
     });
   };
 
+  // Teacher status colors (online / away / offline) – same as teacher dashboard
+  const teacherStatusColor = (status) => {
+    const s = (status || 'offline').toLowerCase();
+    if (s === 'online') return '#22c55e';
+    if (s === 'away') return '#eab308';
+    return '#6b7280';
+  };
+
   const renderTeacherCard = ({ item }) => {
     const isFavorite = favoriteTeachers.find(t => t.id === item.id);
     const specializations = typeof item.specializations === 'string'
       ? item.specializations.split(',')[0].trim()
       : 'Subject';
+    const status = item.availability_status || 'offline';
 
     return (
       <TouchableOpacity
@@ -463,7 +472,10 @@ export default function StudentDashboard({ navigation }) {
         onPress={() => navigation.navigate(SCREEN_NAMES.Join)}
       >
         <View style={styles.teacherCardContent}>
-          <User width={48} height={48} fill="#5568FE" style={{ marginBottom: 8 }} />
+          <View style={styles.teacherAvatarWrapper}>
+            <User width={48} height={48} fill="#5568FE" style={{ marginBottom: 8 }} />
+            <View style={[styles.teacherStatusDot, { backgroundColor: teacherStatusColor(status) }]} />
+          </View>
           <Text style={styles.teacherName}>{item.profile?.full_name || 'Teacher'}</Text>
           <Text style={styles.teacherCategory}>{specializations}</Text>
           <View style={styles.ratingContainer}>
@@ -486,7 +498,7 @@ export default function StudentDashboard({ navigation }) {
             >
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <Calendar width={18} height={18} fill="#fff" style={{ marginRight: 6 }} />
-                <Text style={styles.bookBtnText}>Book</Text>
+                <Text style={styles.bookBtnText}>Schedule</Text>
               </View>
             </TouchableOpacity>
             <TouchableOpacity
@@ -529,8 +541,16 @@ export default function StudentDashboard({ navigation }) {
 
           {/* Teacher Info */}
           <View style={styles.teacherInfoCard}>
-            <User width={56} height={56} fill="#5568FE" style={{ marginBottom: 12 }} />
+            <View style={styles.teacherModalAvatarWrapper}>
+              <User width={56} height={56} fill="#5568FE" style={{ marginBottom: 12 }} />
+              <View style={[styles.teacherStatusDotModal, { backgroundColor: teacherStatusColor(selectedTeacher.availability_status) }]} />
+            </View>
             <Text style={styles.teacherName}>{selectedTeacher.profile?.full_name}</Text>
+            <Text style={styles.teacherStatusLabel}>
+              {((selectedTeacher.availability_status || 'offline') === 'online' && 'Online') ||
+               ((selectedTeacher.availability_status || 'offline') === 'away' && 'Away') ||
+               'Offline'}
+            </Text>
             <Text style={styles.teacherSpec}>{selectedTeacher.specializations?.split(',')[0].trim()}</Text>
             <View style={styles.priceRow}>
               <Text style={styles.priceLabel}>Price: </Text>
@@ -1135,7 +1155,10 @@ export default function StudentDashboard({ navigation }) {
               {favoriteTeachers.map(teacher => (
                 <View key={teacher.id} style={styles.favTeacherCard}>
                   <View style={styles.favTeacherImageContainer}>
-                    <User width={40} height={40} fill="#5568FE" />
+                    <View style={styles.favTeacherAvatarWrapper}>
+                      <User width={40} height={40} fill="#5568FE" />
+                      <View style={[styles.favTeacherStatusDot, { backgroundColor: teacherStatusColor(teacher.availability_status) }]} />
+                    </View>
                   </View>
                   <View style={styles.favTeacherInfo}>
                     <Text style={styles.favTeacherName}>{teacher.profile?.full_name || 'Teacher'}</Text>
@@ -1146,9 +1169,19 @@ export default function StudentDashboard({ navigation }) {
                     </Text>
                     <Text style={styles.favTeacherPrice}>₹{teacher.price_per_call || 500}/call</Text>
                   </View>
-                  <TouchableOpacity onPress={() => toggleFavorite(teacher)}>
-                    <HeartFilled width={20} height={20} fill="#FF6B6B" />
-                  </TouchableOpacity>
+                  <View style={styles.favTeacherActions}>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setSelectedTeacher(teacher);
+                        setShowBookingModal(true);
+                      }}
+                    >
+                      <Calendar width={20} height={20} fill="#5568FE" />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => toggleFavorite(teacher)} style={{ marginLeft: 12 }}>
+                      <HeartFilled width={20} height={20} fill="#FF6B6B" />
+                    </TouchableOpacity>
+                  </View>
                 </View>
               ))}
             </>
@@ -1196,7 +1229,16 @@ export default function StudentDashboard({ navigation }) {
 
             <TouchableOpacity
               style={[styles.settingItem, styles.logoutItem]}
-              onPress={() => Alert.alert('Logout', 'Are you sure?')}
+              onPress={() =>
+                Alert.alert(
+                  'Logout',
+                  'Are you sure you want to log out?',
+                  [
+                    { text: 'No', style: 'cancel', onPress: () => {} },
+                    { text: 'Yes', onPress: async () => { await supabase.auth.signOut(); } },
+                  ]
+                )
+              }
             >
               <View style={styles.settingIconContainer}>
                 <User width={18} height={18} fill="#FF6B6B" />
@@ -1361,6 +1403,65 @@ const styles = StyleSheet.create({
   teacherCardContent: {
     flex: 1,
     marginLeft: 12,
+  },
+
+  teacherAvatarWrapper: {
+    position: 'relative',
+    alignSelf: 'flex-start',
+  },
+
+  teacherStatusDot: {
+    position: 'absolute',
+    bottom: 4,
+    right: 0,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 2,
+    borderColor: '#1C1F4A',
+  },
+
+  teacherModalAvatarWrapper: {
+    position: 'relative',
+    alignSelf: 'center',
+  },
+
+  teacherStatusDotModal: {
+    position: 'absolute',
+    bottom: 8,
+    right: 0,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#0B0D2A',
+  },
+
+  teacherStatusLabel: {
+    color: '#999',
+    fontSize: 12,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+
+  favTeacherAvatarWrapper: {
+    position: 'relative',
+  },
+
+  favTeacherStatusDot: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#1C1F4A',
+  },
+
+  favTeacherActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
 
   teacherName: {
