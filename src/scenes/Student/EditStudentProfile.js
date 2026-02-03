@@ -12,11 +12,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-simple-toast';
 import { supabase } from '../../../supabase';
-import { updateStudentProfile } from '../../../database/database';
 import User from '../../assets/icons/User';
 import ChevronRight from '../../assets/icons/ChevronRight';
 
-export default function EditStudentProfile({ navigation }) {
+export default function EditStudentProfile({ navigation, onSaveSuccess }) {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [gradeLevel, setGradeLevel] = useState('');
@@ -37,23 +36,25 @@ export default function EditStudentProfile({ navigation }) {
           setStudentId(user.id);
           setEmail(user.email || '');
 
-          // Get student profile
-          const { data: profile } = await supabase
+          // Get student profile (limit(1) to avoid single-object coercion errors)
+          const { data: profileRows } = await supabase
             .from('profiles')
             .select('full_name')
             .eq('id', user.id)
-            .single();
+            .limit(1);
+          const profile = Array.isArray(profileRows) && profileRows.length > 0 ? profileRows[0] : profileRows;
 
           if (profile?.full_name) {
             setFullName(profile.full_name);
           }
 
-          // Get student details
-          const { data: studentData } = await supabase
+          // Get student details (maybeSingle in case row not created yet)
+          const { data: studentRows } = await supabase
             .from('student_profiles')
             .select('*')
             .eq('id', user.id)
-            .single();
+            .limit(1);
+          const studentData = Array.isArray(studentRows) && studentRows.length > 0 ? studentRows[0] : studentRows;
 
           if (studentData) {
             setGradeLevel(studentData.grade_level || '');
@@ -64,7 +65,7 @@ export default function EditStudentProfile({ navigation }) {
         
       } catch (error) {
         console.error('🔴 Error loading profile:', error);
-        Toast.show('Error loading profile');
+        Toast.show(error?.message || 'Error loading profile');
       } finally {
         setLoading(false);
       }
@@ -83,33 +84,45 @@ export default function EditStudentProfile({ navigation }) {
       setSaving(true);
       console.log('🔵 [EditStudentProfile] Saving profile...');
 
-      // Update profiles table
+      // Update profiles table (full_name)
       const { error: profileError } = await supabase
         .from('profiles')
-        .update({ full_name: fullName })
+        .update({ full_name: fullName.trim() })
         .eq('id', studentId);
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error('🔴 Profile update error:', profileError);
+        throw new Error(profileError.message || 'Could not update name');
+      }
 
-      // Update student_profiles table
+      // Upsert student_profiles so row is created if missing (e.g. old account)
+      const studentPayload = {
+        id: studentId,
+        grade_level: gradeLevel || '',
+        subjects_interested: subjectsInterested || '',
+        preferred_language: preferredLanguage || 'English',
+      };
       const { error: studentError } = await supabase
         .from('student_profiles')
-        .update({
-          grade_level: gradeLevel,
-          subjects_interested: subjectsInterested,
-          preferred_language: preferredLanguage,
-        })
-        .eq('id', studentId);
+        .upsert(studentPayload, { onConflict: 'id' });
 
-      if (studentError) throw studentError;
+      if (studentError) {
+        console.error('🔴 Student profile upsert error:', studentError);
+        throw new Error(studentError.message || 'Could not save student details');
+      }
 
       console.log('✅ Profile updated successfully');
       Toast.show('✅ Profile updated successfully');
-      setTimeout(() => navigation.goBack(), 1000);
+      if (onSaveSuccess) {
+        onSaveSuccess();
+      } else {
+        setTimeout(() => navigation.goBack(), 1000);
+      }
 
     } catch (error) {
       console.error('🔴 Save error:', error);
-      Alert.alert('Error', 'Failed to save profile');
+      const msg = error?.message || 'Failed to save profile';
+      Alert.alert('Error', msg);
     } finally {
       setSaving(false);
     }

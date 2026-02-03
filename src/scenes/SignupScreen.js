@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../../supabase';
+import { createTeacherProfile, createStudentProfile } from '../database/database';
 import {
   View,
   Text,
@@ -26,10 +27,11 @@ export default function SignupScreen({ navigation, route }) {
     setLoading(true);
 
     try {
-      // Sign up user
+      // Sign up user (options.data so RootNavigator can use role if profile isn't ready yet)
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: { data: { role, full_name: fullName } },
       });
 
       if (error) {
@@ -56,6 +58,18 @@ export default function SignupScreen({ navigation, route }) {
       }
 
       console.log('✅ Profile created successfully');
+
+      // Create role-specific profile row so edits save to teacher_profiles / student_profiles
+      try {
+        if (role === 'teacher') {
+          await createTeacherProfile(data.user.id);
+        } else {
+          await createStudentProfile(data.user.id);
+        }
+      } catch (roleProfileErr) {
+        console.error('❌ Role profile creation error:', roleProfileErr);
+        // Continue to OTP; they can complete profile later
+      }
 
       // Navigate to OTP verification screen
       navigation.navigate('OTPVerification', {

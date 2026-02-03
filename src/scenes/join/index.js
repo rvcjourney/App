@@ -167,7 +167,11 @@ export default function Join({ navigation, route }) {
             console.log('✅ [Join] Navigation complete');
           } catch (error) {
             console.error('🔴 [Join] Error auto-joining meeting:', error);
-            Toast.show(`❌ Error: ${error.message}`);
+            const msg = error?.message || 'Something went wrong';
+            Toast.show(`❌ ${msg}`);
+            if (msg.includes('Cannot reach') || msg.includes('network')) {
+              Alert.alert('Video call server unreachable', msg + '\n\nTip: Start backend with "npm start" in the backend folder and ensure your phone and computer are on the same Wi‑Fi.');
+            }
           }
         }, 500);
       }
@@ -410,7 +414,11 @@ export default function Join({ navigation, route }) {
                       console.log('✅ [Join] Navigation complete');
                     } catch (error) {
                       console.error('🔴 [Join] Error starting meeting:', error);
-                      Toast.show(`❌ Error: ${error.message}`);
+                      const msg = error?.message || 'Something went wrong';
+                      Toast.show(`❌ ${msg}`);
+                      if (msg.includes('Cannot reach') || msg.includes('network')) {
+                        Alert.alert('Video call server unreachable', msg + '\n\nTip: Start backend with "npm start" in the backend folder and ensure your phone and computer are on the same Wi‑Fi.');
+                      }
                     }
                   }}
                 />
@@ -488,7 +496,11 @@ export default function Join({ navigation, route }) {
                       console.log('✅ [Join] Navigation complete');
                     } catch (error) {
                       console.error('🔴 [Join] Error joining meeting:', error);
-                      Toast.show(`❌ Error: ${error.message}`);
+                      const msg = error?.message || 'Something went wrong';
+                      Toast.show(`❌ ${msg}`);
+                      if (msg.includes('Cannot reach') || msg.includes('network')) {
+                        Alert.alert('Video call server unreachable', msg + '\n\nTip: Start backend with "npm start" in the backend folder and ensure your phone and computer are on the same Wi‑Fi.');
+                      }
                     }
                   }}
                 />

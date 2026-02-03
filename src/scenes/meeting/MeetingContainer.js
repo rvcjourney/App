@@ -8,7 +8,7 @@ import ConferenceMeetingViewer from "./Conference/ConferenceMeetingViewer";
 import ParticipantLimitViewer from "./OneToOne/ParticipantLimitViewer";
 import WaitingToJoinView from "./Components/WaitingToJoinView";
 
-export default function MeetingContainer({ webcamEnabled, meetingType }) {
+export default function MeetingContainer({ webcamEnabled, meetingType, isTeacher = true }) {
   const [isJoined, setJoined] = useState(false);
   const [participantLimit, setParticipantLimit] = useState(false);
   const [error, setError] = useState(null);
@@ -61,11 +61,11 @@ export default function MeetingContainer({ webcamEnabled, meetingType }) {
     </View>
   ) : isJoined ? (
     meetingType === "GROUP" ? (
-      <ConferenceMeetingViewer />
+      <ConferenceMeetingViewer isTeacher={isTeacher} />
     ) : participantLimit ? (
       <ParticipantLimitViewer />
     ) : (
-      <OneToOneMeetingViewer />
+      <OneToOneMeetingViewer isTeacher={isTeacher} />
     )
   ) : (
     <WaitingToJoinView />

@@ -55,7 +55,7 @@ const MemoizedParticipant = React.memo(
 import { MemoizedParticipantGrid } from "./ConferenceParticipantGrid";
 import { useOrientation } from "../../../utils/useOrientation";
 
-export default function ConferenceMeetingViewer() {
+export default function ConferenceMeetingViewer({ isTeacher = true }) {
   const {
     localParticipant,
     participants,
@@ -204,30 +204,32 @@ export default function ConferenceMeetingViewer() {
                 : 0,
           }}
         >
-          <View style={{ flexDirection: "row" }}>
-            <Text
-              style={{
-                fontSize: 16,
-                fontFamily: ROBOTO_FONTS.RobotoBold,
-                color: colors.primary[100],
-              }}
-            >
-              {meetingId ? meetingId : "xxx - xxx - xxx"}
-            </Text>
+          {isTeacher && (
+            <View style={{ flexDirection: "row" }}>
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontFamily: ROBOTO_FONTS.RobotoBold,
+                  color: colors.primary[100],
+                }}
+              >
+                {meetingId ? meetingId : "xxx - xxx - xxx"}
+              </Text>
 
-            <TouchableOpacity
-              style={{
-                justifyContent: "center",
-                marginLeft: 10,
-              }}
-              onPress={() => {
-                Clipboard.setString(meetingId);
-                Toast.show("Meeting Id copied Successfully");
-              }}
-            >
-              <Copy fill={colors.primary[100]} width={18} height={18} />
-            </TouchableOpacity>
-          </View>
+              <TouchableOpacity
+                style={{
+                  justifyContent: "center",
+                  marginLeft: 10,
+                }}
+                onPress={() => {
+                  Clipboard.setString(meetingId);
+                  Toast.show("Meeting Id copied Successfully");
+                }}
+              >
+                <Copy fill={colors.primary[100]} width={18} height={18} />
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
         <View style={{ flexDirection: "row" }}>
           <TouchableOpacity
@@ -297,21 +299,25 @@ export default function ConferenceMeetingViewer() {
             moreOptionsMenu.current.close();
           }}
         />
-        <View
-          style={{
-            height: 1,
-            backgroundColor: colors.primary["600"],
-          }}
-        />
-        <MenuItem
-          title={"End"}
-          description={"End call for all participants"}
-          icon={<EndForAll />}
-          onPress={() => {
-            end();
-            moreOptionsMenu.current.close();
-          }}
-        />
+        {isTeacher && (
+          <>
+            <View
+              style={{
+                height: 1,
+                backgroundColor: colors.primary["600"],
+              }}
+            />
+            <MenuItem
+              title={"End"}
+              description={"End call for all participants"}
+              icon={<EndForAll />}
+              onPress={() => {
+                end();
+                moreOptionsMenu.current.close();
+              }}
+            />
+          </>
+        )}
       </Menu>
       <Menu
         ref={audioDeviceMenuRef}

@@ -39,7 +39,10 @@ export const getAllTeachers = async () => {
       `)
       .order('rating', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error('🔴 Error fetching teachers:', error);
+      throw error;
+    }
     
     console.log('✅ All teachers fetched:', data?.length);
     return data || [];
@@ -103,6 +106,29 @@ export const updateTeacherProfile = async (teacherId, updates) => {
   }
 };
 
+/** Create a minimal teacher_profiles row (call after signup so edits work). */
+export const createTeacherProfile = async (userId) => {
+  try {
+    const { error } = await supabase
+      .from('teacher_profiles')
+      .upsert({
+        id: userId,
+        price_per_call: 500,
+        specializations: '',
+        bio: '',
+        rating: 4.8,
+        followers: 0,
+        experience_years: 0,
+        updated_at: new Date(),
+      }, { onConflict: 'id' });
+    if (error) throw error;
+    console.log('✅ Teacher profile row created');
+  } catch (error) {
+    console.error('🔴 createTeacherProfile error:', error);
+    throw error;
+  }
+};
+
 // ==========================================
 // STUDENT QUERIES
 // ==========================================
@@ -150,6 +176,52 @@ export const updateStudentProfile = async (studentId, updates) => {
   } catch (error) {
     console.error('🔴 Update error:', error);
     throw error;
+  }
+};
+
+/** Create a minimal student_profiles row (call after signup so edits work). */
+export const createStudentProfile = async (userId) => {
+  try {
+    const { error } = await supabase
+      .from('student_profiles')
+      .upsert({
+        id: userId,
+        preferred_language: 'English',
+        grade_level: '',
+        subjects_interested: '',
+        updated_at: new Date(),
+      }, { onConflict: 'id' });
+    if (error) throw error;
+    console.log('✅ Student profile row created');
+  } catch (error) {
+    console.error('🔴 createStudentProfile error:', error);
+    throw error;
+  }
+};
+
+/** Check if role-specific profile is complete (required before using app). */
+export const isProfileComplete = async (role, userId) => {
+  try {
+    if (role === 'teacher') {
+      const { data } = await supabase
+        .from('teacher_profiles')
+        .select('specializations, bio')
+        .eq('id', userId)
+        .maybeSingle();
+      return !!(data?.specializations?.trim() || data?.bio?.trim());
+    }
+    if (role === 'student') {
+      const { data } = await supabase
+        .from('student_profiles')
+        .select('grade_level, subjects_interested')
+        .eq('id', userId)
+        .maybeSingle();
+      return !!(data?.grade_level?.trim() || data?.subjects_interested?.trim());
+    }
+    return false;
+  } catch (error) {
+    console.error('🔴 isProfileComplete error:', error);
+    return false;
   }
 };
 
@@ -212,23 +284,35 @@ export const getTeacherBookings = async (teacherId) => {
   try {
     console.log('🔵 Fetching teacher bookings...');
     
-    const { data, error } = await supabase
+    const { data: bookings, error } = await supabase
       .from('bookings')
-      .select(`
-        *,
-        student:student_id(full_name),
-        teacher:teacher_id(full_name)
-      `)
+      .select('*')
       .eq('teacher_id', teacherId)
       .order('booked_date', { ascending: false });
 
     if (error) throw error;
-    
-    console.log('✅ Teacher bookings fetched:', data?.length);
-    return data || [];
-  } catch (error) {
-    console.error('🔴 Error fetching teacher bookings:', error);
-    throw error;
+    if (!bookings || bookings.length === 0) {
+      console.log('✅ Teacher bookings fetched: 0');
+      return [];
+    }
+
+    const studentIds = [...new Set(bookings.map(b => b.student_id).filter(Boolean))];
+    const studentNames = {};
+    for (const sid of studentIds) {
+      const { data: row } = await supabase.from('profiles').select('full_name').eq('id', sid).limit(1).maybeSingle();
+      const name = (Array.isArray(row) ? row[0] : row)?.full_name || 'Student';
+      studentNames[sid] = name;
+    }
+
+    const result = bookings.map(b => ({
+      ...b,
+      student: { full_name: studentNames[b.student_id] || 'Student' },
+    }));
+    console.log('✅ Teacher bookings fetched:', result.length);
+    return result;
+  } catch (err) {
+    console.error('🔴 Error fetching teacher bookings:', err);
+    throw err;
   }
 };
 
@@ -1149,6 +1233,47 @@ export const endMeeting = async (bookingId, meetingId) => {
   } catch (error) {
     console.error('🔴 Error ending meeting:', error);
     throw error;
+  }
+};
+
+/**
+ * Get teacher's call history for today only.
+ * After the day ends, this returns empty so history is not visible on other days.
+ */
+export const getTeacherTodayCallHistory = async (teacherId) => {
+  try {
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+    const { data: bookings, error } = await supabase
+      .from('bookings')
+      .select('*')
+      .eq('teacher_id', teacherId)
+      .eq('status', 'completed')
+      .not('meeting_ended_at', 'is', null)
+      .gte('meeting_ended_at', startOfToday.toISOString())
+      .lte('meeting_ended_at', endOfToday.toISOString())
+      .order('meeting_ended_at', { ascending: false });
+
+    if (error) throw error;
+    if (!bookings || bookings.length === 0) return [];
+
+    const studentIds = [...new Set(bookings.map(b => b.student_id).filter(Boolean))];
+    const studentNames = {};
+    for (const sid of studentIds) {
+      const { data: row } = await supabase.from('profiles').select('full_name').eq('id', sid).limit(1).maybeSingle();
+      const name = (Array.isArray(row) ? row[0] : row)?.full_name || 'Student';
+      studentNames[sid] = name;
+    }
+
+    return bookings.map(b => ({
+      ...b,
+      student: { full_name: studentNames[b.student_id] || 'Student' },
+    }));
+  } catch (err) {
+    console.error('🔴 Error fetching today call history:', err);
+    return [];
   }
 };
 

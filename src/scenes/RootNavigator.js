@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, ActivityIndicator, Text } from 'react-native';
 import { supabase } from '../../supabase';
+import { isProfileComplete } from '../database/database';
 import AuthStack from './AuthStack';
 import StudentStack from './StudentStack';
 import TeacherStack from './TeacherStack';
@@ -11,6 +12,7 @@ export default function RootNavigator() {
   const [role, setRole] = useState(null);
   const [loading, setLoading] = useState(true);
   const [emailVerified, setEmailVerified] = useState(null);
+  const [profileComplete, setProfileComplete] = useState(null);
 
   // Initialize auth session
   useEffect(() => {
@@ -23,7 +25,7 @@ export default function RootNavigator() {
         setSession(currentSession);
         
         if (currentSession?.user) {
-          await fetchRole(currentSession.user.id);
+          await fetchRole(currentSession.user);
         }
       } catch (err) {
         console.error('🔴 RootNavigator: Auth init error:', err);
@@ -40,9 +42,11 @@ export default function RootNavigator() {
       setSession(newSession);
       
       if (newSession?.user) {
-        await fetchRole(newSession.user.id);
+        await fetchRole(newSession.user);
+        setProfileComplete(null);
       } else {
         setRole(null);
+        setProfileComplete(null);
       }
     });
 
@@ -51,54 +55,86 @@ export default function RootNavigator() {
     };
   }, []);
 
-  // Fetch user role from profiles table
-  const fetchRole = async (userId) => {
+  // Fetch user role from profiles table (user = full auth user object for fallback)
+  const fetchRole = async (user) => {
+    const userId = user?.id;
+    if (!userId) return;
+
     try {
       console.log('🔵 RootNavigator: Fetching role and verification status for user:', userId);
-      
-      // Retry logic in case profile is not synced yet
+
+      // Retry logic in case profile is not synced yet (e.g. right after signup)
+      const maxAttempts = 6;
+      const retryDelayMs = 600;
       let attempts = 0;
-      let data = null;
+      let profile = null;
       let error = null;
-      
-      while (attempts < 3) {
+
+      while (attempts < maxAttempts) {
         const result = await supabase
           .from('profiles')
           .select('role, email_verified')
           .eq('id', userId)
-          .single();
-        
-        data = result.data;
+          .limit(1);
+
+        const rows = result.data;
         error = result.error;
-        
-        if (!error && data?.role) {
-          console.log('✅ RootNavigator: Role fetched:', data.role, 'Verified:', data.email_verified);
-          setRole(data.role);
-          setEmailVerified(data.email_verified || false);
+        profile = Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
+
+        if (!error && profile?.role) {
+          console.log('✅ RootNavigator: Role fetched:', profile.role, 'Verified:', profile.email_verified);
+          setRole(profile.role);
+          setEmailVerified(profile.email_verified || false);
           return;
         }
-        
+
         attempts++;
-        if (attempts < 3) {
-          console.log(`⏳ RootNavigator: Retry ${attempts}/3 - waiting for profile sync...`);
-          await new Promise(resolve => setTimeout(resolve, 500)); // Wait 500ms before retry
+        if (attempts < maxAttempts) {
+          console.log(`⏳ RootNavigator: Retry ${attempts}/${maxAttempts} - waiting for profile sync...`);
+          await new Promise(resolve => setTimeout(resolve, retryDelayMs));
         }
       }
 
-      if (error) {
-        throw new Error(`Failed after 3 attempts: ${error.message}`);
+      // Fallback: use role from signup metadata so teacher doesn't land on student dashboard
+      const metaRole = user?.user_metadata?.role;
+      if (metaRole === 'teacher' || metaRole === 'student') {
+        console.log('⚠️ RootNavigator: Using role from user_metadata:', metaRole);
+        setRole(metaRole);
+        setEmailVerified(false);
+        return;
       }
-      
-      if (!data?.role) {
-        throw new Error('Role not found in profile after 3 attempts');
+
+      if (error) {
+        throw new Error(`Failed after ${maxAttempts} attempts: ${error?.message || 'unknown'}`);
+      }
+      if (!profile?.role) {
+        throw new Error('Role not found in profile after retries');
       }
     } catch (err) {
       console.error('🔴 RootNavigator: Failed to fetch role:', err.message);
-      // Set a default role to prevent infinite loading
-      setRole('student');
+      const metaRole = user?.user_metadata?.role;
+      if (metaRole === 'teacher' || metaRole === 'student') {
+        setRole(metaRole);
+      } else {
+        setRole('student');
+      }
       setEmailVerified(false);
     }
   };
+
+  // When session + role + emailVerified are set, check if role-specific profile is complete
+  useEffect(() => {
+    if (!session?.user?.id || !role || emailVerified !== true) return;
+    let cancelled = false;
+    isProfileComplete(role, session.user.id)
+      .then((complete) => {
+        if (!cancelled) setProfileComplete(complete);
+      })
+      .catch(() => {
+        if (!cancelled) setProfileComplete(false);
+      });
+    return () => { cancelled = true; };
+  }, [session?.user?.id, role, emailVerified]);
 
   // Loading state
   if (loading) {
@@ -147,7 +183,22 @@ export default function RootNavigator() {
     );
   }
 
-  // Authenticated - show role-based stack
+  // Wait for profile-completion check (done in useEffect above)
+  if (profileComplete === null) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0B0D2A' }}>
+        <ActivityIndicator size="large" color="#2ECC71" />
+        <Text style={{ color: '#fff', marginTop: 10 }}>Loading...</Text>
+      </View>
+    );
+  }
+
+  // When profile is incomplete we still show the dashboard; snackbar there prompts "Go to edit profile"
+  if (profileComplete === false) {
+    console.log('🔵 RootNavigator: Profile incomplete, showing dashboard with snackbar prompt');
+  }
+
+  // Authenticated, verified - show role-based stack (snackbar on dashboard if profile incomplete)
   console.log('🔵 RootNavigator: Showing stack for role:', role);
 
   if (role === 'teacher') {

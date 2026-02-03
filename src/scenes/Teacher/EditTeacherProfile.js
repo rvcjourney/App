@@ -13,7 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-simple-toast';
 import { supabase } from '../../../supabase';
 
-export default function EditTeacherProfile({ navigation }) {
+export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [bio, setBio] = useState('');
@@ -46,12 +46,13 @@ export default function EditTeacherProfile({ navigation }) {
             setFullName(profile.full_name);
           }
 
-          // Get teacher details
-          const { data: teacherData } = await supabase
+          // Get teacher details (maybeSingle in case row not created yet)
+          const { data: teacherRows } = await supabase
             .from('teacher_profiles')
             .select('*')
             .eq('id', user.id)
-            .single();
+            .limit(1);
+          const teacherData = Array.isArray(teacherRows) && teacherRows.length > 0 ? teacherRows[0] : teacherRows;
 
           if (teacherData) {
             setBio(teacherData.bio || '');
@@ -82,34 +83,48 @@ export default function EditTeacherProfile({ navigation }) {
       setSaving(true);
       console.log('🔵 [EditTeacherProfile] Saving profile...');
 
-      // Update profiles table
+      // Update profiles table (full_name)
       const { error: profileError } = await supabase
         .from('profiles')
-        .update({ full_name: fullName })
+        .update({ full_name: fullName.trim() })
         .eq('id', teacherId);
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error('🔴 Profile update error:', profileError);
+        throw new Error(profileError.message || 'Could not update name');
+      }
 
-      // Update teacher_profiles table
+      // Upsert teacher_profiles so row is created if missing (e.g. old account)
+      const teacherPayload = {
+        id: teacherId,
+        bio: bio || '',
+        specializations: specializations || '',
+        price_per_call: parseInt(pricePerCall, 10) || 500,
+        experience_years: parseInt(experienceYears, 10) || 0,
+        rating: 4.8,
+        followers: 0,
+      };
       const { error: teacherError } = await supabase
         .from('teacher_profiles')
-        .update({
-          bio,
-          specializations,
-          price_per_call: parseInt(pricePerCall) || 500,
-          experience_years: parseInt(experienceYears) || 0,
-        })
-        .eq('id', teacherId);
+        .upsert(teacherPayload, { onConflict: 'id' });
 
-      if (teacherError) throw teacherError;
+      if (teacherError) {
+        console.error('🔴 Teacher profile upsert error:', teacherError);
+        throw new Error(teacherError.message || 'Could not save teacher details');
+      }
 
       console.log('✅ Profile updated successfully');
       Toast.show('✅ Profile updated successfully');
-      setTimeout(() => navigation.goBack(), 1000);
+      if (onSaveSuccess) {
+        onSaveSuccess();
+      } else {
+        setTimeout(() => navigation.goBack(), 1000);
+      }
 
     } catch (error) {
       console.error('🔴 Save error:', error);
-      Alert.alert('Error', 'Failed to save profile');
+      const msg = error?.message || 'Failed to save profile';
+      Alert.alert('Error', msg);
     } finally {
       setSaving(false);
     }

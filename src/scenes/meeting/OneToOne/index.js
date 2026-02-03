@@ -49,7 +49,7 @@ import Blink from "../../../components/Blink";
 import VideosdkRPK from "../../../../VideosdkRPK";
 import ParticipantStatsViewer from "../Components/ParticipantStatsViewer";
 
-export default function OneToOneMeetingViewer() {
+export default function OneToOneMeetingViewer({ isTeacher = true }) {
   const {
     join,
     participants,
@@ -171,31 +171,33 @@ export default function OneToOneMeetingViewer() {
                 : 0,
           }}
         >
-          <View style={{ flexDirection: "row" }}>
-            <Text
-              style={{
-                fontSize: 16,
-                fontFamily: ROBOTO_FONTS.RobotoBold,
-                color: colors.primary[100],
-              }}
-            >
-              {meetingId ? meetingId : "xxx - xxx - xxx"}
-            </Text>
+          {isTeacher && (
+            <View style={{ flexDirection: "row" }}>
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontFamily: ROBOTO_FONTS.RobotoBold,
+                  color: colors.primary[100],
+                }}
+              >
+                {meetingId ? meetingId : "xxx - xxx - xxx"}
+              </Text>
 
-            <TouchableOpacity
-              style={{
-                justifyContent: "center",
-                marginLeft: 10,
-                // marginTop: 4,
-              }}
-              onPress={() => {
-                Clipboard.setString(meetingId);
-                Toast.show("Meeting Id copied Successfully");
-              }}
-            >
-              <Copy fill={colors.primary[100]} width={18} height={18} />
-            </TouchableOpacity>
-          </View>
+              <TouchableOpacity
+                style={{
+                  justifyContent: "center",
+                  marginLeft: 10,
+                  // marginTop: 4,
+                }}
+                onPress={() => {
+                  Clipboard.setString(meetingId);
+                  Toast.show("Meeting Id copied Successfully");
+                }}
+              >
+                <Copy fill={colors.primary[100]} width={18} height={18} />
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
         <View>
           <TouchableOpacity
@@ -250,21 +252,25 @@ export default function OneToOneMeetingViewer() {
             moreOptionsMenu.current.close();
           }}
         />
-        <View
-          style={{
-            height: 1,
-            backgroundColor: colors.primary["600"],
-          }}
-        />
-        <MenuItem
-          title={"End"}
-          description={"End call for all participants"}
-          icon={<EndForAll />}
-          onPress={() => {
-            end();
-            moreOptionsMenu.current.close();
-          }}
-        />
+        {isTeacher && (
+          <>
+            <View
+              style={{
+                height: 1,
+                backgroundColor: colors.primary["600"],
+              }}
+            />
+            <MenuItem
+              title={"End"}
+              description={"End call for all participants"}
+              icon={<EndForAll />}
+              onPress={() => {
+                end();
+                moreOptionsMenu.current.close();
+              }}
+            />
+          </>
+        )}
       </Menu>
       <Menu
         ref={audioDeviceMenuRef}

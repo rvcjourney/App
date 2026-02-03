@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,13 +8,14 @@ import {
   ScrollView,
   FlatList,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-simple-toast';
 import { SCREEN_NAMES } from '../navigators/screenNames';
 import { supabase } from '../../supabase';
-import { getTeacherProfile, getTeacherBookings } from '../database/database';
+import { getTeacherProfile, getTeacherBookings, getTeacherTodayCallHistory } from '../database/database';
 import Home from '../assets/icons/Home';
 import DollarSign from '../assets/icons/DollarSign';
 import Phone from '../assets/icons/Phone';
@@ -72,8 +73,12 @@ export default function TeacherDashboard({ navigation }) {
   const [followers, setFollowers] = useState(0);
   const [specializations, setSpecializations] = useState('');
   const [upcomingBookings, setUpcomingBookings] = useState([]);
+  const [todayCallHistory, setTodayCallHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [teacherStatus, setTeacherStatus] = useState('offline'); // 'online' | 'away' | 'offline'
+  const [profileIncomplete, setProfileIncomplete] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const loadTeacherProfileRef = useRef(null);
 
   // Function to load teacher profile data
   const loadTeacherProfile = async () => {
@@ -95,11 +100,12 @@ export default function TeacherDashboard({ navigation }) {
         }
 
         // Get teacher details
-        const { data: teacherData } = await supabase
+        const { data: teacherRows } = await supabase
           .from('teacher_profiles')
           .select('*')
           .eq('id', user.id)
-          .single();
+          .limit(1);
+        const teacherData = Array.isArray(teacherRows) && teacherRows.length > 0 ? teacherRows[0] : (teacherRows && !Array.isArray(teacherRows) ? teacherRows : null);
 
         if (teacherData) {
           setPricePerCall(teacherData.price_per_call || 500);
@@ -110,18 +116,42 @@ export default function TeacherDashboard({ navigation }) {
           if (status === 'online' || status === 'away' || status === 'offline') {
             setTeacherStatus(status);
           }
+          const hasContent = (teacherData.specializations || '').trim() || (teacherData.bio || '').trim();
+          setProfileIncomplete(!hasContent);
+        } else {
+          // No teacher_profiles row or empty profile → show snackbar to complete profile
+          setProfileIncomplete(true);
         }
 
-        // Get upcoming bookings
-        const bookingsData = await getTeacherBookings(user.id);
-        console.log('📚 [TeacherDashboard] Bookings fetched:', bookingsData?.length, bookingsData);
-        if (bookingsData && bookingsData.length > 0) {
-          const upcoming = bookingsData.filter(b => new Date(b.booked_date) > new Date() && b.status !== 'cancelled');
-          console.log('📅 [TeacherDashboard] Upcoming bookings filtered:', upcoming.length, upcoming);
-          setUpcomingBookings(upcoming);
-        } else {
-          console.log('⚠️ [TeacherDashboard] No bookings found for teacher:', user.id);
+        // Get teacher's bookings (include today and future; exclude only cancelled)
+        try {
+          const bookingsData = await getTeacherBookings(user.id);
+          console.log('📚 [TeacherDashboard] Bookings fetched:', bookingsData?.length, bookingsData);
+          if (bookingsData && bookingsData.length > 0) {
+            const now = new Date();
+            const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const upcoming = bookingsData.filter(b => {
+              const bookedAt = new Date(b.booked_date);
+              return bookedAt >= startOfToday && b.status !== 'cancelled';
+            });
+            console.log('📅 [TeacherDashboard] Upcoming bookings filtered:', upcoming.length, upcoming);
+            setUpcomingBookings(upcoming);
+          } else {
+            setUpcomingBookings([]);
+          }
+        } catch (bookingsErr) {
+          console.error('🔴 [TeacherDashboard] Error fetching bookings:', bookingsErr);
           setUpcomingBookings([]);
+          Toast.show(bookingsErr?.message || 'Could not load bookings');
+        }
+
+        // Today's call history (only visible for the current day)
+        try {
+          const historyData = await getTeacherTodayCallHistory(user.id);
+          setTodayCallHistory(historyData || []);
+        } catch (historyErr) {
+          console.error('🔴 [TeacherDashboard] Error fetching call history:', historyErr);
+          setTodayCallHistory([]);
         }
       }
       
@@ -130,8 +160,12 @@ export default function TeacherDashboard({ navigation }) {
       Toast.show('Error loading profile');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
+
+  loadTeacherProfileRef.current = loadTeacherProfile;
+  const onRefresh = React.useCallback(() => { setRefreshing(true); loadTeacherProfile(); }, []);
 
   // Change status (online / away / offline) – manual only
   const handleStatusPress = () => {
@@ -163,17 +197,26 @@ export default function TeacherDashboard({ navigation }) {
   };
 
   const setStatusAndSave = async (newStatus) => {
+    const previousStatus = teacherStatus;
     setTeacherStatus(newStatus);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase
-          .from('teacher_profiles')
-          .update({ availability_status: newStatus })
-          .eq('id', user.id);
+      if (!user) return;
+      const { error } = await supabase
+        .from('teacher_profiles')
+        .update({ availability_status: newStatus })
+        .eq('id', user.id);
+      if (error) {
+        setTeacherStatus(previousStatus);
+        console.error('🔴 Status update error:', error);
+        Toast.show(error.message || 'Failed to save status');
+        return;
       }
+      Toast.show(`Status set to ${newStatus}`);
     } catch (e) {
-      Toast.show('Failed to update status');
+      setTeacherStatus(previousStatus);
+      console.error('🔴 Status save error:', e);
+      Toast.show(e?.message || 'Failed to save status');
     }
   };
 
@@ -192,58 +235,102 @@ export default function TeacherDashboard({ navigation }) {
     }, [])
   );
 
-  // Set up real-time subscription for bookings updates (for fresh notifications)
+  // Real-time: bookings (INSERT + UPDATE) and notifications so changes show quickly
   useEffect(() => {
-    let subscription;
-    
-    const setupSubscription = async () => {
+    let bookingsChannel;
+    let notificationsChannel;
+
+    const setupSubscriptions = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
-        console.log('🔵 [TeacherDashboard] Setting up real-time subscription...');
-        
-        // Subscribe to changes on bookings table for this teacher
-        subscription = supabase
+        console.log('🔵 [TeacherDashboard] Setting up real-time subscriptions...');
+
+        bookingsChannel = supabase
           .channel(`bookings:teacher_${user.id}`)
           .on(
             'postgres_changes',
-            {
-              event: 'INSERT',
-              schema: 'public',
-              table: 'bookings',
-              filter: `teacher_id=eq.${user.id}`,
-            },
-            (payload) => {
-              console.log('📡 New booking received:', payload.new);
-              Toast.show('📚 New booking received!');
-              // Refresh bookings
-              loadTeacherProfile();
+            { event: 'INSERT', schema: 'public', table: 'bookings', filter: `teacher_id=eq.${user.id}` },
+            () => {
+              console.log('📡 New booking (INSERT)');
+              Toast.show('📚 New booking! A student scheduled a session.');
+              if (loadTeacherProfileRef.current) loadTeacherProfileRef.current();
             }
           )
-          .subscribe();
-        
-        console.log('✅ [TeacherDashboard] Real-time subscription started');
+          .on(
+            'postgres_changes',
+            { event: 'UPDATE', schema: 'public', table: 'bookings', filter: `teacher_id=eq.${user.id}` },
+            () => {
+              console.log('📡 Booking updated');
+              if (loadTeacherProfileRef.current) loadTeacherProfileRef.current();
+            }
+          )
+          .subscribe((status) => console.log('📡 Bookings channel:', status));
+
+        notificationsChannel = supabase
+          .channel(`notifications:teacher_${user.id}`)
+          .on(
+            'postgres_changes',
+            { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
+            (payload) => {
+              const n = payload?.new;
+              if (n?.title || n?.message) Toast.show(n.title ? `${n.title}\n${n.message || ''}` : n.message);
+            }
+          )
+          .subscribe((status) => console.log('📡 Notifications channel:', status));
+
+        console.log('✅ [TeacherDashboard] Real-time subscriptions started');
       } catch (error) {
-        console.error('🔴 Error setting up subscription:', error);
+        console.error('🔴 Error setting up subscriptions:', error);
       }
     };
-    
-    setupSubscription();
-    
-    // Cleanup on unmount
+
+    setupSubscriptions();
     return () => {
-      if (subscription) {
-        supabase.removeChannel(subscription);
-      }
+      if (bookingsChannel) supabase.removeChannel(bookingsChannel);
+      if (notificationsChannel) supabase.removeChannel(notificationsChannel);
     };
   }, []);
+
+  // Full-screen loading until profile is fetched
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#5568FE" />
+          <Text style={styles.loadingText}>Loading your profile...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   // HOME TAB
   if (activeTab === 'home') {
     return (
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-        <ScrollView showsVerticalScrollIndicator={false}>
+        {profileIncomplete && (
+          <View style={styles.snackbar}>
+            <Text style={styles.snackbarText}>Complete your profile for a better experience.</Text>
+            <TouchableOpacity
+              style={styles.snackbarBtn}
+              onPress={() => {
+                setProfileIncomplete(false);
+                navigation.navigate(SCREEN_NAMES.EditTeacherProfile);
+              }}
+            >
+              <Text style={styles.snackbarBtnText}>Go to edit profile</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#5568FE']} />
+          }
+        >
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.welcomeContainer}>
@@ -290,6 +377,7 @@ export default function TeacherDashboard({ navigation }) {
             <Text style={styles.sectionTitle}>Quick Actions</Text>
           </View>
 
+          {/* Schedule Lecture - commented out
           <TouchableOpacity
             style={[styles.actionCard, styles.scheduleCard]}
             onPress={() => navigation.navigate(SCREEN_NAMES.ScheduleLecture)}
@@ -301,7 +389,9 @@ export default function TeacherDashboard({ navigation }) {
             </View>
             <ChevronRight width={24} height={24} fill="#666" />
           </TouchableOpacity>
+          */}
 
+          {/* Go Live - commented out
           <TouchableOpacity
             style={[styles.actionCard, styles.availableCard]}
             onPress={() => navigation.navigate(SCREEN_NAMES.Join)}
@@ -313,6 +403,7 @@ export default function TeacherDashboard({ navigation }) {
             </View>
             <ChevronRight width={24} height={24} fill="#666" />
           </TouchableOpacity>
+          */}
 
           <TouchableOpacity
             style={[styles.actionCard, styles.upcomingCard]}
@@ -364,7 +455,7 @@ export default function TeacherDashboard({ navigation }) {
                 <View style={styles.activityDot} />
                 <View style={styles.activityContent}>
                   <Text style={styles.activityTitle}>{booking.subject}</Text>
-                  <Text style={styles.activitySubtitle}>{booking.student?.profile?.full_name || 'Student'}</Text>
+                  <Text style={styles.activitySubtitle}>{booking.student?.full_name || 'Student'}</Text>
                   <Text style={styles.activityTime}>{new Date(booking.booked_date).toLocaleString()}</Text>
                   {booking.meeting_id && (
                     <View style={styles.meetingStartedBadgeContainer}>
@@ -377,6 +468,7 @@ export default function TeacherDashboard({ navigation }) {
               </TouchableOpacity>
             ))
           )}
+          <View style={{ height: 100 }} />
         </ScrollView>
 
         {/* Bottom Navigation */}
@@ -549,7 +641,11 @@ export default function TeacherDashboard({ navigation }) {
 
     return (
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-        <ScrollView>
+        <ScrollView
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#5568FE']} />
+          }
+        >
           <View style={styles.header}>
             <View style={styles.welcomeContainer}>
               <Text style={styles.welcome}>My Calls</Text>
@@ -576,7 +672,7 @@ export default function TeacherDashboard({ navigation }) {
                     <Text style={styles.callTimeText}>🔴 LIVE</Text>
                   </View>
                   <View style={styles.callContent}>
-                    <Text style={styles.callStudent}>{booking.student?.profile?.full_name || 'Student'}</Text>
+                    <Text style={styles.callStudent}>{booking.student?.full_name || 'Student'}</Text>
                     <Text style={styles.callSubject}>{booking.subject}</Text>
                     <View style={styles.callMeta}>
                       <Clock width={12} height={12} fill="#999" style={{ marginRight: 4 }} />
@@ -619,7 +715,7 @@ export default function TeacherDashboard({ navigation }) {
                   <Text style={styles.callTimeText}>{new Date(booking.booked_date).toLocaleTimeString()}</Text>
                 </View>
                 <View style={styles.callContent}>
-                  <Text style={styles.callStudent}>{booking.student?.profile?.full_name || 'Student'}</Text>
+                  <Text style={styles.callStudent}>{booking.student?.full_name || 'Student'}</Text>
                   <Text style={styles.callSubject}>{booking.subject}</Text>
                   <View style={styles.callMeta}>
                     <Clock width={12} height={12} fill="#999" style={{ marginRight: 4 }} />
@@ -635,16 +731,39 @@ export default function TeacherDashboard({ navigation }) {
             ))
           )}
 
-          {/* Call History */}
+          {/* Call History - today only; after the day ends history is not visible */}
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Call History</Text>
+            <Text style={styles.sectionTitle}>📋 Today&apos;s call history</Text>
           </View>
 
-          <View style={styles.emptyState}>
-            <Video width={48} height={48} fill="#999" />
-            <Text style={styles.emptyText}>No history yet</Text>
-            <Text style={styles.emptySubtext}>Complete a session to see it here</Text>
-          </View>
+          {todayCallHistory.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Video width={48} height={48} fill="#999" />
+              <Text style={styles.emptyText}>No calls today yet</Text>
+              <Text style={styles.emptySubtext}>Completed sessions for today will appear here. History is only visible for the current day.</Text>
+            </View>
+          ) : (
+            todayCallHistory.map(booking => (
+              <View key={booking.id} style={[styles.callCard, { borderLeftColor: '#999', borderLeftWidth: 4, opacity: 0.95 }]}>
+                <View style={[styles.callTime, { backgroundColor: '#999' }]}>
+                  <Text style={styles.callTimeText}>
+                    {booking.meeting_ended_at
+                      ? new Date(booking.meeting_ended_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                      : new Date(booking.booked_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </Text>
+                </View>
+                <View style={styles.callContent}>
+                  <Text style={styles.callStudent}>{booking.student?.full_name || 'Student'}</Text>
+                  <Text style={styles.callSubject}>{booking.subject}</Text>
+                  <View style={styles.callMeta}>
+                    <Clock width={12} height={12} fill="#999" style={{ marginRight: 4 }} />
+                    <Text style={styles.callDuration}>{booking.duration_minutes || 60} min</Text>
+                  </View>
+                  <Text style={{ fontSize: 11, color: '#2ECC71', marginTop: 4 }}>✓ Completed</Text>
+                </View>
+              </View>
+            ))
+          )}
         </ScrollView>
 
         <View style={styles.bottomNav}>
@@ -835,6 +954,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0B0D2A',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 100,
+    flexGrow: 1,
   },
 
   // Header
@@ -1463,6 +1589,41 @@ const styles = StyleSheet.create({
   },
   emptySubtext: {
     color: '#ffffff',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: '#ccc',
+    marginTop: 10,
+  },
+
+  snackbar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#B45309',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  snackbarText: {
+    flex: 1,
+    color: '#fff',
+    fontSize: 13,
+  },
+  snackbarBtn: {
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+  },
+  snackbarBtnText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
   },
 
   // Pending Booking Card

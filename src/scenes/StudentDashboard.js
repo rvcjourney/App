@@ -8,13 +8,14 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  RefreshControl,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-simple-toast';
 import { SCREEN_NAMES } from '../navigators/screenNames';
 import { supabase } from '../../supabase';
-import { getAllTeachers, createBooking, getStudentBookings, getAllLectures, getStudentEnrolledLectures, enrollInLecture, unenrollFromLecture, getTeacherSlotsByDateRange, bookAvailabilitySlot } from '../database/database';
+import { getAllTeachers, createBooking, getStudentBookings, getAllLectures, getStudentEnrolledLectures, enrollInLecture, unenrollFromLecture, getTeacherSlotsByDateRange, bookAvailabilitySlot, isProfileComplete } from '../database/database';
 import Home from '../assets/icons/Home';
 import Calendar from '../assets/icons/Calendar';
 import BookOpen from '../assets/icons/BookOpen';
@@ -42,6 +43,7 @@ export default function StudentDashboard({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [studentId, setStudentId] = useState(null);
   const [studentName, setStudentName] = useState('Student');
+  const [profileIncomplete, setProfileIncomplete] = useState(false);
 
   // Lectures state
   const [availableLectures, setAvailableLectures] = useState([]);
@@ -57,6 +59,8 @@ export default function StudentDashboard({ navigation }) {
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [bookingSubject, setBookingSubject] = useState('');
   const [bookingInProgress, setBookingInProgress] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [lecturesRefreshing, setLecturesRefreshing] = useState(false);
 
   // Fetch user info and teachers on mount
   useEffect(() => {
@@ -69,33 +73,51 @@ export default function StudentDashboard({ navigation }) {
         if (user) {
           setStudentId(user.id);
 
-          // Get student profile
-          const { data: profile } = await supabase
+          // Get student profile (limit(1) to avoid single-object coercion errors)
+          const { data: profileRows } = await supabase
             .from('profiles')
             .select('full_name')
             .eq('id', user.id)
-            .single();
+            .limit(1);
+          const profile = Array.isArray(profileRows) && profileRows.length > 0 ? profileRows[0] : profileRows;
 
           if (profile?.full_name) {
             setStudentName(profile.full_name);
           }
+          try {
+            const complete = await isProfileComplete('student', user.id);
+            setProfileIncomplete(!complete);
+          } catch (e) {
+            setProfileIncomplete(true);
+          }
         }
 
-        // Fetch all teachers from database
+        // Fetch all teachers from database (don't block dashboard if this fails, e.g. RLS)
         console.log('🔵 [StudentDashboard] Fetching teachers from database...');
-        const teachersData = await getAllTeachers();
-        setTeachers(teachersData || []);
-        console.log('✅ [StudentDashboard] Teachers loaded:', teachersData?.length);
+        try {
+          const teachersData = await getAllTeachers();
+          setTeachers(teachersData || []);
+          console.log('✅ [StudentDashboard] Teachers loaded:', teachersData?.length);
+        } catch (teacherErr) {
+          console.error('🔴 [StudentDashboard] Error fetching teachers:', teacherErr);
+          setTeachers([]);
+          Toast.show(teacherErr?.message || 'Could not load teachers. Try again.');
+        }
 
         // Fetch available lectures
         console.log('🔵 [StudentDashboard] Fetching lectures...');
-        const lecturesData = await getAllLectures();
-        setAvailableLectures(lecturesData || []);
-        console.log('✅ [StudentDashboard] Lectures loaded:', lecturesData?.length);
+        try {
+          const lecturesData = await getAllLectures();
+          setAvailableLectures(lecturesData || []);
+          console.log('✅ [StudentDashboard] Lectures loaded:', lecturesData?.length);
+        } catch (lectureErr) {
+          console.error('🔴 [StudentDashboard] Error fetching lectures:', lectureErr);
+          setAvailableLectures([]);
+        }
 
       } catch (error) {
         console.error('🔴 [StudentDashboard] Error initializing:', error);
-        Toast.show('Error loading teachers');
+        Toast.show(error?.message || 'Something went wrong');
       } finally {
         setLoading(false);
       }
@@ -104,64 +126,107 @@ export default function StudentDashboard({ navigation }) {
     initialize();
   }, []);
 
-  // Set up real-time subscription for bookings updates (meeting_id added)
-  useEffect(() => {
-    let subscription;
+  // Refresh bookings – used by pull-to-refresh
+  const onRefreshBookings = React.useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const bookingsData = await getStudentBookings(user.id);
+      setMyBookings(bookingsData || []);
+    } catch (e) {
+      console.error('🔴 Error refreshing bookings:', e);
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
 
-    const setupSubscription = async () => {
+  // Refresh lectures (available + enrolled) – used by pull-to-refresh on Lectures tab
+  const onRefreshLectures = React.useCallback(async () => {
+    setLecturesRefreshing(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const [lecturesData, enrolledData] = await Promise.all([
+        getAllLectures(),
+        getStudentEnrolledLectures(user.id),
+      ]);
+      setAvailableLectures(lecturesData || []);
+      setEnrolledLectures(enrolledData || []);
+    } catch (e) {
+      console.error('🔴 Error refreshing lectures:', e);
+    } finally {
+      setLecturesRefreshing(false);
+    }
+  }, []);
+
+  // Real-time: bookings (INSERT + UPDATE) so new bookings and teacher-go-live show quickly
+  useEffect(() => {
+    let bookingsChannel;
+    let notificationsChannel;
+
+    const setupSubscriptions = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
-        console.log('🔵 Setting up real-time subscription for bookings...');
+        console.log('🔵 Setting up real-time subscriptions for student...');
 
-        // Subscribe to changes on bookings table for this student
-        subscription = supabase
+        const refreshBookingsForUser = () => {
+          getStudentBookings(user.id).then(updatedBookings => {
+            setMyBookings(updatedBookings || []);
+            console.log('📝 Bookings updated in real-time');
+          });
+        };
+
+        bookingsChannel = supabase
           .channel(`bookings:student_${user.id}`)
           .on(
             'postgres_changes',
-            {
-              event: 'UPDATE',
-              schema: 'public',
-              table: 'bookings',
-              filter: `student_id=eq.${user.id}`,
-            },
+            { event: 'INSERT', schema: 'public', table: 'bookings', filter: `student_id=eq.${user.id}` },
+            () => {
+              console.log('📡 New booking (INSERT)');
+              Toast.show('📅 Your booking was confirmed.');
+              refreshBookingsForUser();
+            }
+          )
+          .on(
+            'postgres_changes',
+            { event: 'UPDATE', schema: 'public', table: 'bookings', filter: `student_id=eq.${user.id}` },
             (payload) => {
               console.log('📡 Real-time update received:', payload);
-
-              // Update bookings in state when ANY change occurs
               if (payload.new) {
-                console.log('✅ Booking updated:', payload.new.id);
-
-                // Check if meeting_id was added
                 if (payload.new.meeting_id && !payload.old?.meeting_id) {
-                  console.log('✅ Meeting ID just arrived:', payload.new.meeting_id);
                   Toast.show('📞 Class is starting! You can now join!');
                 }
-
-                // Refresh all bookings on any update
-                getStudentBookings(user.id).then(updatedBookings => {
-                  setMyBookings(updatedBookings || []);
-                  console.log('📝 Bookings updated in real-time');
-                });
+                refreshBookingsForUser();
               }
             }
           )
-          .subscribe();
+          .subscribe((status) => console.log('📡 Bookings channel:', status));
 
-        console.log('✅ Real-time subscription started');
+        notificationsChannel = supabase
+          .channel(`notifications:student_${user.id}`)
+          .on(
+            'postgres_changes',
+            { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
+            (payload) => {
+              const n = payload?.new;
+              if (n?.title || n?.message) Toast.show(n.title ? `${n.title}\n${n.message || ''}` : n.message);
+            }
+          )
+          .subscribe((status) => console.log('📡 Notifications channel:', status));
+
+        console.log('✅ Real-time subscriptions started');
       } catch (error) {
-        console.error('🔴 Error setting up subscription:', error);
+        console.error('🔴 Error setting up subscriptions:', error);
       }
     };
 
-    setupSubscription();
-
-    // Cleanup on unmount
+    setupSubscriptions();
     return () => {
-      if (subscription) {
-        supabase.removeChannel(subscription);
-      }
+      if (bookingsChannel) supabase.removeChannel(bookingsChannel);
+      if (notificationsChannel) supabase.removeChannel(notificationsChannel);
     };
   }, [studentId]);
 
@@ -172,11 +237,12 @@ export default function StudentDashboard({ navigation }) {
         try {
           const { data: { user } } = await supabase.auth.getUser();
           if (user) {
-            const { data: profile } = await supabase
+            const { data: profileRows } = await supabase
               .from('profiles')
               .select('full_name')
               .eq('id', user.id)
-              .single();
+              .limit(1);
+            const profile = Array.isArray(profileRows) && profileRows.length > 0 ? profileRows[0] : profileRows;
 
             if (profile?.full_name) {
               setStudentName(profile.full_name);
@@ -188,11 +254,19 @@ export default function StudentDashboard({ navigation }) {
             setMyBookings(bookingsData || []);
             console.log('✅ Bookings loaded:', bookingsData?.length);
 
-            // Refresh enrolled lectures
-            console.log('🔵 Refreshing enrolled lectures...');
-            const enrolledData = await getStudentEnrolledLectures(user.id);
-            setEnrolledLectures(enrolledData || []);
-            console.log('✅ Enrolled lectures loaded:', enrolledData?.length);
+            // Refresh available and enrolled lectures
+            console.log('🔵 Refreshing lectures...');
+            try {
+              const [lecturesData, enrolledData] = await Promise.all([
+                getAllLectures(),
+                getStudentEnrolledLectures(user.id),
+              ]);
+              setAvailableLectures(lecturesData || []);
+              setEnrolledLectures(enrolledData || []);
+              console.log('✅ Lectures loaded - available:', lecturesData?.length, 'enrolled:', enrolledData?.length);
+            } catch (e) {
+              console.error('🔴 Error refreshing lectures:', e);
+            }
           }
         } catch (error) {
           console.error('🔴 Error refreshing profile:', error);
@@ -370,6 +444,34 @@ export default function StudentDashboard({ navigation }) {
     }
   };
 
+  // Handle joining a live lecture from "My Enrolled Lectures"
+  const handleJoinLecture = async (enrollment) => {
+    try {
+      const lecture = enrollment.lecture;
+      if (!lecture) {
+        Alert.alert('Error', 'Lecture details not available');
+        return;
+      }
+
+      if (!lecture.meeting_id) {
+        Alert.alert('Not Started', 'The teacher has not started this lecture yet. Please wait until it goes live.');
+        return;
+      }
+
+      console.log('🔵 Student attempting to join lecture meeting:', lecture.meeting_id);
+
+      navigation.navigate(SCREEN_NAMES.Join, {
+        meetingId: lecture.meeting_id,
+        isTeacher: false,
+        studentId: studentId,
+        name: studentName,
+      });
+    } catch (error) {
+      console.error('🔴 Error joining lecture:', error);
+      Alert.alert('Error', 'Failed to join lecture');
+    }
+  };
+
   // Handle unenroll from lecture
   const handleUnenrollLecture = async (lectureId) => {
     try {
@@ -402,11 +504,12 @@ export default function StudentDashboard({ navigation }) {
         try {
           const { data: { user } } = await supabase.auth.getUser();
           if (user) {
-            const { data: profile } = await supabase
+            const { data: profileRows } = await supabase
               .from('profiles')
               .select('full_name')
               .eq('id', user.id)
-              .single();
+              .limit(1);
+            const profile = Array.isArray(profileRows) && profileRows.length > 0 ? profileRows[0] : profileRows;
 
             if (profile?.full_name) {
               setStudentName(profile.full_name);
@@ -469,7 +572,13 @@ export default function StudentDashboard({ navigation }) {
     return (
       <TouchableOpacity
         style={styles.teacherCard}
-        onPress={() => navigation.navigate(SCREEN_NAMES.Join)}
+        // Disabled direct video join from teacher card on home.
+        // Students should use bookings to join sessions.
+        activeOpacity={0.9}
+        onPress={() => {
+          setSelectedTeacher(item);
+          setShowBookingModal(true);
+        }}
       >
         <View style={styles.teacherCardContent}>
           <View style={styles.teacherAvatarWrapper}>
@@ -517,6 +626,18 @@ export default function StudentDashboard({ navigation }) {
     );
   };
 
+  // Full-screen loading until profile and teachers are fetched
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#5568FE" />
+          <Text style={styles.loadingText}>Loading your info...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   // BOOKING MODAL
   if (showBookingModal && selectedTeacher) {
     // Load slots if not loaded yet
@@ -557,6 +678,20 @@ export default function StudentDashboard({ navigation }) {
               <Text style={styles.priceValue}>₹{selectedTeacher.price_per_call || 500}/60 min</Text>
             </View>
           </View>
+
+          {/* Subject/Topic - show first so it's always visible before selecting slot */}
+          {availableSlots.length > 0 && (
+            <View style={styles.fieldSection}>
+              <Text style={styles.label}>📚 Subject/Topic *</Text>
+              <TextInput
+                style={styles.subjectInput}
+                placeholder="e.g., Algebra, Physics Problem Solving"
+                placeholderTextColor="#999"
+                value={bookingSubject}
+                onChangeText={setBookingSubject}
+              />
+            </View>
+          )}
 
           {/* Available Slots */}
           <View style={styles.fieldSection}>
@@ -601,20 +736,6 @@ export default function StudentDashboard({ navigation }) {
             )}
           </View>
 
-          {/* Subject Input */}
-          {availableSlots.length > 0 && (
-            <View style={styles.fieldSection}>
-              <Text style={styles.label}>📚 Subject/Topic *</Text>
-              <TextInput
-                style={styles.subjectInput}
-                placeholder="e.g., Algebra, Physics Problem Solving"
-                placeholderTextColor="#999"
-                value={bookingSubject}
-                onChangeText={setBookingSubject}
-              />
-            </View>
-          )}
-
           {/* Summary */}
           {selectedSlot && (
             <View style={styles.summaryCard}>
@@ -622,6 +743,10 @@ export default function StudentDashboard({ navigation }) {
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>Teacher:</Text>
                 <Text style={styles.summaryValue}>{selectedTeacher.profile?.full_name}</Text>
+              </View>
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Subject/Topic:</Text>
+                <Text style={styles.summaryValue}>{bookingSubject || '— Not entered —'}</Text>
               </View>
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>Date & Time:</Text>
@@ -673,13 +798,21 @@ export default function StudentDashboard({ navigation }) {
   if (activeTab === 'home') {
     return (
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-        {loading ? (
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-            <ActivityIndicator size="large" color="#5568FE" />
-            <Text style={{ color: '#ccc', marginTop: 10 }}>Loading teachers...</Text>
+        {profileIncomplete && (
+          <View style={styles.snackbar}>
+            <Text style={styles.snackbarText}>Complete your profile for a better experience.</Text>
+            <TouchableOpacity
+              style={styles.snackbarBtn}
+              onPress={() => {
+                setProfileIncomplete(false);
+                navigation.navigate(SCREEN_NAMES.EditStudentProfile);
+              }}
+            >
+              <Text style={styles.snackbarBtnText}>Go to edit profile</Text>
+            </TouchableOpacity>
           </View>
-        ) : (
-          <ScrollView showsVerticalScrollIndicator={false}>
+        )}
+        <ScrollView showsVerticalScrollIndicator={false}>
             {/* Header */}
             <View style={styles.header}>
               <Text style={styles.welcome}>Welcome 👋</Text>
@@ -747,7 +880,6 @@ export default function StudentDashboard({ navigation }) {
               </View>
             )}
           </ScrollView>
-        )}
 
         {/* Bottom Navigation */}
         <View style={styles.bottomNav}>
@@ -767,6 +899,7 @@ export default function StudentDashboard({ navigation }) {
             <Text style={styles.navLabel}>Bookings</Text>
           </TouchableOpacity>
 
+          {/* Lectures tab hidden for students
           <TouchableOpacity
             style={[styles.navItem, activeTab === 'lectures' && styles.navItemActive]}
             onPress={() => setActiveTab('lectures')}
@@ -774,6 +907,7 @@ export default function StudentDashboard({ navigation }) {
             <BookOpen width={24} height={24} fill={activeTab === 'lectures' ? '#5568FE' : '#999'} />
             <Text style={styles.navLabel}>Lectures</Text>
           </TouchableOpacity>
+          */}
 
           <TouchableOpacity
             style={[styles.navItem, activeTab === 'profile' && styles.navItemActive]}
@@ -795,7 +929,12 @@ export default function StudentDashboard({ navigation }) {
 
     return (
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-        <ScrollView showsVerticalScrollIndicator={false}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefreshBookings} colors={['#5568FE']} />
+          }
+        >
           <View style={styles.bookingsHeader}>
             <View style={styles.headerContent}>
               <View style={styles.headerIconContainer}>
@@ -870,8 +1009,11 @@ export default function StudentDashboard({ navigation }) {
                     </View>
                     <Text style={styles.sectionCount}>{confirmedBookings.length}</Text>
                   </View>
-                  {confirmedBookings.map(booking => (
-                    <View key={booking.id} style={[styles.bookingCard, styles.confirmedCard]}>
+                  {confirmedBookings.map(booking => {
+                    const CardWrapper = booking.meeting_id ? TouchableOpacity : View;
+                    const cardProps = booking.meeting_id ? { activeOpacity: 0.8, onPress: () => handleJoinMeeting(booking) } : {};
+                    return (
+                    <CardWrapper key={booking.id} style={[styles.bookingCard, styles.confirmedCard]} {...cardProps}>
                       <View style={styles.bookingCardLeft}>
                         <View style={styles.bookingTeacherIcon}>
                           <User width={24} height={24} fill="#2ECC71" />
@@ -888,7 +1030,7 @@ export default function StudentDashboard({ navigation }) {
                           {booking.meeting_id && (
                             <TouchableOpacity
                               style={styles.meetingIdContainer}
-                              onPress={() => copyMeetingIdToClipboard(booking.meeting_id)}
+                              onPress={(e) => { e?.stopPropagation?.(); copyMeetingIdToClipboard(booking.meeting_id); }}
                             >
                               <Video width={12} height={12} fill="#f9fafb" style={{ marginRight: 6 }} />
                               <Text style={styles.meetingIdLabel}>Meeting ID: {booking.meeting_id}</Text>
@@ -898,21 +1040,18 @@ export default function StudentDashboard({ navigation }) {
                         </View>
                       </View>
                       {booking.meeting_id ? (
-                        <TouchableOpacity
-                          style={styles.joinBtn}
-                          onPress={() => handleJoinMeeting(booking)}
-                        >
+                        <View style={styles.joinBtn}>
                           <Video width={16} height={16} fill="#fff" />
                           <Text style={styles.joinBtnText}>Join</Text>
-                        </TouchableOpacity>
+                        </View>
                       ) : (
                         <View style={styles.waitingBadge}>
-                          {/* <Clock width={14} height={14} fill="#FFA500" style={{ marginRight: 4 }} /> */}
                           <Text style={styles.waitingText}>Booked</Text>
                         </View>
                       )}
-                    </View>
-                  ))}
+                    </CardWrapper>
+                    );
+                  })}
                 </>
               )}
 
@@ -969,6 +1108,7 @@ export default function StudentDashboard({ navigation }) {
             <Calendar width={22} height={22} fill={activeTab === 'bookings' ? '#5568FE' : '#999'} />
             <Text style={styles.navLabel}>Bookings</Text>
           </TouchableOpacity>
+          {/* Lectures tab hidden for students
           <TouchableOpacity
             style={styles.navItem}
             onPress={() => setActiveTab('lectures')}
@@ -976,6 +1116,7 @@ export default function StudentDashboard({ navigation }) {
             <BookOpen width={22} height={22} fill={activeTab === 'lectures' ? '#5568FE' : '#999'} />
             <Text style={styles.navLabel}>Lectures</Text>
           </TouchableOpacity>
+          */}
           <TouchableOpacity
             style={styles.navItem}
             onPress={() => setActiveTab('profile')}
@@ -992,7 +1133,15 @@ export default function StudentDashboard({ navigation }) {
   if (activeTab === 'lectures') {
     return (
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-        <ScrollView>
+        <ScrollView
+          refreshControl={
+            <RefreshControl
+              refreshing={lecturesRefreshing}
+              onRefresh={onRefreshLectures}
+              colors={['#5568FE']}
+            />
+          }
+        >
           {/* <View style={styles.header}> */}
           <View style={styles.bookingsHeader}>
             <View style={styles.welcomeContainer}>
@@ -1054,33 +1203,50 @@ export default function StudentDashboard({ navigation }) {
                 </View>
               </View>
 
-              {enrolledLectures.map(enrollment => (
-                <View key={enrollment.id} style={styles.enrolledLectureCard}>
-                  <View style={styles.lectureHeader}>
-                    <Text style={styles.lectureSubject}>{enrollment.lecture?.subject}</Text>
-                    <Text style={styles.lectureTeacher}>
-                      by {enrollment.lecture?.teacher_profiles?.full_name || 'Teacher'}
-                    </Text>
-                  </View>
+              {enrolledLectures.map(enrollment => {
+                const lecture = enrollment.lecture;
+                const scheduledDate = lecture?.scheduled_date ? new Date(lecture.scheduled_date) : null;
+                const now = new Date();
+                const hasStarted = scheduledDate ? now >= scheduledDate : false;
+                const canJoin = !!lecture?.meeting_id && hasStarted;
 
-                  <View style={styles.lectureDetails}>
-                    <Text style={styles.lectureDetail}>📅 {new Date(enrollment.lecture?.scheduled_date).toLocaleDateString()}</Text>
-                    <Text style={styles.lectureDetail}>🕐 {new Date(enrollment.lecture?.scheduled_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
-                  </View>
+                return (
+                  <View key={enrollment.id} style={styles.enrolledLectureCard}>
+                    <View style={styles.lectureHeader}>
+                      <Text style={styles.lectureSubject}>{lecture?.subject}</Text>
+                      <Text style={styles.lectureTeacher}>
+                        by {lecture?.teacher_profiles?.full_name || 'Teacher'}
+                      </Text>
+                    </View>
 
-                  <View style={styles.enrolledActions}>
-                    <TouchableOpacity style={styles.joinLectureBtn}>
-                      <Text style={styles.joinLectureBtnText}>📹 Join Lecture</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.removeBtn}
-                      onPress={() => handleUnenrollLecture(enrollment.lecture?.id)}
-                    >
-                      <Text style={styles.removeBtnText}>❌ Remove</Text>
-                    </TouchableOpacity>
+                    <View style={styles.lectureDetails}>
+                      <Text style={styles.lectureDetail}>📅 {lecture?.scheduled_date ? new Date(lecture.scheduled_date).toLocaleDateString() : '-'}</Text>
+                      <Text style={styles.lectureDetail}>🕐 {lecture?.scheduled_date ? new Date(lecture.scheduled_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}</Text>
+                    </View>
+
+                    <View style={styles.enrolledActions}>
+                      <TouchableOpacity
+                        style={[
+                          styles.joinLectureBtn,
+                          !canJoin && { backgroundColor: '#9CA3AF' },
+                        ]}
+                        disabled={!canJoin}
+                        onPress={() => handleJoinLecture(enrollment)}
+                      >
+                        <Text style={styles.joinLectureBtnText}>
+                          {canJoin ? '📹 Join Lecture' : 'Not started yet'}
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.removeBtn}
+                        onPress={() => handleUnenrollLecture(lecture?.id)}
+                      >
+                        <Text style={styles.removeBtnText}>❌ Remove</Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
-                </View>
-              ))}
+                );
+              })}
             </>
           )}
 
@@ -1263,6 +1429,7 @@ export default function StudentDashboard({ navigation }) {
             <Calendar width={22} height={22} fill={activeTab === 'bookings' ? '#5568FE' : '#999'} />
             <Text style={styles.navLabel}>Bookings</Text>
           </TouchableOpacity>
+          {/* Lectures tab hidden for students
           <TouchableOpacity
             style={styles.navItem}
             onPress={() => setActiveTab('lectures')}
@@ -1270,6 +1437,7 @@ export default function StudentDashboard({ navigation }) {
             <BookOpen width={22} height={22} fill={activeTab === 'lectures' ? '#5568FE' : '#999'} />
             <Text style={styles.navLabel}>Lectures</Text>
           </TouchableOpacity>
+          */}
           <TouchableOpacity
             style={[styles.navItem, styles.navItemActive]}
             onPress={() => setActiveTab('profile')}
@@ -2460,5 +2628,41 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
     fontSize: 12,
+  },
+
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: '#ccc',
+    marginTop: 10,
+  },
+
+  snackbar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#B45309',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  snackbarText: {
+    flex: 1,
+    color: '#fff',
+    fontSize: 13,
+  },
+  snackbarBtn: {
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+  },
+  snackbarBtnText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
   },
 });

@@ -9,6 +9,8 @@ import {
 import MeetingContainer from "./MeetingContainer";
 import { SCREEN_NAMES } from "../../navigators/screenNames";
 import { supabase } from "../../../supabase";
+import { endMeeting } from "../../database/database";
+import Toast from "react-native-simple-toast";
 const { ForegroundServiceModule } = NativeModules;
 
 // const requestPermissions = async () => {
@@ -124,7 +126,7 @@ export default function Meeting({ navigation, route }) {
         
         console.log('📱 Notifying student about meeting start... BookingId:', bookingId, 'TeacherId:', teacherId);
         
-        const backendUrl = process.env.REACT_APP_AUTH_URL || 'http://localhost:3000';
+        const backendUrl = process.env.REACT_APP_AUTH_URL || 'http://192.168.1.5:3000';
         console.log('🌐 Backend URL:', backendUrl);
         
         const response = await fetch(`${backendUrl}/api/meetings/start`, {
@@ -167,11 +169,28 @@ export default function Meeting({ navigation, route }) {
     }
   };
 
-  const handleMeetingLeft = () => {
+  const handleMeetingLeft = async () => {
     if (Platform.OS === "android") {
-      ForegroundServiceModule.stopService();
+      try {
+        ForegroundServiceModule.stopService();
+      } catch (e) {
+        console.warn("Foreground service stop:", e);
+      }
     }
-    navigation.navigate(SCREEN_NAMES.Join);
+    // When teacher leaves, mark booking as completed in DB
+    if (isTeacher && bookingId && meetingId) {
+      try {
+        await endMeeting(bookingId, meetingId);
+      } catch (e) {
+        console.error("Error ending meeting in DB:", e);
+      }
+    }
+    Toast.show("Meeting completed");
+    const dashboardName = isTeacher ? "TeacherDashboard" : "StudentDashboard";
+    navigation.reset({
+      index: 0,
+      routes: [{ name: dashboardName }],
+    });
   };
 
   if (Platform.OS === "android" && !permissionsGranted) {
@@ -213,6 +232,7 @@ export default function Meeting({ navigation, route }) {
             <MeetingContainer
               webcamEnabled={webcamEnabled}
               meetingType={meetingType}
+              isTeacher={isTeacher}
             />
           )}
         </MeetingConsumer>
