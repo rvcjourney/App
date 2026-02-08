@@ -568,302 +568,6 @@ export const isFavorite = async (studentId, teacherId) => {
 };
 
 // ==========================================
-// LECTURE QUERIES (Group Classes)
-// ==========================================
-
-export const createLecture = async (teacherId, subject, description, scheduledDate, durationMinutes = 60, capacity = 30) => {
-  try {
-    console.log('🔵 Creating lecture:', subject);
-    
-    const { data, error } = await supabase
-      .from('lectures')
-      .insert([{
-        teacher_id: teacherId,
-        subject: subject,
-        description: description,
-        scheduled_date: scheduledDate.toISOString(),
-        duration_minutes: durationMinutes,
-        capacity: capacity,
-        status: 'scheduled'
-      }])
-      .select();
-
-    if (error) throw error;
-    
-    console.log('✅ Lecture created:', data[0]);
-    return data[0];
-  } catch (error) {
-    console.error('🔴 Error creating lecture:', error);
-    throw error;
-  }
-};
-
-export const getAllLectures = async () => {
-  try {
-    console.log('🔵 Fetching all available lectures...');
-    
-    const { data, error } = await supabase
-      .from('lectures')
-      .select(`
-        id,
-        teacher_id,
-        subject,
-        description,
-        scheduled_date,
-        duration_minutes,
-        capacity,
-        meeting_id,
-        status,
-        created_at,
-        teacher_profiles!teacher_id(
-          id,
-          specializations
-        )
-      `)
-      .eq('status', 'scheduled')
-      .gte('scheduled_date', new Date().toISOString())
-      .order('scheduled_date', { ascending: true });
-
-    if (error) throw error;
-    
-    // Fetch teacher names separately
-    if (data && data.length > 0) {
-      const teacherIds = [...new Set(data.map(l => l.teacher_id))];
-      const { data: teacherNames } = await supabase
-        .from('profiles')
-        .select('id, full_name')
-        .in('id', teacherIds);
-      
-      // Map teacher names to lectures
-      const teacherMap = {};
-      teacherNames?.forEach(t => {
-        teacherMap[t.id] = t.full_name;
-      });
-      
-      data.forEach(lecture => {
-        if (lecture.teacher_profiles) {
-          lecture.teacher_profiles.full_name = teacherMap[lecture.teacher_id];
-        }
-      });
-    }
-    
-    console.log('✅ Lectures fetched:', data?.length);
-    return data || [];
-  } catch (error) {
-    console.error('🔴 Error fetching lectures:', error);
-    throw error;
-  }
-};
-
-export const getLecturesBySubject = async (subject) => {
-  try {
-    console.log('🔵 Fetching lectures by subject:', subject);
-    
-    const { data, error } = await supabase
-      .from('lectures')
-      .select(`
-        *,
-        teacher:teacher_id(
-          id,
-          specializations,
-          profile:id(full_name)
-        )
-      `)
-      .ilike('subject', `%${subject}%`)
-      .eq('status', 'scheduled')
-      .gte('scheduled_date', new Date().toISOString())
-      .order('scheduled_date', { ascending: true });
-
-    if (error) throw error;
-    
-    console.log('✅ Lectures fetched:', data?.length);
-    return data || [];
-  } catch (error) {
-    console.error('🔴 Error fetching lectures by subject:', error);
-    throw error;
-  }
-};
-
-export const getTeacherLectures = async (teacherId) => {
-  try {
-    console.log('🔵 Fetching teacher lectures:', teacherId);
-    
-    const { data, error } = await supabase
-      .from('lectures')
-      .select('*')
-      .eq('teacher_id', teacherId)
-      .order('scheduled_date', { ascending: false });
-
-    if (error) throw error;
-    
-    console.log('✅ Teacher lectures fetched:', data?.length);
-    return data || [];
-  } catch (error) {
-    console.error('🔴 Error fetching teacher lectures:', error);
-    throw error;
-  }
-};
-
-export const enrollInLecture = async (lectureId, studentId) => {
-  try {
-    console.log('🔵 Enrolling student in lecture:', lectureId);
-    
-    // Check if already enrolled
-    const { data: existing } = await supabase
-      .from('lecture_enrollments')
-      .select('id')
-      .eq('lecture_id', lectureId)
-      .eq('student_id', studentId)
-      .single();
-
-    if (existing) {
-      throw new Error('Already enrolled in this lecture');
-    }
-
-    // Enroll in lecture
-    const { data, error } = await supabase
-      .from('lecture_enrollments')
-      .insert([{
-        lecture_id: lectureId,
-        student_id: studentId
-      }])
-      .select();
-
-    if (error) throw error;
-    
-    console.log('✅ Enrolled in lecture:', data[0]);
-    return data[0];
-  } catch (error) {
-    console.error('🔴 Error enrolling in lecture:', error);
-    throw error;
-  }
-};
-
-export const getStudentEnrolledLectures = async (studentId) => {
-  try {
-    console.log('🔵 Fetching student enrolled lectures...');
-    
-    const { data, error } = await supabase
-      .from('lecture_enrollments')
-      .select(`
-        *,
-        lecture:lecture_id(
-          id,
-          teacher_id,
-          subject,
-          description,
-          scheduled_date,
-          duration_minutes,
-          capacity,
-          meeting_id,
-          status,
-          created_at,
-          teacher_profiles!teacher_id(
-            id,
-            specializations
-          )
-        )
-      `)
-      .eq('student_id', studentId)
-      .order('enrolled_at', { ascending: false });
-
-    if (error) throw error;
-    
-    // Fetch teacher names separately
-    if (data && data.length > 0) {
-      const teacherIds = [...new Set(data.map(e => e.lecture?.teacher_id).filter(Boolean))];
-      const { data: teacherNames } = await supabase
-        .from('profiles')
-        .select('id, full_name')
-        .in('id', teacherIds);
-      
-      // Map teacher names to lectures
-      const teacherMap = {};
-      teacherNames?.forEach(t => {
-        teacherMap[t.id] = t.full_name;
-      });
-      
-      data.forEach(enrollment => {
-        if (enrollment.lecture?.teacher_profiles) {
-          enrollment.lecture.teacher_profiles.full_name = teacherMap[enrollment.lecture.teacher_id];
-        }
-      });
-    }
-    
-    console.log('✅ Student lectures fetched:', data?.length);
-    return data || [];
-  } catch (error) {
-    console.error('🔴 Error fetching student lectures:', error);
-    throw error;
-  }
-};
-
-export const getLectureEnrollments = async (lectureId) => {
-  try {
-    console.log('🔵 Fetching lecture enrollments:', lectureId);
-    
-    const { data, error } = await supabase
-      .from('lecture_enrollments')
-      .select(`
-        *,
-        student:student_id(
-          profiles(full_name, email)
-        )
-      `)
-      .eq('lecture_id', lectureId)
-      .order('enrolled_at', { ascending: true });
-
-    if (error) throw error;
-    
-    console.log('✅ Enrollments fetched:', data?.length);
-    return data || [];
-  } catch (error) {
-    console.error('🔴 Error fetching enrollments:', error);
-    throw error;
-  }
-};
-
-export const cancelLecture = async (lectureId) => {
-  try {
-    console.log('🔵 Cancelling lecture:', lectureId);
-    
-    const { data, error } = await supabase
-      .from('lectures')
-      .update({ status: 'cancelled' })
-      .eq('id', lectureId)
-      .select();
-
-    if (error) throw error;
-    
-    console.log('✅ Lecture cancelled:', data[0]);
-    return data[0];
-  } catch (error) {
-    console.error('🔴 Error cancelling lecture:', error);
-    throw error;
-  }
-};
-
-export const unenrollFromLecture = async (lectureId, studentId) => {
-  try {
-    console.log('🔵 Unenrolling from lecture:', lectureId);
-    
-    const { error } = await supabase
-      .from('lecture_enrollments')
-      .delete()
-      .eq('lecture_id', lectureId)
-      .eq('student_id', studentId);
-
-    if (error) throw error;
-    
-    console.log('✅ Unenrolled from lecture');
-    return true;
-  } catch (error) {
-    console.error('🔴 Error unenrolling:', error);
-    throw error;
-  }
-};
-
-// ==========================================
 // TEACHER AVAILABILITY QUERIES
 // ==========================================
 
@@ -1038,6 +742,7 @@ export const generateAvailabilitySlots = async (teacherId, startDate, endDate, s
 
 /**
  * Get available slots for a teacher on a specific date
+ * Now includes booked slots so they can be displayed with different styling
  */
 export const getTeacherAvailableSlots = async (teacherId, date) => {
   try {
@@ -1048,7 +753,7 @@ export const getTeacherAvailableSlots = async (teacherId, date) => {
       .select('*')
       .eq('teacher_id', teacherId)
       .eq('available_date', date)
-      .eq('slot_status', 'available')
+      .in('slot_status', ['available', 'booked'])
       .order('start_time', { ascending: true });
 
     if (error) throw error;
@@ -1063,6 +768,7 @@ export const getTeacherAvailableSlots = async (teacherId, date) => {
 
 /**
  * Get all available slots for a teacher in a date range
+ * Now includes booked slots so they can be displayed with different styling
  */
 export const getTeacherSlotsByDateRange = async (teacherId, startDate, endDate) => {
   try {
@@ -1074,7 +780,7 @@ export const getTeacherSlotsByDateRange = async (teacherId, startDate, endDate) 
       .eq('teacher_id', teacherId)
       .gte('available_date', startDate)
       .lte('available_date', endDate)
-      .eq('slot_status', 'available')
+      .in('slot_status', ['available', 'booked'])
       .order('start_time', { ascending: true });
 
     if (error) throw error;
@@ -1110,7 +816,7 @@ export const bookAvailabilitySlot = async (studentId, teacherId, slotId, subject
       throw new Error('Slot is no longer available');
     }
 
-    // Create booking with status "confirmed" (immediate booking)
+    // Create booking with status "pending" (will be confirmed after payment)
     const { data: booking, error: bookingError } = await supabase
       .from('bookings')
       .insert([{
@@ -1119,9 +825,9 @@ export const bookAvailabilitySlot = async (studentId, teacherId, slotId, subject
         availability_slot_id: slotId,
         booked_date: new Date(slot.start_time),
         subject: subject,
-        status: 'confirmed', // Changed from 'pending' - booking is immediate
+        status: 'pending', // Pending until payment is verified
         duration_minutes: hoursRequired * 60,
-        teacher_confirmed_at: new Date() // Auto-confirmed at booking time
+        teacher_confirmed_at: null // Will be set after payment confirmation
       }])
       .select();
 
@@ -1143,15 +849,7 @@ export const bookAvailabilitySlot = async (studentId, teacherId, slotId, subject
 
     if (updateError) throw updateError;
 
-    // Create notification for teacher about new booking
-    await createNotification(
-      teacherId,
-      'booking_confirmed',
-      '✅ New Booking Confirmed',
-      `A student has booked your session at ${new Date(slot.start_time).toLocaleString()}. Topic: ${subject}`,
-      booking?.[0]?.id
-    );
-
+    // Don't create notification here - it will be created after payment verification
     console.log('✅ Slot booked:', booking?.[0]?.id);
     return booking?.[0];
   } catch (error) {

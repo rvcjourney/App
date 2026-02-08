@@ -7,6 +7,8 @@ import ScheduleLecture from "./Teacher/ScheduleLecture";
 import Join from "./join";
 import Meeting from "./meeting";
 import { SCREEN_NAMES } from "../navigators/screenNames";
+import TeacherEarnings from "./Teacher/TeacherEarnings";
+import WithdrawalRequest from "./Teacher/WithdrawalRequest";
 
 const RootStack = createStackNavigator();
 
@@ -37,6 +39,15 @@ export default function TeacherStack() {
         name={SCREEN_NAMES.Meeting} 
         component={Meeting}
       />
+      <RootStack.Screen
+        name={SCREEN_NAMES.TeacherEarnings}
+        component={TeacherEarnings}
+      />
+      <RootStack.Screen
+        name={SCREEN_NAMES.WithdrawalRequest}
+        component={WithdrawalRequest}
+      />
+      
     </RootStack.Navigator>
   );
 }

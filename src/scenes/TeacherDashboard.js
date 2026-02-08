@@ -30,6 +30,8 @@ import Users from '../assets/icons/Users';
 import ChevronRight from '../assets/icons/ChevronRight';
 import User from '../assets/icons/User';
 import CheckCircle from '../assets/icons/CheckCircle';
+import MoneyBag from '../assets/icons/MoneyBag';
+
 
 // Mock data for teacher earnings
 const mockEarnings = {
@@ -84,7 +86,7 @@ export default function TeacherDashboard({ navigation }) {
   const loadTeacherProfile = async () => {
     try {
       console.log('🔵 [TeacherDashboard] Loading profile...');
-      
+
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -94,7 +96,7 @@ export default function TeacherDashboard({ navigation }) {
           .select('full_name')
           .eq('id', user.id)
           .single();
-        
+
         if (profile?.full_name) {
           setTeacherName(profile.full_name);
         }
@@ -154,7 +156,7 @@ export default function TeacherDashboard({ navigation }) {
           setTodayCallHistory([]);
         }
       }
-      
+
     } catch (error) {
       console.error('🔴 [TeacherDashboard] Error loading profile:', error);
       Toast.show('Error loading profile');
@@ -407,7 +409,7 @@ export default function TeacherDashboard({ navigation }) {
 
           <TouchableOpacity
             style={[styles.actionCard, styles.upcomingCard]}
-            onPress={() => Alert.alert('Upcoming Calls', `You have ${upcomingBookings.length} sessions scheduled`)}
+            onPress={() => setActiveTab('calls')}
           >
             <Calendar width={32} height={32} fill="#4ECDC4" style={{ marginRight: 12 }} />
             <View style={styles.actionContent}>
@@ -432,42 +434,6 @@ export default function TeacherDashboard({ navigation }) {
           </View>
 
           {/* Recent Activity */}
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Upcoming Sessions</Text>
-          </View>
-
-          {upcomingBookings.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyIcon}>📭</Text>
-              <Text style={styles.emptyText}>No upcoming sessions</Text>
-              <Text style={styles.emptySubtext}>Students will book sessions soon</Text>
-            </View>
-          ) : (
-            upcomingBookings.slice(0, 3).map(booking => (
-              <TouchableOpacity
-                key={booking.id}
-                style={styles.activityCard}
-                onPress={() => navigation.navigate(SCREEN_NAMES.Join, {
-                  booking: booking,
-                  isTeacher: true,
-                })}
-              >
-                <View style={styles.activityDot} />
-                <View style={styles.activityContent}>
-                  <Text style={styles.activityTitle}>{booking.subject}</Text>
-                  <Text style={styles.activitySubtitle}>{booking.student?.full_name || 'Student'}</Text>
-                  <Text style={styles.activityTime}>{new Date(booking.booked_date).toLocaleString()}</Text>
-                  {booking.meeting_id && (
-                    <View style={styles.meetingStartedBadgeContainer}>
-                      <CheckCircle width={16} height={16} fill="#2ECC71" />
-                      <Text style={styles.meetingStartedBadge}>Meeting Started - ID: {booking.meeting_id}</Text>
-                    </View>
-                  )}
-                </View>
-                <Text style={styles.activityPrice}>₹{pricePerCall}</Text>
-              </TouchableOpacity>
-            ))
-          )}
           <View style={{ height: 100 }} />
         </ScrollView>
 
@@ -511,12 +477,12 @@ export default function TeacherDashboard({ navigation }) {
 
   // EARNINGS TAB
   if (activeTab === 'earnings') {
-    const currentData = 
+    const currentData =
       earningsFilter === 'weekly'
         ? mockEarnings.weekly
         : earningsFilter === 'monthly'
-        ? mockEarnings.monthly
-        : mockEarnings.yearly;
+          ? mockEarnings.monthly
+          : mockEarnings.yearly;
 
     const totalEarnings = currentData.reduce((sum, item) => sum + item.amount, 0);
     const maxAmount = Math.max(...currentData.map(item => item.amount));
@@ -830,8 +796,8 @@ export default function TeacherDashboard({ navigation }) {
 
           {/* Profile Settings */}
           <View style={styles.settingsSection}>
-            <TouchableOpacity 
-              style={styles.settingItem} 
+            <TouchableOpacity
+              style={styles.settingItem}
               onPress={() => navigation.navigate(SCREEN_NAMES.EditTeacherProfile)}
             >
               <View style={styles.settingIconContainer}>
@@ -865,8 +831,8 @@ export default function TeacherDashboard({ navigation }) {
               <ChevronRight width={16} height={16} fill="#999999" />
             </TouchableOpacity>
 
-            <TouchableOpacity 
-              style={styles.settingItem} 
+            <TouchableOpacity
+              style={styles.settingItem}
               onPress={() => navigation.navigate(SCREEN_NAMES.TeacherAvailability)}
             >
               <View style={styles.settingIconContainer}>
@@ -890,14 +856,25 @@ export default function TeacherDashboard({ navigation }) {
               <Text style={styles.settingArrow}>→</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity 
-              style={[styles.settingItem, styles.logoutItem]} 
+            <TouchableOpacity
+              style={styles.settingItem}
+              onPress={() => navigation.navigate(SCREEN_NAMES.TeacherEarnings)}
+            >
+              <View style={styles.settingIconContainer}>
+                <MoneyBag width={20} height={20} fill="#5568FE" />
+              </View>
+              <Text style={styles.settingText}>My Earnings & Withdrawals</Text>
+              <ChevronRight width={16} height={16} fill="#999999" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.settingItem, styles.logoutItem]}
               onPress={() =>
                 Alert.alert(
                   'Logout',
                   'Are you sure you want to log out?',
                   [
-                    { text: 'No', style: 'cancel', onPress: () => {} },
+                    { text: 'No', style: 'cancel', onPress: () => { } },
                     { text: 'Yes', onPress: async () => { await supabase.auth.signOut(); } },
                   ]
                 )

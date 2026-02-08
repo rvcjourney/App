@@ -19,7 +19,8 @@ const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const nodemailer = require('nodemailer');
 const { createClient } = require('@supabase/supabase-js');
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const app = express();
 
@@ -671,7 +672,811 @@ app.post('/api/notifications/send-reminder', async (req, res) => {
 });
 
 // ==========================================
-// Error Handling
+// Start Server
+// ==========================================
+
+const PORT = process.env.PORT || 3000;
+
+// ==========================================
+// PAYMENT MANAGEMENT ENDPOINTS
+// ==========================================
+
+// Razorpay Integration
+const Razorpay = require('razorpay');
+
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID || '',
+  key_secret: process.env.RAZORPAY_KEY_SECRET || '',
+});
+
+/**
+ * POST /api/payments/create-order
+ * Create a Razorpay order for booking payment
+ * 
+ * Request Body:
+ * {
+ *   "bookingId": "uuid",
+ *   "studentId": "uuid",
+ *   "teacherId": "uuid",
+ *   "basePrice": 600,
+ *   "adminCharge": 150,
+ *   "totalAmount": 750
+ * }
+ */
+app.post('/api/payments/create-order', async (req, res) => {
+  try {
+    const { bookingId, studentId, teacherId, basePrice, adminCharge, totalAmount } = req.body;
+
+    if (!bookingId || !studentId || !teacherId || !totalAmount) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields',
+      });
+    }
+
+    console.log('🔵 Creating Razorpay order for booking:', bookingId, 'Amount:', totalAmount);
+
+    // Validate Razorpay configuration
+    if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+      console.error('🔴 Razorpay keys not configured in environment');
+      return res.status(500).json({
+        success: false,
+        error: 'Payment service not configured',
+      });
+    }
+
+    // Create Razorpay order
+    // Note: receipt must be <= 40 characters, so we use a shortened hash instead of full bookingId
+    const bookingReceiptId = bookingId.substring(0, 12); // Use first 12 chars of booking ID
+    const order = await razorpay.orders.create({
+      amount: totalAmount * 100, // Convert to paise
+      currency: 'INR',
+      receipt: `book_${bookingReceiptId}`, // Max 40 chars: "book_" (5) + 12 chars = 17 chars
+      notes: {
+        bookingId: bookingId,
+        studentId: studentId,
+        teacherId: teacherId,
+        basePrice: basePrice,
+        adminCharge: adminCharge,
+      },
+    });
+
+    console.log('✅ Order created:', order.id);
+
+    // Log in database
+    const { error: logError } = await supabase
+      .from('razorpay_orders')
+      .insert([{
+        booking_id: bookingId,
+        student_id: studentId,
+        teacher_id: teacherId,
+        razorpay_order_id: order.id,
+        amount: totalAmount,
+        currency: 'INR',
+        status: 'created',
+      }]);
+
+    if (logError) console.warn('⚠️ Order log error:', logError);
+
+    res.json({
+      success: true,
+      orderId: order.id,
+      amount: totalAmount,
+      currency: 'INR',
+      keyId: process.env.RAZORPAY_KEY_ID,
+    });
+  } catch (error) {
+    console.error('🔴 Error creating order:', error.message);
+    console.error('Full error:', error);
+    
+    // Check if it's a Razorpay API error
+    if (error.statusCode) {
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to create order',
+        message: error.message,
+        razorpayError: error.error?.description || error.message,
+      });
+    }
+    
+    res.status(500).json({
+      success: false,
+      error: 'Failed to create order',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * POST /api/payments/verify
+ * Verify payment and create payment record
+ * 
+ * Request Body:
+ * {
+ *   "razorpayPaymentId": "pay_...",
+ *   "razorpayOrderId": "order_...",
+ *   "razorpaySignature": "sig_...",
+ *   "bookingId": "uuid",
+ *   "studentId": "uuid",
+ *   "teacherId": "uuid",
+ *   "basePrice": 600,
+ *   "adminCharge": 150,
+ *   "totalAmount": 750
+ * }
+ */
+app.post('/api/payments/verify', async (req, res) => {
+  try {
+    const {
+      razorpayPaymentId,
+      razorpayOrderId,
+      razorpaySignature,
+      bookingId,
+      studentId,
+      teacherId,
+      basePrice,
+      adminCharge,
+      totalAmount,
+    } = req.body;
+
+    if (!razorpayPaymentId || !razorpayOrderId || !razorpaySignature) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid payment details',
+      });
+    }
+
+    console.log('🔵 Verifying payment:', razorpayPaymentId);
+
+    // Verify signature
+    const crypto = require('crypto');
+    const hmac = crypto.createHmac('sha256', process.env.RAZORPAY_KEY_SECRET);
+    hmac.update(razorpayOrderId + '|' + razorpayPaymentId);
+    const generatedSignature = hmac.digest('hex');
+
+    if (generatedSignature !== razorpaySignature) {
+      console.error('🔴 Signature mismatch');
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid signature',
+      });
+    }
+
+    console.log('✅ Signature verified');
+
+    // Create payment record
+    const { data: payment, error: paymentError } = await supabase
+      .from('payments')
+      .insert([{
+        booking_id: bookingId,
+        student_id: studentId,
+        teacher_id: teacherId,
+        base_price: basePrice,
+        admin_charge: adminCharge,
+        total_amount: totalAmount,
+        razorpay_payment_id: razorpayPaymentId,
+        razorpay_order_id: razorpayOrderId,
+        razorpay_signature: razorpaySignature,
+        status: 'completed',
+        paid_at: new Date().toISOString(),
+      }])
+      .select();
+
+    if (paymentError) {
+      console.error('🔴 Payment creation error:', paymentError);
+      throw paymentError;
+    }
+
+    console.log('✅ Payment created:', payment[0].id);
+
+    // Create teacher earnings record
+    const platformFee = 100; // Fixed platform fee
+    const teacherEarn = totalAmount - adminCharge - platformFee;
+
+    const { data: earnings, error: earningsError } = await supabase
+      .from('teacher_earnings')
+      .insert([{
+        teacher_id: teacherId,
+        payment_id: payment[0].id,
+        booking_id: bookingId,
+        total_collected: totalAmount,
+        admin_deduction: adminCharge,
+        platform_fee: platformFee,
+        status: 'pending',
+      }])
+      .select();
+
+    if (earningsError) {
+      console.error('🔴 Earnings creation error:', earningsError);
+      throw earningsError;
+    }
+
+    console.log('✅ Earnings record created. Teacher will earn:', teacherEarn);
+
+    // Update booking status and confirm
+    const { data: updatedBooking, error: bookingError } = await supabase
+      .from('bookings')
+      .update({
+        payment_status: 'completed',
+        total_price: totalAmount,
+        payment_id: payment[0].id,
+        status: 'confirmed', // Mark booking as confirmed after payment
+        teacher_confirmed_at: new Date().toISOString(), // Auto-confirm at payment time
+      })
+      .eq('id', bookingId)
+      .select();
+
+    if (bookingError) {
+      console.warn('⚠️ Booking update error:', bookingError);
+    } else {
+      console.log(`✅ Booking status updated to confirmed`);
+    }
+
+    // Update teacher wallet
+    const { data: wallet } = await supabase
+      .from('teacher_wallet')
+      .select('*')
+      .eq('teacher_id', teacherId)
+      .single();
+
+    if (wallet) {
+      const newBalance = (wallet.total_balance || 0) + teacherEarn;
+      await supabase
+        .from('teacher_wallet')
+        .update({
+          total_balance: newBalance,
+          available_balance: newBalance,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('teacher_id', teacherId);
+    } else {
+      // Create wallet if not exists
+      await supabase
+        .from('teacher_wallet')
+        .insert([{
+          teacher_id: teacherId,
+          total_balance: teacherEarn,
+          available_balance: teacherEarn,
+          created_at: new Date().toISOString(),
+        }]);
+    }
+
+    console.log('✅ Wallet updated');
+
+    // Update order status
+    await supabase
+      .from('razorpay_orders')
+      .update({
+        status: 'paid',
+        paid_at: new Date().toISOString(),
+      })
+      .eq('razorpay_order_id', razorpayOrderId);
+
+    // Send notification to student
+    await supabase
+      .from('notifications')
+      .insert([{
+        user_id: studentId,
+        notification_type: 'payment_confirmed',
+        title: '✅ Payment Successful',
+        message: `Your booking with teacher is confirmed. Session will start at the scheduled time.`,
+        booking_id: bookingId,
+        is_read: false,
+      }]);
+
+    // Send notification to teacher
+    await supabase
+      .from('notifications')
+      .insert([{
+        user_id: teacherId,
+        notification_type: 'payment_received',
+        title: '💰 Payment Received',
+        message: `A student has booked and paid for your session. ₹${teacherEarn} added to your wallet.`,
+        booking_id: bookingId,
+        is_read: false,
+      }]);
+
+    res.json({
+      success: true,
+      message: 'Payment verified successfully',
+      payment: payment[0],
+      earnings: {
+        totalCollected: totalAmount,
+        adminDeduction: adminCharge,
+        platformFee: platformFee,
+        teacherEarn: teacherEarn,
+      },
+    });
+  } catch (error) {
+    console.error('🔴 Error verifying payment:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to verify payment',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * POST /api/admin/charges/set
+ * Admin sets additional charge for a teacher
+ * 
+ * Request Body:
+ * {
+ *   "teacherId": "uuid",
+ *   "baseCharge": 600,
+ *   "adminCharge": 150
+ * }
+ */
+app.post('/api/admin/charges/set', async (req, res) => {
+  try {
+    const { teacherId, baseCharge, adminCharge } = req.body;
+
+    if (!teacherId || !baseCharge || adminCharge === undefined) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields',
+      });
+    }
+
+    console.log('🔵 Setting admin charge for teacher:', teacherId);
+
+    // Check if charge exists
+    const { data: existing } = await supabase
+      .from('admin_charges')
+      .select('*')
+      .eq('teacher_id', teacherId)
+      .single();
+
+    let result;
+    if (existing) {
+      // Update existing
+      const { data, error } = await supabase
+        .from('admin_charges')
+        .update({
+          base_charge_amount: baseCharge,
+          admin_charge_amount: adminCharge,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('teacher_id', teacherId)
+        .select();
+      result = { data, error };
+    } else {
+      // Create new
+      result = await supabase
+        .from('admin_charges')
+        .insert([{
+          teacher_id: teacherId,
+          base_charge_amount: baseCharge,
+          admin_charge_amount: adminCharge,
+        }])
+        .select();
+    }
+
+    if (result.error) throw result.error;
+
+    console.log('✅ Admin charge set:', result.data[0]);
+
+    res.json({
+      success: true,
+      message: 'Admin charge updated',
+      data: result.data[0],
+      totalAmount: baseCharge + adminCharge,
+    });
+  } catch (error) {
+    console.error('🔴 Error setting admin charge:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to set admin charge',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * GET /api/admin/charges/:teacherId
+ * Get admin charge for a teacher
+ */
+app.get('/api/admin/charges/:teacherId', async (req, res) => {
+  try {
+    const { teacherId } = req.params;
+
+    console.log('🔵 Fetching admin charge for teacher:', teacherId);
+
+    const { data, error } = await supabase
+      .from('admin_charges')
+      .select('*')
+      .eq('teacher_id', teacherId)
+      .eq('is_active', true)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows returned
+
+    if (!data) {
+      return res.json({
+        success: true,
+        data: null,
+        message: 'No admin charge found',
+      });
+    }
+
+    console.log('✅ Admin charge found:', data);
+
+    res.json({
+      success: true,
+      data: data,
+    });
+  } catch (error) {
+    console.error('🔴 Error fetching admin charge:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch admin charge',
+    });
+  }
+});
+
+/**
+ * GET /api/teacher/earnings/:teacherId
+ * Get teacher earnings summary
+ */
+app.get('/api/teacher/earnings/:teacherId', async (req, res) => {
+  try {
+    const { teacherId } = req.params;
+
+    console.log('🔵 Fetching earnings for teacher:', teacherId);
+
+    // Get wallet
+    const { data: wallet } = await supabase
+      .from('teacher_wallet')
+      .select('*')
+      .eq('teacher_id', teacherId)
+      .single();
+
+    // Get recent earnings
+    const { data: earnings } = await supabase
+      .from('teacher_earnings')
+      .select('*')
+      .eq('teacher_id', teacherId)
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    // Get withdrawal eligibility
+    const { data: eligibility } = await supabase
+      .rpc('get_withdrawal_eligibility', { p_teacher_id: teacherId });
+
+    console.log('✅ Earnings fetched');
+
+    res.json({
+      success: true,
+      wallet: wallet || {
+        total_balance: 0,
+        available_balance: 0,
+        minimum_balance_reached: false,
+        one_month_covered: false,
+      },
+      earnings: earnings || [],
+      eligibility: eligibility?.[0] || null,
+    });
+  } catch (error) {
+    console.error('🔴 Error fetching earnings:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch earnings',
+    });
+  }
+});
+
+/**
+ * POST /api/teacher/withdrawal/request
+ * Request withdrawal from wallet
+ * 
+ * Request Body:
+ * {
+ *   "teacherId": "uuid",
+ *   "amount": 15000,
+ *   "bankAccountNumber": "123456789",
+ *   "bankIFSCCode": "HDFC0000001",
+ *   "accountHolderName": "Teacher Name"
+ * }
+ */
+app.post('/api/teacher/withdrawal/request', async (req, res) => {
+  try {
+    const { teacherId, amount, bankAccountNumber, bankIFSCCode, accountHolderName } = req.body;
+
+    if (!teacherId || !amount || !bankAccountNumber || !bankIFSCCode || !accountHolderName) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields',
+      });
+    }
+
+    console.log('🔵 Processing withdrawal request for teacher:', teacherId, 'Amount:', amount);
+
+    // Check wallet and eligibility
+    const { data: wallet } = await supabase
+      .from('teacher_wallet')
+      .select('*')
+      .eq('teacher_id', teacherId)
+      .single();
+
+    if (!wallet) {
+      return res.status(400).json({
+        success: false,
+        error: 'Wallet not found',
+      });
+    }
+
+    // Check if amount is available
+    if (wallet.available_balance < amount) {
+      return res.status(400).json({
+        success: false,
+        error: 'Insufficient balance',
+        availableBalance: wallet.available_balance,
+      });
+    }
+
+    // Check minimum balance
+    if (wallet.total_balance < 10000) {
+      return res.status(400).json({
+        success: false,
+        error: 'Minimum balance of ₹10,000 required',
+        currentBalance: wallet.total_balance,
+      });
+    }
+
+    // Check if one month has passed
+    const accountCreatedDate = new Date(wallet.created_at);
+    const oneMonthLater = new Date(accountCreatedDate);
+    oneMonthLater.setMonth(oneMonthLater.getMonth() + 1);
+
+    if (new Date() < oneMonthLater) {
+      return res.status(400).json({
+        success: false,
+        error: 'Please wait for 1 month from account creation',
+        eligibleDate: oneMonthLater,
+      });
+    }
+
+    // Create withdrawal request
+    const { data: withdrawal, error: withdrawalError } = await supabase
+      .from('withdrawal_requests')
+      .insert([{
+        teacher_id: teacherId,
+        amount: amount,
+        status: 'pending',
+        bank_account_number: bankAccountNumber,
+        bank_ifsc_code: bankIFSCCode,
+        account_holder_name: accountHolderName,
+      }])
+      .select();
+
+    if (withdrawalError) throw withdrawalError;
+
+    console.log('✅ Withdrawal request created:', withdrawal[0].id);
+
+    // Update wallet
+    const newAvailableBalance = wallet.available_balance - amount;
+    await supabase
+      .from('teacher_wallet')
+      .update({
+        available_balance: newAvailableBalance,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('teacher_id', teacherId);
+
+    // Send notification to teacher
+    await supabase
+      .from('notifications')
+      .insert([{
+        user_id: teacherId,
+        notification_type: 'withdrawal_requested',
+        title: '📤 Withdrawal Request Submitted',
+        message: `Your withdrawal request of ₹${amount} has been submitted. Admin will process it within 24-48 hours.`,
+        is_read: false,
+      }]);
+
+    res.json({
+      success: true,
+      message: 'Withdrawal request submitted',
+      withdrawalRequestId: withdrawal[0].id,
+      data: withdrawal[0],
+    });
+  } catch (error) {
+    console.error('🔴 Error processing withdrawal:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to process withdrawal request',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * GET /api/admin/withdrawals
+ * Get all pending withdrawal requests (Admin only)
+ */
+app.get('/api/admin/withdrawals', async (req, res) => {
+  try {
+    console.log('🔵 Fetching withdrawal requests');
+
+    const { data, error } = await supabase
+      .from('withdrawal_requests')
+      .select(`
+        *,
+        teacher:teacher_id(profile:profiles(full_name, email))
+      `)
+      .eq('status', 'pending')
+      .order('requested_at', { ascending: false });
+
+    if (error) throw error;
+
+    console.log('✅ Withdrawal requests fetched:', data?.length);
+
+    res.json({
+      success: true,
+      data: data || [],
+      count: data?.length || 0,
+    });
+  } catch (error) {
+    console.error('🔴 Error fetching withdrawals:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch withdrawals',
+    });
+  }
+});
+
+/**
+ * POST /api/admin/withdrawals/:withdrawalId/approve
+ * Admin approves and processes withdrawal
+ */
+app.post('/api/admin/withdrawals/:withdrawalId/approve', async (req, res) => {
+  try {
+    const { withdrawalId } = req.params;
+    const { adminId } = req.body;
+
+    console.log('🔵 Approving withdrawal:', withdrawalId);
+
+    // Get withdrawal request
+    const { data: withdrawal } = await supabase
+      .from('withdrawal_requests')
+      .select('*')
+      .eq('id', withdrawalId)
+      .single();
+
+    if (!withdrawal) {
+      return res.status(404).json({
+        success: false,
+        error: 'Withdrawal request not found',
+      });
+    }
+
+    // Update withdrawal status
+    const { data: updated, error: updateError } = await supabase
+      .from('withdrawal_requests')
+      .update({
+        status: 'processing',
+        admin_acknowledged: true,
+        admin_acknowledged_at: new Date().toISOString(),
+        admin_id: adminId,
+        processed_at: new Date().toISOString(),
+      })
+      .eq('id', withdrawalId)
+      .select();
+
+    if (updateError) throw updateError;
+
+    // Here you would integrate with Razorpay Payouts API
+    // For now, mark as pending processing
+    // In production: await razorpay.payouts.create(payoutDetails);
+
+    console.log('✅ Withdrawal marked as processing:', withdrawalId);
+
+    // Send notification to teacher
+    await supabase
+      .from('notifications')
+      .insert([{
+        user_id: withdrawal.teacher_id,
+        notification_type: 'withdrawal_approved',
+        title: '✅ Withdrawal Approved',
+        message: `Your withdrawal of ₹${withdrawal.amount} has been approved. Amount will be transferred to your bank account within 2-3 business days.`,
+        is_read: false,
+      }]);
+
+    res.json({
+      success: true,
+      message: 'Withdrawal approved and processing',
+      data: updated[0],
+    });
+  } catch (error) {
+    console.error('🔴 Error approving withdrawal:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to approve withdrawal',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * GET /api/admin/analytics
+ * Payment analytics for admin dashboard
+ */
+app.get('/api/admin/analytics', async (req, res) => {
+  try {
+    console.log('🔵 Fetching payment analytics');
+
+    // Total revenue
+    const { data: totalRevenue } = await supabase
+      .from('payments')
+      .select('total_amount')
+      .eq('status', 'completed');
+
+    const total = totalRevenue?.reduce((sum, p) => sum + p.total_amount, 0) || 0;
+
+    // Get top teachers by earnings
+    const { data: topTeachers } = await supabase
+      .from('teacher_earnings')
+      .select('teacher_id, teacher_earn')
+      .eq('status', 'pending')
+      .order('teacher_earn', { ascending: false })
+      .limit(10);
+
+    // Get pending withdrawals
+    const { data: pendingWithdrawals } = await supabase
+      .from('withdrawal_requests')
+      .select('amount')
+      .eq('status', 'pending');
+
+    const totalPending = pendingWithdrawals?.reduce((sum, w) => sum + w.amount, 0) || 0;
+
+    console.log('✅ Analytics fetched');
+
+    res.json({
+      success: true,
+      analytics: {
+        totalRevenue: total,
+        totalPayments: totalRevenue?.length || 0,
+        pendingWithdrawals: totalPending,
+        topTeachers: topTeachers || [],
+      },
+    });
+  } catch (error) {
+    console.error('🔴 Error fetching analytics:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch analytics',
+    });
+  }
+});
+
+app.listen(PORT, () => {
+  console.log('\n' + '='.repeat(50));
+  console.log('🚀 VideoSDK Token Server Started');
+  console.log('='.repeat(50));
+  console.log(`📍 Server running at: http://localhost:${PORT}`);
+  console.log('\n📌 Available Endpoints:');
+  console.log(`   POST /send-otp        - Send OTP to email`);
+  console.log(`   POST /verify-otp      - Verify OTP`);
+  console.log(`   GET  /get-token       - Get fresh token`);
+  console.log(`   GET  /health          - Health check`);
+  console.log(`   POST /validate-token  - Validate token`);
+  console.log(`\n💳 Payment Endpoints:`);
+  console.log(`   POST /api/payments/create-order    - Create Razorpay order`);
+  console.log(`   POST /api/payments/verify          - Verify payment`);
+  console.log(`   POST /api/admin/charges/set        - Set admin charge`);
+  console.log(`   GET  /api/admin/charges/:id        - Get admin charge`);
+  console.log(`   GET  /api/teacher/earnings/:id     - Get earnings`);
+  console.log(`   POST /api/teacher/withdrawal/request - Request withdrawal`);
+  console.log(`   GET  /api/admin/withdrawals        - Get pending withdrawals`);
+  console.log(`   POST /api/admin/withdrawals/:id/approve - Approve withdrawal`);
+  console.log(`   GET  /api/admin/analytics          - Analytics`);
+  console.log('\n💡 Use this in your .env:');
+  console.log(`   REACT_APP_AUTH_URL = "http://localhost:${PORT}"`);
+  console.log('='.repeat(50) + '\n');
+});
+
+// ==========================================
+// Error Handling (Must be LAST)
 // ==========================================
 
 app.use((req, res) => {
@@ -687,30 +1492,17 @@ app.use((req, res) => {
       'POST /api/meetings/start',
       'POST /api/meetings/end',
       'POST /api/notifications/send-reminder',
+      'POST /api/payments/create-order',
+      'POST /api/payments/verify',
+      'POST /api/admin/charges/set',
+      'GET /api/admin/charges/:id',
+      'GET /api/teacher/earnings/:id',
+      'POST /api/teacher/withdrawal/request',
+      'GET /api/admin/withdrawals',
+      'POST /api/admin/withdrawals/:id/approve',
+      'GET /api/admin/analytics',
     ],
   });
-});
-
-// ==========================================
-// Start Server
-// ==========================================
-
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-  console.log('\n' + '='.repeat(50));
-  console.log('🚀 VideoSDK Token Server Started');
-  console.log('='.repeat(50));
-  console.log(`📍 Server running at: http://localhost:${PORT}`);
-  console.log('\n📌 Available Endpoints:');
-  console.log(`   POST /send-otp        - Send OTP to email`);
-  console.log(`   POST /verify-otp      - Verify OTP`);
-  console.log(`   GET  /get-token       - Get fresh token`);
-  console.log(`   GET  /health          - Health check`);
-  console.log(`   POST /validate-token  - Validate token`);
-  console.log('\n💡 Use this in your .env:');
-  console.log(`   REACT_APP_AUTH_URL = "http://localhost:${PORT}"`);
-  console.log('='.repeat(50) + '\n');
 });
 
 module.exports = app;
