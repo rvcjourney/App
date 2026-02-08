@@ -5,6 +5,7 @@ import { isProfileComplete } from '../database/database';
 import AuthStack from './AuthStack';
 import StudentStack from './StudentStack';
 import TeacherStack from './TeacherStack';
+import AdminStack from './AdminStack';
 import EmailVerificationScreen from './EmailVerificationScreen';
 
 export default function RootNavigator() {
@@ -162,8 +163,8 @@ export default function RootNavigator() {
     );
   }
 
-  // Check if email is not verified - show OTP screen
-  if (!emailVerified) {
+  // Check if email is not verified - show OTP screen (super_admin skips verification)
+  if (role !== 'super_admin' && !emailVerified) {
     console.log('🔵 RootNavigator: Email not verified, showing verification screen');
     return (
       <EmailVerificationScreen
@@ -200,6 +201,10 @@ export default function RootNavigator() {
 
   // Authenticated, verified - show role-based stack (snackbar on dashboard if profile incomplete)
   console.log('🔵 RootNavigator: Showing stack for role:', role);
+
+  if (role === 'super_admin') {
+    return <AdminStack />;
+  }
 
   if (role === 'teacher') {
     return <TeacherStack />;

@@ -170,7 +170,7 @@ export default function Join({ navigation, route }) {
             const msg = error?.message || 'Something went wrong';
             Toast.show(`❌ ${msg}`);
             if (msg.includes('Cannot reach') || msg.includes('network')) {
-              Alert.alert('Video call server unreachable', msg + '\n\nTip: Start backend with "npm start" in the backend folder and ensure your phone and computer are on the same Wi‑Fi.');
+              Alert.alert('Video call server unreachable', msg + '\n\nTip: 1) Start backend: npm start in backend folder. 2) Use same IP in .env (REACT_APP_AUTH_URL = http://YOUR_PC_IP:3000). 3) Phone and PC on same WiFi, or use USB + adb reverse tcp:3000 tcp:3000.');
             }
           }
         }, 500);
@@ -417,7 +417,7 @@ export default function Join({ navigation, route }) {
                       const msg = error?.message || 'Something went wrong';
                       Toast.show(`❌ ${msg}`);
                       if (msg.includes('Cannot reach') || msg.includes('network')) {
-                        Alert.alert('Video call server unreachable', msg + '\n\nTip: Start backend with "npm start" in the backend folder and ensure your phone and computer are on the same Wi‑Fi.');
+                        Alert.alert('Video call server unreachable', msg + '\n\nTip: 1) Start backend: npm start in backend folder. 2) Use same IP in .env (REACT_APP_AUTH_URL = http://YOUR_PC_IP:3000). 3) Phone and PC on same WiFi, or use USB + adb reverse tcp:3000 tcp:3000.');
                       }
                     }
                   }}
@@ -499,7 +499,7 @@ export default function Join({ navigation, route }) {
                       const msg = error?.message || 'Something went wrong';
                       Toast.show(`❌ ${msg}`);
                       if (msg.includes('Cannot reach') || msg.includes('network')) {
-                        Alert.alert('Video call server unreachable', msg + '\n\nTip: Start backend with "npm start" in the backend folder and ensure your phone and computer are on the same Wi‑Fi.');
+                        Alert.alert('Video call server unreachable', msg + '\n\nTip: 1) Start backend: npm start in backend folder. 2) Use same IP in .env (REACT_APP_AUTH_URL = http://YOUR_PC_IP:3000). 3) Phone and PC on same WiFi, or use USB + adb reverse tcp:3000 tcp:3000.');
                       }
                     }
                   }}

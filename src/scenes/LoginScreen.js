@@ -51,9 +51,10 @@ export default function LoginScreen({ navigation, route }) {
       }
 
       // Ensure user is logging in from the correct section (teacher vs student)
+      // Super admin can log in from either Student or Teacher entry point
       const profileRole = (profile.role || '').toLowerCase();
       const selectedRole = (role || '').toLowerCase();
-      if (profileRole !== selectedRole) {
+      if (profileRole !== 'super_admin' && profileRole !== selectedRole) {
         await supabase.auth.signOut();
         const actualLabel = profileRole === 'teacher' ? 'Teacher' : 'Student';
         Alert.alert(

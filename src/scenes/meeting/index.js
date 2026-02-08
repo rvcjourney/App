@@ -126,7 +126,7 @@ export default function Meeting({ navigation, route }) {
         
         console.log('📱 Notifying student about meeting start... BookingId:', bookingId, 'TeacherId:', teacherId);
         
-        const backendUrl = process.env.REACT_APP_AUTH_URL || 'http://192.168.1.5:3000';
+        const backendUrl = process.env.REACT_APP_AUTH_URL || 'http://192.168.1.11:3000';
         console.log('🌐 Backend URL:', backendUrl);
         
         const response = await fetch(`${backendUrl}/api/meetings/start`, {

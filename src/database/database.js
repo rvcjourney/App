@@ -202,6 +202,7 @@ export const createStudentProfile = async (userId) => {
 /** Check if role-specific profile is complete (required before using app). */
 export const isProfileComplete = async (role, userId) => {
   try {
+    if (role === 'super_admin') return true;
     if (role === 'teacher') {
       const { data } = await supabase
         .from('teacher_profiles')
@@ -222,6 +223,139 @@ export const isProfileComplete = async (role, userId) => {
   } catch (error) {
     console.error('🔴 isProfileComplete error:', error);
     return false;
+  }
+};
+
+// ==========================================
+// SUPER ADMIN QUERIES (requires RLS allowing super_admin role)
+// ==========================================
+
+/** Get all users (profiles) for super admin. Requires RLS policy allowing super_admin to select all. */
+export const getAllUsersForAdmin = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, full_name, role, email_verified, created_at')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error('🔴 getAllUsersForAdmin error:', error);
+    throw error;
+  }
+};
+
+/** Update a user's profile (full_name, role) by super admin. */
+export const updateUserProfileForAdmin = async (userId, updates) => {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', userId)
+      .select();
+    if (error) throw error;
+    return data?.[0];
+  } catch (error) {
+    console.error('🔴 updateUserProfileForAdmin error:', error);
+    throw error;
+  }
+};
+
+/** Get all bookings for super admin overview. */
+export const getAllBookingsForAdmin = async () => {
+  try {
+    const { data: bookings, error } = await supabase
+      .from('bookings')
+      .select('*')
+      .order('booked_date', { ascending: false });
+    if (error) throw error;
+    if (!bookings?.length) return [];
+    const studentIds = [...new Set(bookings.map(b => b.student_id).filter(Boolean))];
+    const teacherIds = [...new Set(bookings.map(b => b.teacher_id).filter(Boolean))];
+    const allIds = [...new Set([...studentIds, ...teacherIds])];
+    const { data: profiles } = await supabase.from('profiles').select('id, full_name').in('id', allIds);
+    const nameMap = (profiles || []).reduce((acc, p) => ({ ...acc, [p.id]: p.full_name || '—' }), {});
+    return bookings.map(b => ({
+      ...b,
+      student_name: nameMap[b.student_id] || '—',
+      teacher_name: nameMap[b.teacher_id] || '—',
+    }));
+  } catch (error) {
+    console.error('🔴 getAllBookingsForAdmin error:', error);
+    throw error;
+  }
+};
+
+/** Get teacher profile by userId (for super admin edit). */
+export const getTeacherProfileForAdmin = async (userId) => {
+  try {
+    const { data, error } = await supabase
+      .from('teacher_profiles')
+      .select('*')
+      .eq('id', userId)
+      .maybeSingle();
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('🔴 getTeacherProfileForAdmin error:', error);
+    throw error;
+  }
+};
+
+/** Update teacher profile by userId (super admin). */
+export const updateTeacherProfileForAdmin = async (userId, updates) => {
+  try {
+    const payload = {
+      ...updates,
+      updated_at: new Date().toISOString(),
+    };
+    const { data, error } = await supabase
+      .from('teacher_profiles')
+      .upsert({ id: userId, ...payload }, { onConflict: 'id' })
+      .select();
+    if (error) throw error;
+    return data?.[0];
+  } catch (error) {
+    console.error('🔴 updateTeacherProfileForAdmin error:', error);
+    throw error;
+  }
+};
+
+/** Get student profile by userId (for super admin edit). */
+export const getStudentProfileForAdmin = async (userId) => {
+  try {
+    const { data, error } = await supabase
+      .from('student_profiles')
+      .select('*')
+      .eq('id', userId)
+      .maybeSingle();
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('🔴 getStudentProfileForAdmin error:', error);
+    throw error;
+  }
+};
+
+/** Update student profile by userId (super admin). */
+export const updateStudentProfileForAdmin = async (userId, updates) => {
+  try {
+    const payload = {
+      ...updates,
+      updated_at: new Date().toISOString(),
+    };
+    const { data, error } = await supabase
+      .from('student_profiles')
+      .upsert({ id: userId, ...payload }, { onConflict: 'id' })
+      .select();
+    if (error) throw error;
+    return data?.[0];
+  } catch (error) {
+    console.error('🔴 updateStudentProfileForAdmin error:', error);
+    throw error;
   }
 };
 

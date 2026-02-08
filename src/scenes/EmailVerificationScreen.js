@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { supabase } from '../../supabase';
 
-const BACKEND_URL = process.env.REACT_APP_AUTH_URL || 'http://192.168.1.5:3000';
+const BACKEND_URL = process.env.REACT_APP_AUTH_URL || 'http://192.168.1.11:3000';
 
 /**
  * Email Verification Screen
