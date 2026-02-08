@@ -11,7 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-simple-toast';
 import { supabase } from '../../../supabase';
-import { createLecture } from '../../database/database';
+
 
 export default function ScheduleLecture({ navigation, route }) {
   const [subject, setSubject] = useState('');
@@ -68,17 +68,10 @@ export default function ScheduleLecture({ navigation, route }) {
       const lectureDateTime = new Date(selectedDate);
       lectureDateTime.setHours(hours, minutes, 0);
 
-      // Create lecture
-      await createLecture(
-        teacherId,
-        subject,
-        description,
-        lectureDateTime,
-        parseInt(duration),
-        parseInt(capacity)
-      );
+      // Create lecture was removed  (lectures table no longer in use)
+      // This functionality is no longer available
 
-      Toast.show('✅ Lecture scheduled successfully!');
+      Toast.show('❌ Lecture scheduling is no longer available');
       
       // Reset form
       setSubject('');

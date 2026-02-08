@@ -1,9 +1,26 @@
 import { REACT_APP_VIDEOSDK_TOKEN, REACT_APP_AUTH_URL } from "@env";
+import { Platform } from "react-native";
 
 const API_BASE_URL = "https://api.videosdk.live/v2";
 
 const VIDEOSDK_TOKEN = REACT_APP_VIDEOSDK_TOKEN;
-const API_AUTH_URL = REACT_APP_AUTH_URL || "http://192.168.1.5:3000";
+
+// Determine backend URL based on platform and environment
+// On Android Emulator: use 10.0.2.2 (special alias for host machine)
+// On iOS Simulator: use localhost
+// On physical device: use network IP (192.168.1.x)
+const getBackendURL = () => {
+  if (REACT_APP_AUTH_URL) {
+    return REACT_APP_AUTH_URL;
+  }
+  // Android emulator alias for host machine
+  const baseURL = Platform.OS === 'android' ? "http://10.0.2.2:3000" : "http://localhost:3000";
+  console.log(`📌 Using backend URL for ${Platform.OS}: ${baseURL}`);
+  return baseURL;
+};
+
+const API_AUTH_URL = getBackendURL();
+export const API_URL = API_AUTH_URL;
 
 const TOKEN_FETCH_TIMEOUT_MS = 15000;
 

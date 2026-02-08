@@ -39,6 +39,7 @@ import Menu from "../../components/Menu";
 import MenuItem from "../meeting/Components/MenuItem";
 import { ROBOTO_FONTS } from "../../styles/fonts";
 import Modal from "react-native-modal";
+import { supabase } from "../../../supabase";
 
 export default function Join({ navigation, route }) {
   console.log('Join component mounted');
@@ -54,6 +55,7 @@ export default function Join({ navigation, route }) {
   const [facingMode, setFacingMode] = useState("user");
   const [audioList, setAudioList] = useState([]);
   const [selectedDeviceId, setSelectedDeviceId] = useState(null);
+  const [loadingTeacherName, setLoadingTeacherName] = useState(false);
 
   const meetingTypes = [
     { key: "ONE_TO_ONE", value: "One to One Meeting" },
@@ -118,6 +120,36 @@ export default function Join({ navigation, route }) {
   useEffect(() => {
     getTrack();
   }, [facingMode]);
+
+  // Fetch teacher's name when teacher is creating a meeting
+  useEffect(() => {
+    const fetchTeacherName = async () => {
+      if (isTeacher && !name && !routeName) {
+        try {
+          setLoadingTeacherName(true);
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('full_name')
+              .eq('id', user.id)
+              .single();
+            
+            if (profile?.full_name) {
+              console.log('✅ [Join] Teacher name fetched:', profile.full_name);
+              setName(profile.full_name);
+            }
+          }
+        } catch (error) {
+          console.error('🔴 [Join] Error fetching teacher name:', error);
+        } finally {
+          setLoadingTeacherName(false);
+        }
+      }
+    };
+
+    fetchTeacherName();
+  }, [isTeacher]);
 
   // Auto-join meeting if student is coming from dashboard with meeting_id
   useEffect(() => {

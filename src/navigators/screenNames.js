@@ -9,4 +9,10 @@ export const SCREEN_NAMES = {
   EditTeacherProfile: "EditTeacherProfile",
   TeacherAvailability: "TeacherAvailability",
   ScheduleLecture: "ScheduleLecture",
+
+  TeacherEarnings: "TeacherEarnings",
+  WithdrawalRequest: "WithdrawalRequest",
+
+  StudentCheckout: "StudentCheckout",
+
 };

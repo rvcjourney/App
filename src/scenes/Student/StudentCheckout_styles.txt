@@ -1,0 +1,60 @@
+  },
+
+  retryBtnText: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+
+  networkErrorOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+
+  networkErrorCard: {
+    backgroundColor: '#1C1F4A',
+    borderRadius: 15,
+    padding: 25,
+    alignItems: 'center',
+    borderLeftWidth: 4,
+    borderLeftColor: '#FF6B6B',
+  },
+
+  networkErrorIcon: {
+    fontSize: 48,
+    marginBottom: 15,
+  },
+
+  networkErrorTitle: {
+    color: '#FF6B6B',
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+
+  networkErrorMessage: {
+    color: '#AAA',
+    fontSize: 14,
+    marginBottom: 20,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+
+  networkErrorBtn: {
+    backgroundColor: '#5568FE',
+    paddingHorizontal: 30,
+    paddingVertical: 12,
+    borderRadius: 8,
+    minWidth: 100,
+  },
+
+  networkErrorBtnText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+});

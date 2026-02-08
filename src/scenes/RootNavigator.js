@@ -6,6 +6,7 @@ import AuthStack from './AuthStack';
 import StudentStack from './StudentStack';
 import TeacherStack from './TeacherStack';
 import EmailVerificationScreen from './EmailVerificationScreen';
+import AdminStack from './AdminStack';
 
 export default function RootNavigator() {
   const [session, setSession] = useState(null);
@@ -209,6 +210,9 @@ export default function RootNavigator() {
     return <StudentStack />;
   }
 
+  if(role === 'admin') {
+    return <AdminStack />;
+  }
   // Invalid role
   return (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0B0D2A' }}>

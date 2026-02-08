@@ -7,7 +7,20 @@ import {
   TextInput,
   TouchableOpacity,
   Alert,
+  Modal,
+  TouchableWithoutFeedback,
 } from 'react-native';
+
+const isNetworkError = (error) => {
+  if (!error) return false;
+  const errorMsg = (error.message || '').toLowerCase();
+  return errorMsg.includes('network') || 
+         errorMsg.includes('failed to fetch') || 
+         errorMsg.includes('enotfound') || 
+         errorMsg.includes('econnrefused') ||
+         errorMsg.includes('timeout') ||
+         errorMsg.includes('offline');
+};
 
 export default function LoginScreen({ navigation, route }) {
   const { role } = route.params;
@@ -15,6 +28,7 @@ export default function LoginScreen({ navigation, route }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [networkError, setNetworkError] = useState(false);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -23,6 +37,7 @@ export default function LoginScreen({ navigation, route }) {
     }
 
     setLoading(true);
+    setNetworkError(false);
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -31,7 +46,11 @@ export default function LoginScreen({ navigation, route }) {
       });
 
       if (error) {
-        Alert.alert('Login Error', error.message);
+        if (isNetworkError(error)) {
+          setNetworkError(true);
+        } else {
+          Alert.alert('Login Error', error.message);
+        }
         setLoading(false);
         return;
       }
@@ -44,8 +63,12 @@ export default function LoginScreen({ navigation, route }) {
         .single();
 
       if (profileError || !profile) {
-        await supabase.auth.signOut();
-        Alert.alert('Error', 'Could not load your profile. Please try again.');
+        if (isNetworkError(profileError)) {
+          setNetworkError(true);
+        } else {
+          await supabase.auth.signOut();
+          Alert.alert('Error', 'Could not load your profile. Please try again.');
+        }
         setLoading(false);
         return;
       }
@@ -80,10 +103,18 @@ export default function LoginScreen({ navigation, route }) {
         // No need to navigate - auth state change will trigger re-render
       }
     } catch (err) {
-      Alert.alert('Error', err.message);
+      if (isNetworkError(err)) {
+        setNetworkError(true);
+      } else {
+        Alert.alert('Error', err.message);
+      }
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleNetworkErrorDismiss = () => {
+    setNetworkError(false);
   };
 
   return (
@@ -99,6 +130,7 @@ export default function LoginScreen({ navigation, route }) {
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
+        editable={!loading}
       />
 
       <TextInput
@@ -108,6 +140,7 @@ export default function LoginScreen({ navigation, route }) {
         style={styles.input}
         value={password}
         onChangeText={setPassword}
+        editable={!loading}
       />
 
       <TouchableOpacity
@@ -122,11 +155,40 @@ export default function LoginScreen({ navigation, route }) {
 
       <TouchableOpacity
         onPress={() => navigation.navigate('Signup', { role })}
+        disabled={loading}
       >
         <Text style={styles.signupText}>
           Don't have an account? Sign Up
         </Text>
       </TouchableOpacity>
+
+      {/* Network Error Modal */}
+      <Modal
+        visible={networkError}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={handleNetworkErrorDismiss}
+      >
+        <TouchableWithoutFeedback onPress={handleNetworkErrorDismiss}>
+          <View style={styles.networkErrorOverlay}>
+            <TouchableWithoutFeedback>
+              <View style={styles.networkErrorCard}>
+                <Text style={styles.networkErrorIcon}>📡</Text>
+                <Text style={styles.networkErrorTitle}>Network is Not Connected</Text>
+                <Text style={styles.networkErrorMessage}>
+                  Please check your internet connection and try again.
+                </Text>
+                <TouchableOpacity
+                  style={styles.networkErrorBtn}
+                  onPress={handleNetworkErrorDismiss}
+                >
+                  <Text style={styles.networkErrorBtnText}>OK</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </View>
   );
 }
@@ -174,5 +236,58 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 20,
     fontSize: 16,
+  },
+
+  networkErrorOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+
+  networkErrorCard: {
+    backgroundColor: '#1C1F4A',
+    borderRadius: 15,
+    padding: 25,
+    alignItems: 'center',
+    borderLeftWidth: 4,
+    borderLeftColor: '#FF6B6B',
+  },
+
+  networkErrorIcon: {
+    fontSize: 48,
+    marginBottom: 15,
+  },
+
+  networkErrorTitle: {
+    color: '#FF6B6B',
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+
+  networkErrorMessage: {
+    color: '#AAA',
+    fontSize: 14,
+    marginBottom: 20,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+
+  networkErrorBtn: {
+    backgroundColor: '#5568FE',
+    paddingHorizontal: 30,
+    paddingVertical: 12,
+    borderRadius: 8,
+    minWidth: 100,
+  },
+
+  networkErrorBtnText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });

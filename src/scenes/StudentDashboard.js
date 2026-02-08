@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-simple-toast';
 import { SCREEN_NAMES } from '../navigators/screenNames';
 import { supabase } from '../../supabase';
-import { getAllTeachers, createBooking, getStudentBookings, getAllLectures, getStudentEnrolledLectures, enrollInLecture, unenrollFromLecture, getTeacherSlotsByDateRange, bookAvailabilitySlot, isProfileComplete } from '../database/database';
+import { getAllTeachers, createBooking, getStudentBookings, getTeacherSlotsByDateRange, bookAvailabilitySlot, isProfileComplete } from '../database/database';
 import Home from '../assets/icons/Home';
 import Calendar from '../assets/icons/Calendar';
 import BookOpen from '../assets/icons/BookOpen';
@@ -45,11 +45,6 @@ export default function StudentDashboard({ navigation }) {
   const [studentName, setStudentName] = useState('Student');
   const [profileIncomplete, setProfileIncomplete] = useState(false);
 
-  // Lectures state
-  const [availableLectures, setAvailableLectures] = useState([]);
-  const [enrolledLectures, setEnrolledLectures] = useState([]);
-  const [lecturesLoading, setLecturesLoading] = useState(false);
-
   // Booking state
   const [myBookings, setMyBookings] = useState([]);
   const [showBookingModal, setShowBookingModal] = useState(false);
@@ -60,7 +55,6 @@ export default function StudentDashboard({ navigation }) {
   const [bookingSubject, setBookingSubject] = useState('');
   const [bookingInProgress, setBookingInProgress] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [lecturesRefreshing, setLecturesRefreshing] = useState(false);
 
   // Fetch user info and teachers on mount
   useEffect(() => {
@@ -104,17 +98,6 @@ export default function StudentDashboard({ navigation }) {
           Toast.show(teacherErr?.message || 'Could not load teachers. Try again.');
         }
 
-        // Fetch available lectures
-        console.log('🔵 [StudentDashboard] Fetching lectures...');
-        try {
-          const lecturesData = await getAllLectures();
-          setAvailableLectures(lecturesData || []);
-          console.log('✅ [StudentDashboard] Lectures loaded:', lecturesData?.length);
-        } catch (lectureErr) {
-          console.error('🔴 [StudentDashboard] Error fetching lectures:', lectureErr);
-          setAvailableLectures([]);
-        }
-
       } catch (error) {
         console.error('🔴 [StudentDashboard] Error initializing:', error);
         Toast.show(error?.message || 'Something went wrong');
@@ -138,25 +121,6 @@ export default function StudentDashboard({ navigation }) {
       console.error('🔴 Error refreshing bookings:', e);
     } finally {
       setRefreshing(false);
-    }
-  }, []);
-
-  // Refresh lectures (available + enrolled) – used by pull-to-refresh on Lectures tab
-  const onRefreshLectures = React.useCallback(async () => {
-    setLecturesRefreshing(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const [lecturesData, enrolledData] = await Promise.all([
-        getAllLectures(),
-        getStudentEnrolledLectures(user.id),
-      ]);
-      setAvailableLectures(lecturesData || []);
-      setEnrolledLectures(enrolledData || []);
-    } catch (e) {
-      console.error('🔴 Error refreshing lectures:', e);
-    } finally {
-      setLecturesRefreshing(false);
     }
   }, []);
 
@@ -254,19 +218,6 @@ export default function StudentDashboard({ navigation }) {
             setMyBookings(bookingsData || []);
             console.log('✅ Bookings loaded:', bookingsData?.length);
 
-            // Refresh available and enrolled lectures
-            console.log('🔵 Refreshing lectures...');
-            try {
-              const [lecturesData, enrolledData] = await Promise.all([
-                getAllLectures(),
-                getStudentEnrolledLectures(user.id),
-              ]);
-              setAvailableLectures(lecturesData || []);
-              setEnrolledLectures(enrolledData || []);
-              console.log('✅ Lectures loaded - available:', lecturesData?.length, 'enrolled:', enrolledData?.length);
-            } catch (e) {
-              console.error('🔴 Error refreshing lectures:', e);
-            }
           }
         } catch (error) {
           console.error('🔴 Error refreshing profile:', error);
@@ -291,10 +242,7 @@ export default function StudentDashboard({ navigation }) {
 
       console.log('✅ Slots loaded:', slots?.length);
       setAvailableSlots(slots || []);
-
-      if (!slots || slots.length === 0) {
-        Toast.show('⚠️ No available slots found for this teacher');
-      }
+      // Note: Empty slots are handled by UI display, no need for toast
     } catch (error) {
       console.error('🔴 Error loading slots:', error);
       Toast.show('Error loading availability');
@@ -304,17 +252,24 @@ export default function StudentDashboard({ navigation }) {
   };
 
   // Handle booking creation from availability slot
+  // Returns booking object for checkout, or null on error
   const handleBookSlot = async (slot) => {
     try {
+      // Prevent booking of already booked slots
+      if (slot.slot_status === 'booked') {
+        Alert.alert('Slot Unavailable', 'This time slot is already booked. Please select another slot.');
+        return null;
+      }
+
       if (!bookingSubject.trim()) {
         Alert.alert('Error', 'Please enter the subject/topic');
-        return;
+        return null;
       }
 
       setBookingInProgress(true);
-      console.log('🔵 Booking slot:', slot.id);
+      console.log('🔵 Creating booking for slot:', slot.id);
 
-      // Book the availability slot (auto-confirmed)
+      // Create booking with pending status (will be confirmed after payment)
       const booking = await bookAvailabilitySlot(
         studentId,
         selectedTeacher.id,
@@ -323,48 +278,12 @@ export default function StudentDashboard({ navigation }) {
       );
 
       console.log('✅ Booking created:', booking);
-
-      const slotDateTime = new Date(slot.start_time);
-      const formattedDate = slotDateTime.toLocaleDateString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
-      const formattedTime = slotDateTime.toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
-      });
-
-      // Show success popup
-      Alert.alert(
-        '✅ Booking Confirmed!',
-        `Your booking with ${selectedTeacher.profile?.full_name} has been confirmed!\n\nDate: ${formattedDate}\nTime: ${formattedTime}\nTopic: ${bookingSubject}\n\nThe teacher has been notified about your scheduled session.`,
-        [
-          {
-            text: 'View Booking',
-            onPress: () => {
-              // Reset form and switch to bookings tab
-              setShowBookingModal(false);
-              setBookingSubject('');
-              setSelectedTeacher(null);
-              setSelectedSlot(null);
-              setAvailableSlots([]);
-              setActiveTab('bookings');
-
-              // Refresh bookings
-              getStudentBookings(studentId).then(updatedBookings => {
-                setMyBookings(updatedBookings || []);
-              });
-            }
-          }
-        ]
-      );
+      return booking; // Return booking object for checkout
 
     } catch (error) {
       console.error('🔴 Error booking slot:', error);
-      Alert.alert('Error', error.message || 'Failed to book slot');
+      Alert.alert('Error', error.message || 'Failed to create booking');
+      return null;
     } finally {
       setBookingInProgress(false);
     }
@@ -415,85 +334,6 @@ export default function StudentDashboard({ navigation }) {
     } catch (error) {
       console.error('🔴 Error joining meeting:', error);
       Alert.alert('Error', 'Failed to join meeting');
-    }
-  };
-
-  // Handle lecture enrollment
-  const handleEnrollLecture = async (lectureId) => {
-    try {
-      if (!studentId) {
-        Alert.alert('Error', 'Please log in first');
-        return;
-      }
-
-      await enrollInLecture(lectureId, studentId);
-      Toast.show('✅ Enrolled in lecture!');
-
-      // Refresh lectures
-      const updatedLectures = await getAllLectures();
-      setAvailableLectures(updatedLectures || []);
-
-      const enrolledData = await getStudentEnrolledLectures(studentId);
-      setEnrolledLectures(enrolledData || []);
-
-      // Switch to enrolled lectures tab
-      setActiveTab('lectures');
-    } catch (error) {
-      console.error('🔴 Error enrolling:', error);
-      Alert.alert('Error', error.message || 'Failed to enroll');
-    }
-  };
-
-  // Handle joining a live lecture from "My Enrolled Lectures"
-  const handleJoinLecture = async (enrollment) => {
-    try {
-      const lecture = enrollment.lecture;
-      if (!lecture) {
-        Alert.alert('Error', 'Lecture details not available');
-        return;
-      }
-
-      if (!lecture.meeting_id) {
-        Alert.alert('Not Started', 'The teacher has not started this lecture yet. Please wait until it goes live.');
-        return;
-      }
-
-      console.log('🔵 Student attempting to join lecture meeting:', lecture.meeting_id);
-
-      navigation.navigate(SCREEN_NAMES.Join, {
-        meetingId: lecture.meeting_id,
-        isTeacher: false,
-        studentId: studentId,
-        name: studentName,
-      });
-    } catch (error) {
-      console.error('🔴 Error joining lecture:', error);
-      Alert.alert('Error', 'Failed to join lecture');
-    }
-  };
-
-  // Handle unenroll from lecture
-  const handleUnenrollLecture = async (lectureId) => {
-    try {
-      Alert.alert(
-        'Confirm',
-        'Remove from this lecture?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Remove',
-            onPress: async () => {
-              await unenrollFromLecture(lectureId, studentId);
-              Toast.show('❌ Removed from lecture');
-
-              const enrolledData = await getStudentEnrolledLectures(studentId);
-              setEnrolledLectures(enrolledData || []);
-            },
-          },
-        ]
-      );
-    } catch (error) {
-      console.error('🔴 Error unenrolling:', error);
     }
   };
 
@@ -586,7 +426,7 @@ export default function StudentDashboard({ navigation }) {
             <View style={[styles.teacherStatusDot, { backgroundColor: teacherStatusColor(status) }]} />
           </View>
           <Text style={styles.teacherName}>{item.profile?.full_name || 'Teacher'}</Text>
-          <Text style={styles.teacherCategory}>{specializations}</Text>
+          <Text style={styles.teacherCategory}>{(item.specializations)}</Text>
           <View style={styles.ratingContainer}>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 12 }}>
               <Star width={16} height={16} fill="#FFD700" />
@@ -667,12 +507,14 @@ export default function StudentDashboard({ navigation }) {
               <View style={[styles.teacherStatusDotModal, { backgroundColor: teacherStatusColor(selectedTeacher.availability_status) }]} />
             </View>
             <Text style={styles.teacherName}>{selectedTeacher.profile?.full_name}</Text>
+            <Text style={styles.teacherSpec}>{selectedTeacher.bio}</Text>
             <Text style={styles.teacherStatusLabel}>
               {((selectedTeacher.availability_status || 'offline') === 'online' && 'Online') ||
-               ((selectedTeacher.availability_status || 'offline') === 'away' && 'Away') ||
-               'Offline'}
+                ((selectedTeacher.availability_status || 'offline') === 'away' && 'Away') ||
+                'Offline'}
             </Text>
-            <Text style={styles.teacherSpec}>{selectedTeacher.specializations?.split(',')[0].trim()}</Text>
+            {/* <Text style={styles.teacherSpec}>{selectedTeacher.specializations?.split(',')[0].trim()}</Text> */}
+            <Text style={styles.teacherSpec}>{selectedTeacher.specializations}</Text>
             <View style={styles.priceRow}>
               <Text style={styles.priceLabel}>Price: </Text>
               <Text style={styles.priceValue}>₹{selectedTeacher.price_per_call || 500}/60 min</Text>
@@ -715,20 +557,32 @@ export default function StudentDashboard({ navigation }) {
                   const timeStr = slotDateTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
                   const dayStr = slotDateTime.toLocaleDateString('en-US', { weekday: 'short' });
                   const isSelected = selectedSlot?.id === slot.id;
+                  const isBooked = slot.slot_status === 'booked';
 
                   return (
                     <TouchableOpacity
                       key={slot.id}
-                      style={[styles.slotCard, isSelected && styles.slotCardSelected]}
-                      onPress={() => setSelectedSlot(slot)}
+                      style={[
+                        styles.slotCard,
+                        isBooked && styles.slotCardBooked,
+                        isSelected && !isBooked && styles.slotCardSelected
+                      ]}
+                      onPress={() => !isBooked && setSelectedSlot(slot)}
+                      disabled={isBooked}
                     >
                       <View style={styles.slotContent}>
-                        <Text style={styles.slotDateTime}>
+                        <Text style={[styles.slotDateTime, isBooked && styles.slotDateTimeBooked]}>
                           {dayStr}, {dateStr} • {timeStr}
                         </Text>
-                        <Text style={styles.slotDuration}>60 minutes session</Text>
+                        <Text style={[styles.slotDuration, isBooked && styles.slotDurationBooked]}>
+                          {isBooked ? 'Already booked' : '60 minutes session'}
+                        </Text>
                       </View>
-                      {isSelected && <Text style={styles.slotCheckmark}>✓</Text>}
+                      {isBooked ? (
+                        <Text style={styles.slotBookedBadge}>🔒 Booked</Text>
+                      ) : (
+                        isSelected && <Text style={styles.slotCheckmark}>✓</Text>
+                      )}
                     </TouchableOpacity>
                   );
                 })}
@@ -780,15 +634,56 @@ export default function StudentDashboard({ navigation }) {
           >
             <Text style={styles.cancelBtnText}>Cancel</Text>
           </TouchableOpacity>
-          <TouchableOpacity
+          {/* <TouchableOpacity
             style={[styles.confirmBtn, (bookingInProgress || !selectedSlot) && styles.confirmBtnDisabled]}
-            onPress={() => handleBookSlot(selectedSlot)}
+            onPress={() => {
+              handleBookSlot(selectedSlot);
+
+              navigation.navigate('StudentCheckout', {
+                booking: bookingObject,
+                teacher: selectedTeacher,
+                slot: slot,
+                onPaymentSuccess: (paymentData) => {
+                  Toast.show('Booking confirmed!');
+                  loadBookings();
+                }
+              });
+            }}
             disabled={bookingInProgress || !selectedSlot}
           >
             <Text style={styles.confirmBtnText}>
               {bookingInProgress ? 'Booking...' : '✅ Confirm Booking'}
             </Text>
+          </TouchableOpacity> */}
+          <TouchableOpacity
+            style={[
+              styles.confirmBtn,
+              (bookingInProgress || !selectedSlot) && styles.confirmBtnDisabled
+            ]}
+            onPress={async () => {
+              try {
+                const booking = await handleBookSlot(selectedSlot);
+
+                if (!booking) return;
+
+                // Don't pass functions through navigation - use goBack with callback instead
+                navigation.navigate('StudentCheckout', {
+                  booking: booking,
+                  teacher: selectedTeacher,
+                  slot: selectedSlot,
+                });
+              } catch (err) {
+                console.error(err);
+                Toast.show('Booking failed');
+              }
+            }}
+            disabled={bookingInProgress || !selectedSlot}
+          >
+            <Text style={styles.confirmBtnText}>
+              {bookingInProgress ? 'Booking...' : 'Book Now'}
+            </Text>
           </TouchableOpacity>
+
         </View>
       </SafeAreaView>
     );
@@ -813,73 +708,73 @@ export default function StudentDashboard({ navigation }) {
           </View>
         )}
         <ScrollView showsVerticalScrollIndicator={false}>
-            {/* Header */}
-            <View style={styles.header}>
-              <Text style={styles.welcome}>Welcome 👋</Text>
-              <Text style={styles.studentName}>{studentName}</Text>
+          {/* Header */}
+          <View style={styles.header}>
+            <Text style={styles.welcome}>Welcome 👋</Text>
+            <Text style={styles.studentName}>{studentName}</Text>
+          </View>
+
+          {/* Search Bar */}
+          <View style={styles.searchContainer}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search teachers..."
+              placeholderTextColor="#999"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+            {/* <Text style={styles.searchIcon}>🔍</Text> */}
+            <View style={styles.searchIcon}>
+              <SearchIcon width={25} height={25} fill="#f5f1f1" />
             </View>
 
-            {/* Search Bar */}
-            <View style={styles.searchContainer}>
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Search teachers..."
-                placeholderTextColor="#999"
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-              />
-              {/* <Text style={styles.searchIcon}>🔍</Text> */}
-              <View style={styles.searchIcon}>
-                <SearchIcon width={25} height={25} fill="#f5f1f1" />
-              </View>
+          </View>
 
-            </View>
-
-            {/* Categories */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }} style={styles.categoryScroll}>
-              {categories.map(category => (
-                <TouchableOpacity
-                  key={category}
+          {/* Categories */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }} style={styles.categoryScroll}>
+            {categories.map(category => (
+              <TouchableOpacity
+                key={category}
+                style={[
+                  styles.categoryBtn,
+                  selectedCategory === category && styles.categoryBtnActive,
+                ]}
+                onPress={() => setSelectedCategory(category)}
+              >
+                <Text
                   style={[
-                    styles.categoryBtn,
-                    selectedCategory === category && styles.categoryBtnActive,
+                    styles.categoryText,
+                    selectedCategory === category && styles.categoryTextActive,
                   ]}
-                  onPress={() => setSelectedCategory(category)}
                 >
-                  <Text
-                    style={[
-                      styles.categoryText,
-                      selectedCategory === category && styles.categoryTextActive,
-                    ]}
-                  >
-                    {category}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-
-            {/* Featured Section */}
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Featured Teachers</Text>
-            </View>
-
-            {/* Teacher Grid */}
-            {filteredTeachers.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyIcon}>🔍</Text>
-                <Text style={styles.emptyText}>No teachers found</Text>
-                <Text style={styles.emptySubtext}>Try searching with different keywords</Text>
-              </View>
-            ) : (
-              <View style={styles.teacherGrid}>
-                {filteredTeachers.map(teacher => (
-                  <View key={teacher.id} style={styles.gridItem}>
-                    {renderTeacherCard({ item: teacher })}
-                  </View>
-                ))}
-              </View>
-            )}
+                  {category}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </ScrollView>
+
+          {/* Featured Section */}
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Featured Teachers</Text>
+          </View>
+
+          {/* Teacher Grid */}
+          {filteredTeachers.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyIcon}>🔍</Text>
+              <Text style={styles.emptyText}>No teachers found</Text>
+              <Text style={styles.emptySubtext}>Try searching with different keywords</Text>
+            </View>
+          ) : (
+            <View style={styles.teacherGrid}>
+              {filteredTeachers.map(teacher => (
+                <View key={teacher.id} style={styles.gridItem}>
+                  {renderTeacherCard({ item: teacher })}
+                </View>
+              ))}
+            </View>
+          )}
+        </ScrollView>
 
         {/* Bottom Navigation */}
         <View style={styles.bottomNav}>
@@ -963,21 +858,36 @@ export default function StudentDashboard({ navigation }) {
             </View>
           ) : (
             <>
-              {/* Pending Bookings */}
+              {/* Pending Payment Bookings */}
               {pendingBookings.length > 0 && (
                 <>
                   <View style={styles.bookingSectionHeader}>
                     <View style={styles.sectionBadge}>
-                      <Clock width={16} height={16} fill="#FFA500" />
-                      <Text style={styles.sectionBadgeText}>Pending</Text>
+                      <Clock width={16} height={16} fill="#FF6B6B" />
+                      <Text style={styles.sectionBadgeText}>Payment Pending</Text>
                     </View>
                     <Text style={styles.sectionCount}>{pendingBookings.length}</Text>
                   </View>
                   {pendingBookings.map(booking => (
-                    <View key={booking.id} style={[styles.bookingCard, styles.pendingCard]}>
+                    <TouchableOpacity 
+                      key={booking.id} 
+                      style={[styles.bookingCard, styles.pendingCard]}
+                      activeOpacity={0.7}
+                      onPress={() => {
+                        // Navigate to checkout to complete payment
+                        const teacher = teachers.find(t => t.id === booking.teacher_id);
+                        if (teacher) {
+                          navigation.navigate('StudentCheckout', {
+                            booking: booking,
+                            teacher: teacher,
+                            slot: null, // No slot for pending bookings
+                          });
+                        }
+                      }}
+                    >
                       <View style={styles.bookingCardLeft}>
                         <View style={styles.bookingTeacherIcon}>
-                          <User width={24} height={24} fill="#5568FE" />
+                          <User width={24} height={24} fill="#FF6B6B" />
                         </View>
                         <View style={styles.bookingInfo}>
                           <Text style={styles.bookingTeacher}>{booking.teacher_profile?.full_name || 'Teacher'}</Text>
@@ -988,13 +898,12 @@ export default function StudentDashboard({ navigation }) {
                             <Clock width={12} height={12} fill="#999" style={{ marginLeft: 12, marginRight: 4 }} />
                             <Text style={styles.bookingDate}>{new Date(booking.booked_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
                           </View>
-                          <View style={styles.statusBadge}>
-                            <Clock width={12} height={12} fill="#FFA500" style={{ marginRight: 4 }} />
-                            <Text style={styles.statusText}>Waiting for approval</Text>
+                          <View style={[styles.statusBadge, { backgroundColor: '#FFE5E5', borderColor: '#FF6B6B' }]}>
+                            <Text style={{ color: '#FF6B6B', fontSize: 12, fontWeight: '600' }}>💳 Payment Pending - Tap to Pay</Text>
                           </View>
                         </View>
                       </View>
-                    </View>
+                    </TouchableOpacity>
                   ))}
                 </>
               )}
@@ -1013,43 +922,43 @@ export default function StudentDashboard({ navigation }) {
                     const CardWrapper = booking.meeting_id ? TouchableOpacity : View;
                     const cardProps = booking.meeting_id ? { activeOpacity: 0.8, onPress: () => handleJoinMeeting(booking) } : {};
                     return (
-                    <CardWrapper key={booking.id} style={[styles.bookingCard, styles.confirmedCard]} {...cardProps}>
-                      <View style={styles.bookingCardLeft}>
-                        <View style={styles.bookingTeacherIcon}>
-                          <User width={24} height={24} fill="#2ECC71" />
-                        </View>
-                        <View style={styles.bookingInfo}>
-                          <Text style={styles.bookingTeacher}>{booking.teacher_profile?.full_name || 'Teacher'}</Text>
-                          <Text style={styles.bookingSubject}>{booking.subject}</Text>
-                          <View style={styles.bookingMeta}>
-                            <Calendar width={12} height={12} fill="#999" style={{ marginRight: 4 }} />
-                            <Text style={styles.bookingDate}>{new Date(booking.booked_date).toLocaleDateString()}</Text>
-                            <Clock width={12} height={12} fill="#999" style={{ marginLeft: 12, marginRight: 4 }} />
-                            <Text style={styles.bookingDate}>{new Date(booking.booked_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
+                      <CardWrapper key={booking.id} style={[styles.bookingCard, styles.confirmedCard]} {...cardProps}>
+                        <View style={styles.bookingCardLeft}>
+                          <View style={styles.bookingTeacherIcon}>
+                            <User width={24} height={24} fill="#2ECC71" />
                           </View>
-                          {booking.meeting_id && (
-                            <TouchableOpacity
-                              style={styles.meetingIdContainer}
-                              onPress={(e) => { e?.stopPropagation?.(); copyMeetingIdToClipboard(booking.meeting_id); }}
-                            >
-                              <Video width={12} height={12} fill="#f9fafb" style={{ marginRight: 6 }} />
-                              <Text style={styles.meetingIdLabel}>Meeting ID: {booking.meeting_id}</Text>
-                              <Text style={styles.meetingIdCopy}>Copy</Text>
-                            </TouchableOpacity>
-                          )}
+                          <View style={styles.bookingInfo}>
+                            <Text style={styles.bookingTeacher}>{booking.teacher_profile?.full_name || 'Teacher'}</Text>
+                            <Text style={styles.bookingSubject}>{booking.subject}</Text>
+                            <View style={styles.bookingMeta}>
+                              <Calendar width={12} height={12} fill="#999" style={{ marginRight: 4 }} />
+                              <Text style={styles.bookingDate}>{new Date(booking.booked_date).toLocaleDateString()}</Text>
+                              <Clock width={12} height={12} fill="#999" style={{ marginLeft: 12, marginRight: 4 }} />
+                              <Text style={styles.bookingDate}>{new Date(booking.booked_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
+                            </View>
+                            {booking.meeting_id && (
+                              <TouchableOpacity
+                                style={styles.meetingIdContainer}
+                                onPress={(e) => { e?.stopPropagation?.(); copyMeetingIdToClipboard(booking.meeting_id); }}
+                              >
+                                <Video width={12} height={12} fill="#f9fafb" style={{ marginRight: 6 }} />
+                                <Text style={styles.meetingIdLabel}>Meeting ID: {booking.meeting_id}</Text>
+                                <Text style={styles.meetingIdCopy}>Copy</Text>
+                              </TouchableOpacity>
+                            )}
+                          </View>
                         </View>
-                      </View>
-                      {booking.meeting_id ? (
-                        <View style={styles.joinBtn}>
-                          <Video width={16} height={16} fill="#fff" />
-                          <Text style={styles.joinBtnText}>Join</Text>
-                        </View>
-                      ) : (
-                        <View style={styles.waitingBadge}>
-                          <Text style={styles.waitingText}>Booked</Text>
-                        </View>
-                      )}
-                    </CardWrapper>
+                        {booking.meeting_id ? (
+                          <View style={styles.joinBtn}>
+                            <Video width={16} height={16} fill="#fff" />
+                            <Text style={styles.joinBtnText}>Join</Text>
+                          </View>
+                        ) : (
+                          <View style={styles.waitingBadge}>
+                            <Text style={styles.waitingText}>Booked</Text>
+                          </View>
+                        )}
+                      </CardWrapper>
                     );
                   })}
                 </>
@@ -1117,164 +1026,6 @@ export default function StudentDashboard({ navigation }) {
             <Text style={styles.navLabel}>Lectures</Text>
           </TouchableOpacity>
           */}
-          <TouchableOpacity
-            style={styles.navItem}
-            onPress={() => setActiveTab('profile')}
-          >
-            <User width={22} height={22} fill={activeTab === 'profile' ? '#5568FE' : '#999'} />
-            <Text style={styles.navLabel}>Profile</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  // LECTURES TAB
-  if (activeTab === 'lectures') {
-    return (
-      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-        <ScrollView
-          refreshControl={
-            <RefreshControl
-              refreshing={lecturesRefreshing}
-              onRefresh={onRefreshLectures}
-              colors={['#5568FE']}
-            />
-          }
-        >
-          {/* <View style={styles.header}> */}
-          <View style={styles.bookingsHeader}>
-            <View style={styles.welcomeContainer}>
-              <View style={styles.headerContent}>
-                <View style={styles.headerIconContainer}>
-                  <BookOpen width={20} height={20} fill="#ffffff" />
-                </View>
-                <Text style={styles.welcometab}>Available Lectures</Text>
-              </View>
-            </View>
-          </View>
-
-          {lecturesLoading ? (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 20 }}>
-              <ActivityIndicator size="large" color="#5568FE" />
-            </View>
-          ) : availableLectures.length === 0 ? (
-            <View style={styles.emptyState}>
-              <BookOpen width={48} height={48} fill="#999" />
-              <Text style={styles.emptyText}>No lectures available</Text>
-              <Text style={styles.emptySubtext}>Check back later</Text>
-            </View>
-          ) : (
-            <View style={styles.lecturesList}>
-              {availableLectures.map(lecture => (
-                <View key={lecture.id} style={styles.lectureCard}>
-                  <View style={styles.lectureHeader}>
-                    <Text style={styles.lectureSubject}>{lecture.subject}</Text>
-                    <Text style={styles.lectureTeacher}>
-                      by {lecture.teacher_profiles?.full_name || 'Teacher'}
-                    </Text>
-                  </View>
-
-                  <Text style={styles.lectureDescription}>{lecture.description || 'No description'}</Text>
-
-                  <View style={styles.lectureDetails}>
-                    <Text style={styles.lectureDetail}>📅 {new Date(lecture.scheduled_date).toLocaleDateString()}</Text>
-                    <Text style={styles.lectureDetail}>🕐 {new Date(lecture.scheduled_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
-                    <Text style={styles.lectureDetail}>⏱️ {lecture.duration_minutes} min</Text>
-                  </View>
-
-                  <TouchableOpacity
-                    style={styles.enrollBtn}
-                    onPress={() => handleEnrollLecture(lecture.id)}
-                  >
-                    <Text style={styles.enrollBtnText}>✅ Enroll Now</Text>
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </View>
-          )}
-
-          {enrolledLectures.length > 0 && (
-            <>
-              <View style={[styles.header, { marginTop: 30 }]}>
-                <View style={styles.welcomeContainer}>
-                  <CheckCircle width={20} height={20} fill="#2ECC71" style={{ marginRight: 8 }} />
-                  <Text style={styles.welcome}>My Enrolled Lectures</Text>
-                </View>
-              </View>
-
-              {enrolledLectures.map(enrollment => {
-                const lecture = enrollment.lecture;
-                const scheduledDate = lecture?.scheduled_date ? new Date(lecture.scheduled_date) : null;
-                const now = new Date();
-                const hasStarted = scheduledDate ? now >= scheduledDate : false;
-                const canJoin = !!lecture?.meeting_id && hasStarted;
-
-                return (
-                  <View key={enrollment.id} style={styles.enrolledLectureCard}>
-                    <View style={styles.lectureHeader}>
-                      <Text style={styles.lectureSubject}>{lecture?.subject}</Text>
-                      <Text style={styles.lectureTeacher}>
-                        by {lecture?.teacher_profiles?.full_name || 'Teacher'}
-                      </Text>
-                    </View>
-
-                    <View style={styles.lectureDetails}>
-                      <Text style={styles.lectureDetail}>📅 {lecture?.scheduled_date ? new Date(lecture.scheduled_date).toLocaleDateString() : '-'}</Text>
-                      <Text style={styles.lectureDetail}>🕐 {lecture?.scheduled_date ? new Date(lecture.scheduled_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}</Text>
-                    </View>
-
-                    <View style={styles.enrolledActions}>
-                      <TouchableOpacity
-                        style={[
-                          styles.joinLectureBtn,
-                          !canJoin && { backgroundColor: '#9CA3AF' },
-                        ]}
-                        disabled={!canJoin}
-                        onPress={() => handleJoinLecture(enrollment)}
-                      >
-                        <Text style={styles.joinLectureBtnText}>
-                          {canJoin ? '📹 Join Lecture' : 'Not started yet'}
-                        </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.removeBtn}
-                        onPress={() => handleUnenrollLecture(lecture?.id)}
-                      >
-                        <Text style={styles.removeBtnText}>❌ Remove</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                );
-              })}
-            </>
-          )}
-
-          <View style={{ marginBottom: 80 }} />
-        </ScrollView>
-
-        <View style={styles.bottomNav}>
-          <TouchableOpacity
-            style={styles.navItem}
-            onPress={() => setActiveTab('home')}
-          >
-            <Home width={22} height={22} fill={activeTab === 'home' ? '#5568FE' : '#999'} />
-            <Text style={styles.navLabel}>Home</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.navItem}
-            onPress={() => setActiveTab('bookings')}
-          >
-            <Calendar width={22} height={22} fill={activeTab === 'bookings' ? '#5568FE' : '#999'} />
-            <Text style={styles.navLabel}>Bookings</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.navItem, styles.navItemActive]}
-            onPress={() => setActiveTab('lectures')}
-          >
-            <BookOpen width={22} height={22} fill={activeTab === 'lectures' ? '#5568FE' : '#999'} />
-            <Text style={styles.navLabel}>Lectures</Text>
-          </TouchableOpacity>
           <TouchableOpacity
             style={styles.navItem}
             onPress={() => setActiveTab('profile')}
@@ -1400,7 +1151,7 @@ export default function StudentDashboard({ navigation }) {
                   'Logout',
                   'Are you sure you want to log out?',
                   [
-                    { text: 'No', style: 'cancel', onPress: () => {} },
+                    { text: 'No', style: 'cancel', onPress: () => { } },
                     { text: 'Yes', onPress: async () => { await supabase.auth.signOut(); } },
                   ]
                 )
@@ -2066,6 +1817,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#252965',
   },
 
+  slotCardBooked: {
+    backgroundColor: '#3A3A3A',
+    borderColor: '#5A5A5A',
+    opacity: 0.7,
+  },
+
   slotContent: {
     flex: 1,
   },
@@ -2077,9 +1834,23 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
 
+  slotDateTimeBooked: {
+    color: '#999',
+  },
+
   slotDuration: {
     color: '#999',
     fontSize: 12,
+  },
+
+  slotDurationBooked: {
+    color: '#777',
+  },
+
+  slotBookedBadge: {
+    color: '#FF6B6B',
+    fontSize: 12,
+    fontWeight: '600',
   },
 
   slotCheckmark: {
@@ -2287,8 +2058,8 @@ const styles = StyleSheet.create({
   },
 
   pendingCard: {
-    borderLeftColor: '#FFA500',
-    backgroundColor: '#1a1d3f',
+    borderLeftColor: '#FF6B6B',
+    backgroundColor: '#2a1f1f',
   },
 
   confirmedCard: {
@@ -2398,7 +2169,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     minWidth: 56,
     flexDirection: 'row',
-    gap:2,
+    gap: 2,
   },
 
   joinBtnText: {
