@@ -79,28 +79,47 @@ export default function UserListScreen({ navigation }) {
     navigation.navigate(SCREEN_NAMES.AdminUserEdit, { user });
   };
 
+  const openTeacherWallet = (user) => {
+    navigation.navigate(SCREEN_NAMES.AdminTeacherWallet, {
+      teacherId: user.id,
+      teacherName: user.full_name || 'Teacher',
+    });
+  };
+
   const renderItem = ({ item }) => {
     const role = (item.role || 'student').toLowerCase();
     const label = ROLE_LABELS[role] || role;
     const color = ROLE_COLORS[role] || '#6b7280';
+    const isTeacher = role === 'teacher';
     return (
-      <TouchableOpacity
-        style={styles.row}
-        onPress={() => openEdit(item)}
-        activeOpacity={0.8}
-      >
-        <View style={styles.avatar}>
-          <User width={24} height={24} fill="#5568FE" />
-        </View>
-        <View style={styles.rowContent}>
-          <Text style={styles.name} numberOfLines={1}>{item.full_name || '—'}</Text>
-          <Text style={styles.id} numberOfLines={1}>{item.id}</Text>
-          <View style={[styles.badge, { backgroundColor: color + '22' }]}>
-            <Text style={[styles.badgeText, { color }]}>{label}</Text>
+      <View style={styles.row}>
+        <TouchableOpacity
+          style={styles.rowMain}
+          onPress={() => openEdit(item)}
+          activeOpacity={0.8}
+        >
+          <View style={styles.avatar}>
+            <User width={24} height={24} fill="#5568FE" />
           </View>
-        </View>
+          <View style={styles.rowContent}>
+            <Text style={styles.name} numberOfLines={1}>{item.full_name || '—'}</Text>
+            <Text style={styles.id} numberOfLines={1}>{item.id}</Text>
+            <View style={[styles.badge, { backgroundColor: color + '22' }]}>
+              <Text style={[styles.badgeText, { color }]}>{label}</Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+        {isTeacher && (
+          <TouchableOpacity
+            style={styles.walletChip}
+            onPress={() => openTeacherWallet(item)}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.walletChipText}>Wallet</Text>
+          </TouchableOpacity>
+        )}
         <ChevronRight width={20} height={20} fill="#6b7280" />
-      </TouchableOpacity>
+      </View>
     );
   };
 
@@ -200,6 +219,19 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 10,
   },
+  rowMain: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  walletChip: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: '#5568FE22',
+    marginRight: 8,
+  },
+  walletChipText: { color: '#5568FE', fontSize: 12, fontWeight: '600' },
   avatar: {
     width: 44,
     height: 44,

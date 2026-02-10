@@ -13,16 +13,35 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { SCREEN_NAMES } from '../navigators/screenNames';
 import { supabase } from '../../supabase';
 import { getAllUsersForAdmin, getAllBookingsForAdmin } from '../database/database';
+import { API_URL } from '../api/api';
 import Users from '../assets/icons/Users';
 import User from '../assets/icons/User';
 import Calendar from '../assets/icons/Calendar';
 import ChevronRight from '../assets/icons/ChevronRight';
-import Settings from '../assets/icons/Settings';
+import DollarSign from '../assets/icons/DollarSign';
+import MoneyBag from '../assets/icons/MoneyBag';
+
+function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 17) return 'Good afternoon';
+  return 'Good evening';
+}
+
+function getDateLabel() {
+  return new Date().toLocaleDateString('en-IN', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+}
 
 export default function SuperAdminDashboard({ navigation }) {
   const [adminName, setAdminName] = useState('Admin');
   const [userCount, setUserCount] = useState(0);
   const [bookingCount, setBookingCount] = useState(0);
+  const [pendingWithdrawalsCount, setPendingWithdrawalsCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -34,6 +53,16 @@ export default function SuperAdminDashboard({ navigation }) {
       ]);
       setUserCount(users?.length || 0);
       setBookingCount(bookings?.length || 0);
+
+      try {
+        const res = await fetch(`${API_URL}/api/admin/withdrawals`);
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data)) {
+          setPendingWithdrawalsCount(json.data.length);
+        }
+      } catch (_) {
+        setPendingWithdrawalsCount(0);
+      }
     } catch (e) {
       console.error('🔴 SuperAdmin load stats:', e);
     }
@@ -90,7 +119,7 @@ export default function SuperAdminDashboard({ navigation }) {
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#5568FE" />
-          <Text style={styles.loadingText}>Loading admin...</Text>
+          <Text style={styles.loadingText}>Loading dashboard...</Text>
         </View>
       </SafeAreaView>
     );
@@ -103,61 +132,101 @@ export default function SuperAdminDashboard({ navigation }) {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={refresh} colors={['#5568FE']} />
         }
+        showsVerticalScrollIndicator={false}
       >
+        {/* Header */}
         <View style={styles.header}>
-          <View style={styles.headerRow}>
-            <View style={styles.headerIconWrap}>
-              <Settings width={28} height={28} fill="#5568FE" />
-            </View>
+          <View style={styles.headerTop}>
             <View>
-              <Text style={styles.welcome}>Super Admin</Text>
+              <Text style={styles.greeting}>{getGreeting()},</Text>
               <Text style={styles.adminName}>{adminName}</Text>
             </View>
           </View>
+          <Text style={styles.dateLabel}>{getDateLabel()}</Text>
+          <Text style={styles.headerSubtitle}>Here’s your overview</Text>
         </View>
 
+        {/* Stats row */}
+        <View style={styles.statsRow}>
+          <View style={[styles.statCard, { borderLeftColor: '#5568FE' }]}>
+            <Users width={22} height={22} fill="#5568FE" />
+            <Text style={styles.statValue}>{userCount}</Text>
+            <Text style={styles.statLabel}>Users</Text>
+          </View>
+          <View style={[styles.statCard, { borderLeftColor: '#2ECC71' }]}>
+            <Calendar width={22} height={22} fill="#2ECC71" />
+            <Text style={styles.statValue}>{bookingCount}</Text>
+            <Text style={styles.statLabel}>Bookings</Text>
+          </View>
+          <View style={[styles.statCard, { borderLeftColor: '#F59E0B' }]}>
+            <MoneyBag width={22} height={22} fill="#F59E0B" />
+            <Text style={styles.statValue}>{pendingWithdrawalsCount}</Text>
+            <Text style={styles.statLabel}>Pending</Text>
+          </View>
+        </View>
+
+        {/* Section: Manage */}
         <Text style={styles.sectionTitle}>Manage</Text>
 
         <TouchableOpacity
-          style={styles.card}
+          style={[styles.card, styles.cardUsers]}
           onPress={() => navigation.navigate(SCREEN_NAMES.AdminUserList)}
           activeOpacity={0.8}
         >
           <View style={styles.cardLeft}>
-            <View style={styles.cardIcon}>
-              <Users width={24} height={24} fill="#5568FE" />
+            <View style={[styles.cardIcon, { backgroundColor: '#5568FE22' }]}>
+              <Users width={26} height={26} fill="#5568FE" />
             </View>
-            <View>
+            <View style={styles.cardTextWrap}>
               <Text style={styles.cardTitle}>Users</Text>
-              <Text style={styles.cardSubtitle}>CRUD on all users (students, teachers, admins)</Text>
-              <Text style={styles.cardStat}>{userCount} users</Text>
+              <Text style={styles.cardSubtitle}>Students, teachers & admins</Text>
+              <Text style={styles.cardStat}>{userCount} total</Text>
             </View>
           </View>
           <ChevronRight width={22} height={22} fill="#6b7280" />
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.card}
+          style={[styles.card, styles.cardBookings]}
           onPress={() => navigation.navigate(SCREEN_NAMES.AdminBookingsList)}
           activeOpacity={0.8}
         >
           <View style={styles.cardLeft}>
-            <View style={styles.cardIcon}>
-              <Calendar width={24} height={24} fill="#2ECC71" />
+            <View style={[styles.cardIcon, { backgroundColor: '#2ECC7122' }]}>
+              <Calendar width={26} height={26} fill="#2ECC71" />
             </View>
-            <View>
+            <View style={styles.cardTextWrap}>
               <Text style={styles.cardTitle}>Bookings</Text>
-              <Text style={styles.cardSubtitle}>View and manage all bookings</Text>
-              <Text style={styles.cardStat}>{bookingCount} bookings</Text>
+              <Text style={styles.cardSubtitle}>All sessions & status</Text>
+              <Text style={styles.cardStat}>{bookingCount} total</Text>
             </View>
           </View>
           <ChevronRight width={22} height={22} fill="#6b7280" />
         </TouchableOpacity>
 
+        <TouchableOpacity
+          style={[styles.card, styles.cardFinance]}
+          onPress={() => navigation.navigate(SCREEN_NAMES.AdminFinance)}
+          activeOpacity={0.8}
+        >
+          <View style={styles.cardLeft}>
+            <View style={[styles.cardIcon, { backgroundColor: '#F59E0B22' }]}>
+              <DollarSign width={26} height={26} fill="#F59E0B" />
+            </View>
+            <View style={styles.cardTextWrap}>
+              <Text style={styles.cardTitle}>Finance</Text>
+              <Text style={styles.cardSubtitle}>Charges, withdrawals & analytics</Text>
+              <Text style={styles.cardStat}>{pendingWithdrawalsCount} pending</Text>
+            </View>
+          </View>
+          <ChevronRight width={22} height={22} fill="#6b7280" />
+        </TouchableOpacity>
+
+        {/* Logout */}
         <View style={styles.footer}>
-          <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-            <User width={20} height={20} fill="#fff" />
-            <Text style={styles.logoutBtnText}>Logout</Text>
+          <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.8}>
+            <User width={20} height={20} fill="#EF4444" />
+            <Text style={styles.logoutBtnText}>Log out</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -182,71 +251,100 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 20,
+    paddingTop: 8,
     paddingBottom: 40,
   },
   header: {
-    paddingVertical: 20,
-    marginBottom: 10,
+    marginBottom: 24,
   },
-  headerRow: {
+  headerTop: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  headerIconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    backgroundColor: '#1C1F4A',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 14,
-  },
-  welcome: {
+  greeting: {
     color: '#9ca3af',
-    fontSize: 13,
+    fontSize: 15,
     marginBottom: 2,
   },
   adminName: {
     color: '#fff',
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 24,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+  dateLabel: {
+    color: '#6b7280',
+    fontSize: 13,
+    marginTop: 8,
+  },
+  headerSubtitle: {
+    color: '#6b7280',
+    fontSize: 13,
+    marginTop: 4,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 28,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: '#1C1F4A',
+    borderRadius: 14,
+    padding: 14,
+    borderLeftWidth: 4,
+  },
+  statValue: {
+    color: '#fff',
+    fontSize: 22,
+    fontWeight: '700',
+    marginTop: 10,
+  },
+  statLabel: {
+    color: '#9ca3af',
+    fontSize: 12,
+    marginTop: 2,
+    fontWeight: '500',
   },
   sectionTitle: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 16,
+    fontSize: 17,
+    fontWeight: '700',
+    marginBottom: 14,
+    letterSpacing: 0.2,
   },
   card: {
     backgroundColor: '#1C1F4A',
     borderRadius: 14,
     padding: 18,
-    marginBottom: 14,
+    marginBottom: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderLeftWidth: 4,
-    borderLeftColor: '#5568FE',
   },
+  cardUsers: { borderLeftWidth: 4, borderLeftColor: '#5568FE' },
+  cardBookings: { borderLeftWidth: 4, borderLeftColor: '#2ECC71' },
+  cardFinance: { borderLeftWidth: 4, borderLeftColor: '#F59E0B' },
   cardLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
   },
   cardIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: '#252965',
+    width: 50,
+    height: 50,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 14,
   },
+  cardTextWrap: { flex: 1 },
   cardTitle: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   cardSubtitle: {
     color: '#9ca3af',
@@ -254,25 +352,27 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   cardStat: {
-    color: '#5568FE',
+    color: '#6b7280',
     fontSize: 12,
     fontWeight: '600',
   },
   footer: {
-    marginTop: 30,
+    marginTop: 28,
     alignItems: 'center',
   },
   logoutBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#E74C3C',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 10,
-    gap: 8,
+    backgroundColor: '#1C1F4A',
+    paddingVertical: 14,
+    paddingHorizontal: 28,
+    borderRadius: 12,
+    gap: 10,
+    borderWidth: 1,
+    borderColor: '#374151',
   },
   logoutBtnText: {
-    color: '#fff',
+    color: '#EF4444',
     fontSize: 15,
     fontWeight: '600',
   },

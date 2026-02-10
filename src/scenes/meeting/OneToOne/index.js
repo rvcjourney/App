@@ -12,7 +12,6 @@ import {
   useMeeting,
   getAudioDeviceList,
   switchAudioDevice,
-  Constants,
 } from "@videosdk.live/react-native-sdk";
 import {
   CallEnd,
@@ -25,7 +24,6 @@ import {
   MicOn,
   More,
   Participants,
-  Recording,
   ScreenShare,
   VideoOff,
   VideoOn,
@@ -43,13 +41,12 @@ import Toast from "react-native-simple-toast";
 import BottomSheet from "../../../components/BottomSheet";
 import ParticipantListViewer from "../Components/ParticipantListViewer";
 import ChatViewer from "../Components/ChatViewer";
-import Lottie from "lottie-react-native";
-import recording_lottie from "../../../assets/animation/recording_lottie.json";
-import Blink from "../../../components/Blink";
 import VideosdkRPK from "../../../../VideosdkRPK";
 import ParticipantStatsViewer from "../Components/ParticipantStatsViewer";
 
-export default function OneToOneMeetingViewer({ isTeacher = true }) {
+const TEN_MINUTES_MS = 10 * 60 * 1000;
+
+export default function OneToOneMeetingViewer({ isTeacher = true, scheduledEndTime }) {
   const {
     join,
     participants,
@@ -64,10 +61,6 @@ export default function OneToOneMeetingViewer({ isTeacher = true }) {
     localScreenShareOn,
     toggleScreenShare,
     meetingId,
-    startRecording,
-    stopRecording,
-    meeting,
-    recordingState,
     enableScreenShare,
     disableScreenShare,
   } = useMeeting({
@@ -81,7 +74,6 @@ export default function OneToOneMeetingViewer({ isTeacher = true }) {
   const bottomSheetRef = useRef();
   const audioDeviceMenuRef = useRef();
   const moreOptionsMenu = useRef();
-  const recordingRef = useRef();
 
   const participantIds = [...participants.keys()];
 
@@ -93,6 +85,10 @@ export default function OneToOneMeetingViewer({ isTeacher = true }) {
 
   const [audioDevice, setAudioDevice] = useState([]);
   const [statParticipantId, setstatParticipantId] = useState("");
+
+  // Teacher can "End for all" only from 10 min before scheduled end (or if no schedule)
+  const canTeacherEndMeeting =
+    !scheduledEndTime || typeof scheduledEndTime !== "number" || Date.now() >= scheduledEndTime - TEN_MINUTES_MS;
 
   async function updateAudioDeviceList() {
     const devices = await getAudioDeviceList();
@@ -115,19 +111,6 @@ export default function OneToOneMeetingViewer({ isTeacher = true }) {
     }
   }, []);
 
-  useEffect(() => {
-    if (recordingRef.current) {
-      if (
-        recordingState === Constants.recordingEvents.RECORDING_STARTING ||
-        recordingState === Constants.recordingEvents.RECORDING_STOPPING
-      ) {
-        recordingRef.current.start();
-      } else {
-        recordingRef.current.stop();
-      }
-    }
-  }, [recordingState]);
-
   const openStatsBottomSheet = ({ pId }) => {
     setparticipantStatsViewer(true);
     setstatParticipantId(pId);
@@ -142,33 +125,10 @@ export default function OneToOneMeetingViewer({ isTeacher = true }) {
           width: "100%",
         }}
       >
-        {(recordingState === Constants.recordingEvents.RECORDING_STARTED ||
-          recordingState === Constants.recordingEvents.RECORDING_STOPPING ||
-          recordingState === Constants.recordingEvents.RECORDING_STARTING) && (
-          <View>
-            <Blink ref={recordingRef} duration={500}>
-              <Lottie
-                source={recording_lottie}
-                autoPlay
-                loop
-                style={{
-                  height: 30,
-                  width: 5,
-                }}
-              />
-            </Blink>
-          </View>
-        )}
         <View
           style={{
             flex: 1,
             justifyContent: "space-between",
-            marginLeft:
-              recordingState === Constants.recordingEvents.RECORDING_STARTED ||
-              recordingState === Constants.recordingEvents.RECORDING_STOPPING ||
-              recordingState === Constants.recordingEvents.RECORDING_STARTING
-                ? 8
-                : 0,
           }}
         >
           {isTeacher && (
@@ -262,11 +222,20 @@ export default function OneToOneMeetingViewer({ isTeacher = true }) {
             />
             <MenuItem
               title={"End"}
-              description={"End call for all participants"}
+              description={
+                canTeacherEndMeeting
+                  ? "End call for all participants"
+                  : "You can end 10 min before scheduled end time"
+              }
               icon={<EndForAll />}
               onPress={() => {
+                if (!canTeacherEndMeeting) {
+                  Toast.show("You can end the meeting 10 minutes before the scheduled end time.");
+                  leaveMenu.current.close();
+                  return;
+                }
                 end();
-                moreOptionsMenu.current.close();
+                leaveMenu.current.close();
               }}
             />
           </>
@@ -314,38 +283,6 @@ export default function OneToOneMeetingViewer({ isTeacher = true }) {
         menuBackgroundColor={colors.primary[700]}
         placement="right"
       >
-        <MenuItem
-          title={`${
-            !recordingState ||
-            recordingState === Constants.recordingEvents.RECORDING_STOPPED
-              ? "Start"
-              : recordingState === Constants.recordingEvents.RECORDING_STARTING
-              ? "Starting"
-              : recordingState === Constants.recordingEvents.RECORDING_STOPPING
-              ? "Stopping"
-              : "Stop"
-          } Recording`}
-          icon={<Recording width={22} height={22} />}
-          onPress={() => {
-            if (
-              !recordingState ||
-              recordingState === Constants.recordingEvents.RECORDING_STOPPED
-            ) {
-              startRecording();
-            } else if (
-              recordingState === Constants.recordingEvents.RECORDING_STARTED
-            ) {
-              stopRecording();
-            }
-            moreOptionsMenu.current.close();
-          }}
-        />
-        <View
-          style={{
-            height: 1,
-            backgroundColor: colors.primary["600"],
-          }}
-        />
         {(presenterId == null || localScreenShareOn) && (
           <MenuItem
             title={`${localScreenShareOn ? "Stop" : "Start"} Screen Share`}

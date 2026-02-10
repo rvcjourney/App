@@ -7,7 +7,6 @@ import StudentStack from './StudentStack';
 import TeacherStack from './TeacherStack';
 import AdminStack from './AdminStack';
 import EmailVerificationScreen from './EmailVerificationScreen';
-import AdminStack from './AdminStack';
 
 export default function RootNavigator() {
   const [session, setSession] = useState(null);

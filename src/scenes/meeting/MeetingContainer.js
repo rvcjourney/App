@@ -8,7 +8,9 @@ import ConferenceMeetingViewer from "./Conference/ConferenceMeetingViewer";
 import ParticipantLimitViewer from "./OneToOne/ParticipantLimitViewer";
 import WaitingToJoinView from "./Components/WaitingToJoinView";
 
-export default function MeetingContainer({ webcamEnabled, meetingType, isTeacher = true }) {
+const AUTO_END_CHECK_INTERVAL_MS = 15000; // check every 15s
+
+export default function MeetingContainer({ webcamEnabled, meetingType, isTeacher = true, scheduledEndTime }) {
   const [isJoined, setJoined] = useState(false);
   const [participantLimit, setParticipantLimit] = useState(false);
   const [error, setError] = useState(null);
@@ -53,6 +55,18 @@ export default function MeetingContainer({ webcamEnabled, meetingType, isTeacher
     };
   }, []);
 
+  // Auto-end meeting when scheduled end time is reached (lecture responsibility)
+  useEffect(() => {
+    if (!scheduledEndTime || typeof scheduledEndTime !== 'number') return;
+    const id = setInterval(() => {
+      if (Date.now() >= scheduledEndTime) {
+        clearInterval(id);
+        leave();
+      }
+    }, AUTO_END_CHECK_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, [scheduledEndTime, leave]);
+
   return error ? (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0B0D2A' }}>
       <Text style={{ color: '#fff', fontSize: 16, textAlign: 'center', paddingHorizontal: 20 }}>
@@ -61,11 +75,11 @@ export default function MeetingContainer({ webcamEnabled, meetingType, isTeacher
     </View>
   ) : isJoined ? (
     meetingType === "GROUP" ? (
-      <ConferenceMeetingViewer isTeacher={isTeacher} />
+      <ConferenceMeetingViewer isTeacher={isTeacher} scheduledEndTime={scheduledEndTime} />
     ) : participantLimit ? (
       <ParticipantLimitViewer />
     ) : (
-      <OneToOneMeetingViewer isTeacher={isTeacher} />
+      <OneToOneMeetingViewer isTeacher={isTeacher} scheduledEndTime={scheduledEndTime} />
     )
   ) : (
     <WaitingToJoinView />

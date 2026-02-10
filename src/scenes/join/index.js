@@ -183,6 +183,11 @@ export default function Join({ navigation, route }) {
             disposeVideoTrack();
             console.log('🟡 [Join] Navigating to meeting screen...');
             
+            // Scheduled end for student join (if booking passed with slot info)
+            const scheduledEndTime = route?.params?.booking?.booked_date != null && route?.params?.booking?.duration_minutes != null
+              ? new Date(route.params.booking.booked_date).getTime() + (route.params.booking.duration_minutes || 60) * 60 * 1000
+              : undefined;
+
             navigation.navigate(SCREEN_NAMES.Meeting, {
               name: routeName.trim(),
               token,
@@ -194,6 +199,7 @@ export default function Join({ navigation, route }) {
               bookingId: bookingId,
               isTeacher: false,
               studentId: studentId,
+              scheduledEndTime: scheduledEndTime || undefined,
             });
             
             console.log('✅ [Join] Navigation complete');
@@ -429,7 +435,11 @@ export default function Join({ navigation, route }) {
 
                       disposeVideoTrack();
                       console.log('🟡 [Join] Navigating to meeting screen...');
-                      
+                      // Scheduled end = booked_date + duration_minutes (for teacher end button & auto-end)
+                      const scheduledEndTime = booking?.booked_date && (booking?.duration_minutes != null)
+                        ? new Date(booking.booked_date).getTime() + (booking.duration_minutes || 60) * 60 * 1000
+                        : undefined;
+
                       navigation.navigate(SCREEN_NAMES.Meeting, {
                         name: name.trim(),
                         token,
@@ -441,6 +451,7 @@ export default function Join({ navigation, route }) {
                         bookingId: booking?.id,
                         isTeacher: isTeacher,
                         studentId: booking?.student_id,
+                        scheduledEndTime: scheduledEndTime || undefined,
                       });
                       
                       console.log('✅ [Join] Navigation complete');

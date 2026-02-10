@@ -322,7 +322,10 @@ export default function AdminDashboard({ navigation }) {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Admin Dashboard</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+          <Text style={styles.backBtnText}>← Back</Text>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Finance</Text>
       </View>
 
       {/* Tab Navigation */}
@@ -466,13 +469,18 @@ const styles = StyleSheet.create({
   },
 
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1C1F4A',
   },
-
+  backBtn: { marginRight: 12 },
+  backBtnText: { color: '#5568FE', fontSize: 16, fontWeight: '600' },
   headerTitle: {
     color: '#fff',
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '700',
   },
 

@@ -41,7 +41,7 @@ export default function LoginScreen({ navigation, route }) {
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
+        email: email.trim().toLowerCase(),
         password,
       });
 
@@ -49,7 +49,14 @@ export default function LoginScreen({ navigation, route }) {
         if (isNetworkError(error)) {
           setNetworkError(true);
         } else {
-          Alert.alert('Login Error', error.message);
+          // User-friendly messages for common Supabase errors
+          let message = error.message;
+          if (error.message?.includes('Invalid login credentials')) {
+            message = 'Invalid email or password. Please check and try again.';
+          } else if (error.message?.includes('Email not confirmed')) {
+            message = 'Please confirm your email first. Check your inbox for the verification link.';
+          }
+          Alert.alert('Login Error', message);
         }
         setLoading(false);
         return;
@@ -67,7 +74,11 @@ export default function LoginScreen({ navigation, route }) {
           setNetworkError(true);
         } else {
           await supabase.auth.signOut();
-          Alert.alert('Error', 'Could not load your profile. Please try again.');
+          const detail = profileError?.message || 'No profile found.';
+          Alert.alert(
+            'Profile Error',
+            `Could not load your profile. ${detail}\n\nIf you just signed up, try closing and reopening the app.`
+          );
         }
         setLoading(false);
         return;
@@ -107,7 +118,7 @@ export default function LoginScreen({ navigation, route }) {
       if (isNetworkError(err)) {
         setNetworkError(true);
       } else {
-        Alert.alert('Error', err.message);
+        Alert.alert('Error', err?.message || 'Something went wrong. Please try again.');
       }
     } finally {
       setLoading(false);

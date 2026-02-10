@@ -676,6 +676,7 @@ app.post('/api/notifications/send-reminder', async (req, res) => {
 // ==========================================
 
 const PORT = process.env.PORT || 3000;
+const HOST = process.env.HOST || '0.0.0.0';
 
 // ==========================================
 // PAYMENT MANAGEMENT ENDPOINTS
@@ -1291,6 +1292,74 @@ app.post('/api/teacher/withdrawal/request', async (req, res) => {
 });
 
 /**
+ * PATCH /api/admin/teacher/:teacherId/wallet
+ * Admin updates teacher wallet amounts (total_balance, available_balance)
+ */
+app.patch('/api/admin/teacher/:teacherId/wallet', async (req, res) => {
+  try {
+    const { teacherId } = req.params;
+    const { total_balance, available_balance } = req.body;
+
+    if (total_balance === undefined && available_balance === undefined) {
+      return res.status(400).json({
+        success: false,
+        error: 'Provide at least one of total_balance or available_balance',
+      });
+    }
+
+    const total = total_balance !== undefined ? Number(total_balance) : undefined;
+    const available = available_balance !== undefined ? Number(available_balance) : undefined;
+    if ((total !== undefined && (isNaN(total) || total < 0)) || (available !== undefined && (isNaN(available) || available < 0))) {
+      return res.status(400).json({
+        success: false,
+        error: 'Amounts must be non-negative numbers',
+      });
+    }
+
+    const { data: wallet } = await supabase
+      .from('teacher_wallet')
+      .select('*')
+      .eq('teacher_id', teacherId)
+      .single();
+
+    const now = new Date().toISOString();
+    if (wallet) {
+      const updates = { updated_at: now };
+      if (total !== undefined) updates.total_balance = total;
+      if (available !== undefined) updates.available_balance = available;
+      const { data: updated, error } = await supabase
+        .from('teacher_wallet')
+        .update(updates)
+        .eq('teacher_id', teacherId)
+        .select()
+        .single();
+      if (error) throw error;
+      return res.json({ success: true, wallet: updated });
+    } else {
+      const { data: created, error } = await supabase
+        .from('teacher_wallet')
+        .insert([{
+          teacher_id: teacherId,
+          total_balance: total ?? 0,
+          available_balance: available ?? 0,
+          created_at: now,
+          updated_at: now,
+        }])
+        .select()
+        .single();
+      if (error) throw error;
+      return res.json({ success: true, wallet: created });
+    }
+  } catch (error) {
+    console.error('🔴 Error updating teacher wallet:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to update wallet',
+    });
+  }
+});
+
+/**
  * GET /api/admin/withdrawals
  * Get all pending withdrawal requests (Admin only)
  */
@@ -1449,11 +1518,12 @@ app.get('/api/admin/analytics', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, HOST, () => {
   console.log('\n' + '='.repeat(50));
   console.log('🚀 VideoSDK Token Server Started');
   console.log('='.repeat(50));
   console.log(`📍 Server running at: http://localhost:${PORT}`);
+  console.log(`📍 Also reachable at: http://192.168.0.183:${PORT}`);
   console.log('\n📌 Available Endpoints:');
   console.log(`   POST /send-otp        - Send OTP to email`);
   console.log(`   POST /verify-otp      - Verify OTP`);
@@ -1467,11 +1537,12 @@ app.listen(PORT, () => {
   console.log(`   GET  /api/admin/charges/:id        - Get admin charge`);
   console.log(`   GET  /api/teacher/earnings/:id     - Get earnings`);
   console.log(`   POST /api/teacher/withdrawal/request - Request withdrawal`);
+  console.log(`   PATCH /api/admin/teacher/:id/wallet - Admin update wallet amounts`);
   console.log(`   GET  /api/admin/withdrawals        - Get pending withdrawals`);
   console.log(`   POST /api/admin/withdrawals/:id/approve - Approve withdrawal`);
   console.log(`   GET  /api/admin/analytics          - Analytics`);
   console.log('\n💡 Use this in your .env:');
-  console.log(`   REACT_APP_AUTH_URL = "http://localhost:${PORT}"`);
+  console.log(`   REACT_APP_AUTH_URL = "http://192.168.0.183:${PORT}"`);
   console.log('='.repeat(50) + '\n');
 });
 
@@ -1498,6 +1569,7 @@ app.use((req, res) => {
       'GET /api/admin/charges/:id',
       'GET /api/teacher/earnings/:id',
       'POST /api/teacher/withdrawal/request',
+      'PATCH /api/admin/teacher/:id/wallet',
       'GET /api/admin/withdrawals',
       'POST /api/admin/withdrawals/:id/approve',
       'GET /api/admin/analytics',

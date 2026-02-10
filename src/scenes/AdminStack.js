@@ -5,6 +5,8 @@ import SuperAdminDashboard from './SuperAdminDashboard';
 import UserListScreen from './Admin/UserListScreen';
 import UserEditScreen from './Admin/UserEditScreen';
 import AdminBookingsList from './Admin/AdminBookingsList';
+import AdminTeacherWallet from './Admin/AdminTeacherWallet';
+import AdminDashboard from './Admin/AdminDashboard';
 
 const Stack = createStackNavigator();
 
@@ -15,6 +17,8 @@ export default function AdminStack() {
       <Stack.Screen name={SCREEN_NAMES.AdminUserList} component={UserListScreen} />
       <Stack.Screen name={SCREEN_NAMES.AdminUserEdit} component={UserEditScreen} />
       <Stack.Screen name={SCREEN_NAMES.AdminBookingsList} component={AdminBookingsList} />
+      <Stack.Screen name={SCREEN_NAMES.AdminTeacherWallet} component={AdminTeacherWallet} />
+      <Stack.Screen name={SCREEN_NAMES.AdminFinance} component={AdminDashboard} />
     </Stack.Navigator>
   );
 }
