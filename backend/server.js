@@ -1140,9 +1140,21 @@ app.get('/api/teacher/earnings/:teacherId', async (req, res) => {
       .order('created_at', { ascending: false })
       .limit(50);
 
-    // Get withdrawal eligibility
-    const { data: eligibility } = await supabase
-      .rpc('get_withdrawal_eligibility', { p_teacher_id: teacherId });
+    // Get withdrawal requests (wallet history) for this teacher
+    const { data: withdrawals } = await supabase
+      .from('withdrawal_requests')
+      .select('*')
+      .eq('teacher_id', teacherId)
+      .order('requested_at', { ascending: false })
+      .limit(50);
+
+    // Get withdrawal eligibility (optional RPC; ignore if missing)
+    let eligibility = null;
+    try {
+      const { data: elig } = await supabase
+        .rpc('get_withdrawal_eligibility', { p_teacher_id: teacherId });
+      eligibility = elig?.[0] || null;
+    } catch (_) { /* RPC may not exist */ }
 
     console.log('✅ Earnings fetched');
 
@@ -1155,7 +1167,8 @@ app.get('/api/teacher/earnings/:teacherId', async (req, res) => {
         one_month_covered: false,
       },
       earnings: earnings || [],
-      eligibility: eligibility?.[0] || null,
+      withdrawals: withdrawals || [],
+      eligibility,
     });
   } catch (error) {
     console.error('🔴 Error fetching earnings:', error.message);
@@ -1523,7 +1536,7 @@ app.listen(PORT, HOST, () => {
   console.log('🚀 VideoSDK Token Server Started');
   console.log('='.repeat(50));
   console.log(`📍 Server running at: http://localhost:${PORT}`);
-  console.log(`📍 Also reachable at: http://192.168.0.183:${PORT}`);
+  console.log(`📍 Also reachable at: http://192.168.0.130:${PORT}`);
   console.log('\n📌 Available Endpoints:');
   console.log(`   POST /send-otp        - Send OTP to email`);
   console.log(`   POST /verify-otp      - Verify OTP`);
@@ -1542,7 +1555,7 @@ app.listen(PORT, HOST, () => {
   console.log(`   POST /api/admin/withdrawals/:id/approve - Approve withdrawal`);
   console.log(`   GET  /api/admin/analytics          - Analytics`);
   console.log('\n💡 Use this in your .env:');
-  console.log(`   REACT_APP_AUTH_URL = "http://192.168.0.183:${PORT}"`);
+  console.log(`   REACT_APP_AUTH_URL = "http://192.168.0.130:${PORT}"`);
   console.log('='.repeat(50) + '\n');
 });
 

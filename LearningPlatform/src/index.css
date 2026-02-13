@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+/* LearnEasy theme – matches React Native app */
+@theme {
+  --color-app-bg: #0B0D2A;
+  --color-app-card: #1C1F4A;
+  --color-app-accent: #5568FE;
+  --color-app-text: #FFFFFF;
+  --color-app-muted: #9CA3AF;
+  --color-app-border: #2D3748;
+  --color-app-success: #34D399;
+  --color-app-error: #F87171;
+}
+
+:root {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background-color: var(--color-app-bg);
+  color: var(--color-app-text);
+  padding: 2rem;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Responsive container padding */
+.container-padding {
+  padding-left: clamp(1rem, 4vw, 2rem);
+  padding-right: clamp(1rem, 4vw, 2rem);
+  padding-top: clamp(1rem, 3vw, 2rem);
+  padding-bottom: clamp(1rem, 3vw, 2rem);
+}
+
+/* Responsive typography */
+.text-responsive-title {
+  font-size: clamp(1.5rem, 4vw, 2rem);
+}
+
+.text-responsive-heading {
+  font-size: clamp(1.25rem, 3vw, 1.5rem);
+}

@@ -1,0 +1,13 @@
+/* App-specific overrides – theme uses index.css variables */
+#root {
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0;
+  text-align: left;
+}
+
+
+body {
+  width: 100%;
+  height: 100%;
+}
