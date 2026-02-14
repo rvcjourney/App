@@ -63,17 +63,17 @@ const Dashboard = () => {
             {statCards.map((stat, idx) => (
               <div
                 key={idx}
-                className="bg-[#1C1F4A] rounded-xl border border-[#2D3748] p-4 sm:p-6 hover:border-[#5568FE]/50 transition-colors"
+                className="bg-[#1C1F4A] rounded-xl border border-[#2D3748] p-4 sm:p-5 lg:p-6 hover:border-[#5568FE]/50 transition-colors overflow-hidden"
               >
-                <div className="flex items-center justify-between gap-4">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-[#9CA3AF]">{stat.title}</p>
-                    <p className="text-2xl sm:text-3xl font-bold text-white mt-1 sm:mt-2 truncate">
+                <div className="flex items-center justify-between gap-3 sm:gap-4 min-h-0">
+                  <div className="min-w-0 flex-1 overflow-hidden">
+                    <p className="text-sm font-medium text-[#9CA3AF] truncate">{stat.title}</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-white mt-1 sm:mt-2 truncate tabular-nums">
                       {stat.value}
                     </p>
                   </div>
-                  <div className={`${stat.accent} p-3 sm:p-4 rounded-xl shrink-0`}>
-                    <stat.icon className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+                  <div className={`${stat.accent} flex shrink-0 items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-xl`}>
+                    <stat.icon className="w-5 h-5 sm:w-6 sm:h-6 text-white flex-shrink-0" aria-hidden />
                   </div>
                 </div>
               </div>

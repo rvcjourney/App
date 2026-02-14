@@ -19,3 +19,10 @@ buildscript {
 }
 
 apply plugin: "com.facebook.react.rootproject"
+
+// Required for @videosdk.live/react-native-webrtc (AndroidUSBCamera from JitPack)
+allprojects {
+    repositories {
+        maven { url "https://www.jitpack.io" }
+    }
+}

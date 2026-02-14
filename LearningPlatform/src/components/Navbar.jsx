@@ -25,7 +25,7 @@ const Navbar = () => {
           </div>
 
           {/* Desktop nav */}
-          <div className="hidden md:flex items-center gap-1">
+          <div className="hidden md:flex items-center gap-1 btn-mod">
             {navLinks.map((link) => {
               const IconComponent = link.icon;
               return (
@@ -38,8 +38,8 @@ const Navbar = () => {
                       : 'text-[#9CA3AF] hover:bg-[#2D3748] hover:text-white'
                   }`}
                 >
-                  <IconComponent className="shrink-0" />
-                  {link.label}
+                  <IconComponent className="w-5 h-5 flex-shrink-0" aria-hidden />
+                  <span className="hidden sm:inline">{link.label}</span>
                 </Link>
               );
             })}
@@ -56,31 +56,29 @@ const Navbar = () => {
           </button>
         </div>
 
-        {/* Mobile nav */}
-        {mobileOpen && (
-          <div className="md:hidden py-3 border-t border-[#2D3748]">
-            <div className="flex flex-col gap-1">
-              {navLinks.map((link) => {
-                const IconComponent = link.icon;
-                return (
-                  <Link
-                    key={link.to}
-                    to={link.to}
-                    onClick={() => setMobileOpen(false)}
-                    className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                      isActive(link.to)
-                        ? 'bg-[#5568FE] text-white'
-                        : 'text-[#9CA3AF] hover:bg-[#2D3748] hover:text-white'
-                    }`}
-                  >
-                    <IconComponent className="shrink-0" />
-                    {link.label}
-                  </Link>
-                );
-              })}
-            </div>
+          {/* Mobile nav (keeps node mounted for animation) */}
+        <div className={`md:hidden py-3 border-t border-[#2D3748] mobile-menu-wrap ${mobileOpen ? 'mobile-menu-open' : 'mobile-menu-closed'}`}>
+          <div className="flex flex-col gap-1">
+            {navLinks.map((link) => {
+              const IconComponent = link.icon;
+              return (
+                <Link
+                  key={link.to}
+                  to={link.to}
+                  onClick={() => setMobileOpen(false)}
+                  className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                    isActive(link.to)
+                      ? 'bg-[#5568FE] text-white'
+                      : 'text-[#9CA3AF] hover:bg-[#2D3748] hover:text-white'
+                  }`}
+                >
+                  <IconComponent className="shrink-0" />
+                  {link.label}
+                </Link>
+              );
+            })}
           </div>
-        )}
+        </div>
       </div>
     </nav>
   );

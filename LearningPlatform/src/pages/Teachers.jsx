@@ -184,7 +184,7 @@ const Teachers = () => {
           <button
             type="button"
             onClick={loadTeachers}
-            className="px-4 py-2.5 bg-[#5568FE] text-white rounded-lg hover:opacity-90 transition-opacity font-medium shrink-0"
+            className="px-4 py-2.5 bg-[#5568FE] text-white rounded-lg font-medium shrink-0 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:scale-[1.02] hover:shadow-lg hover:shadow-[#5568FE]/30 active:translate-y-0 active:scale-[0.98]"
           >
             Refresh
           </button>

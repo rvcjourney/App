@@ -59,3 +59,57 @@ body {
 .text-responsive-heading {
   font-size: clamp(1.25rem, 3vw, 1.5rem);
 }
+
+/* Animations and helpers */
+@keyframes lp-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes lp-scale-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.lp-fade-in { animation: lp-fade-in 220ms ease-out both; }
+.lp-scale-in { animation: lp-scale-in 260ms cubic-bezier(.2,.9,.25,1) both; }
+
+/* Buttons */
+.btn-animated {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.25rem;
+  border: 0;
+  transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+}
+.btn-animated:hover { transform: translateY(-3px) scale(1.01); box-shadow: 0 6px 18px rgba(0,0,0,0.35); }
+
+/* Small, consistent square icon button used across tables, nav and modals */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+  border-radius: 0.5rem;
+  background: transparent;
+}
+@media (max-width: 640px) {
+  .icon-btn { width: 2rem; height: 2rem; min-width: 2rem; min-height: 2rem; }
+}
+
+/* Table rows */
+.table-row-anim { transition: background-color 180ms ease, transform 180ms ease; }
+.table-row-anim:hover { transform: translateY(-3px); }
+
+/* Mobile menu animation helpers */
+.mobile-menu-wrap { transition: max-height 260ms ease, opacity 220ms ease; overflow: hidden; }
+.mobile-menu-open { max-height: 640px; opacity: 1; }
+.mobile-menu-closed { max-height: 0; opacity: 0; }
+
+/* Utility for smooth-scroll if needed */
+html { scroll-behavior: smooth; }

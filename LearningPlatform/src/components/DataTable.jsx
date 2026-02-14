@@ -83,65 +83,65 @@ const DataTable = ({
               </tr>
             ) : (
               paginatedData.map((row, rowIdx) => (
-                <tr key={rowIdx} className="hover:bg-[#0B0D2A]/50 transition-colors">
+                <tr key={rowIdx} className="hover:bg-[#0B0D2A]/50 transition-colors table-row-anim">
                   {columns.map((col, colIdx) => (
                     <td
                       key={colIdx}
-                      className="px-3 py-3 sm:px-6 sm:py-4 text-sm text-white whitespace-nowrap"
+                      className="px-3 py-3 sm:px-6 sm:py-4 text-sm text-white whitespace-normal break-words max-w-[12rem] sm:max-w-none"
                     >
                       {col.accessor(row)}
                     </td>
                   ))}
-                  <td className="px-3 py-3 sm:px-6 sm:py-4 whitespace-nowrap">
-                    <div className="flex items-center gap-1 sm:gap-2">
+                  <td className="px-3 py-3 sm:px-6 sm:py-4">
+                    <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
                       {onPreview && (
                         <button
                           type="button"
                           onClick={() => onPreview(row)}
-                          className="p-2 rounded-lg text-[#5568FE] hover:bg-[#5568FE]/20 transition-colors"
+                          className="icon-btn text-[#5568FE] hover:bg-[#5568FE]/20 transition-colors btn-animated"
                           title="Preview"
                         >
-                          <FaEye className="w-4 h-4" />
+                          <FaEye className="w-4 h-4" aria-hidden />
                         </button>
                       )}
                       {onWallet && (
                         <button
                           type="button"
                           onClick={() => onWallet(row)}
-                          className="p-2 rounded-lg text-amber-400 hover:bg-amber-400/20 transition-colors"
+                          className="icon-btn text-amber-400 hover:bg-amber-400/20 transition-colors btn-animated"
                           title="Wallet"
                         >
-                          <FaWallet className="w-4 h-4" />
+                          <FaWallet className="w-4 h-4" aria-hidden />
                         </button>
                       )}
                       {onUpdate && (
                         <button
                           type="button"
                           onClick={() => onUpdate(row)}
-                          className="p-2 rounded-lg text-[#34D399] hover:bg-[#34D399]/20 transition-colors"
+                          className="icon-btn text-[#34D399] hover:bg-[#34D399]/20 transition-colors btn-animated"
                           title="Update"
                         >
-                          <FaEdit className="w-4 h-4" />
+                          <FaEdit className="w-4 h-4" aria-hidden />
                         </button>
                       )}
                       {onAudit && (
                         <button
                           type="button"
                           onClick={() => onAudit(row)}
-                          className="p-2 rounded-lg text-[#5568FE] hover:bg-[#5568FE]/20 transition-colors"
+                          className="icon-btn text-[#5568FE] hover:bg-[#5568FE]/20 transition-colors btn-animated"
                           title="Audit"
                         >
-                          <FaHistory className="w-4 h-4" />
+                          <FaHistory className="w-4 h-4" aria-hidden />
                         </button>
                       )}
                       {onDelete && (
                         <button
                           type="button"
                           onClick={() => onDelete(row)}
-                          className="p-2 rounded-lg text-[#F87171] hover:bg-[#F87171]/20 transition-colors"
+                          className="icon-btn text-[#F87171] hover:bg-[#F87171]/20 transition-colors btn-animated"
                           title="Delete"
                         >
-                          <FaTrash className="w-4 h-4" />
+                          <FaTrash className="w-4 h-4" aria-hidden />
                         </button>
                       )}
                     </div>

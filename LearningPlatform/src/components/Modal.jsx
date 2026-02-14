@@ -11,16 +11,16 @@ const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
+    <div className="fixed inset-0 z-50 overflow-y-auto lp-fade-in">
       <div className="flex items-center justify-center min-h-screen p-4 sm:p-6">
         <div
-          className="fixed inset-0 bg-black/60 transition-opacity"
+          className="fixed inset-0 bg-black/60 transition-opacity lp-fade-in"
           onClick={onClose}
           aria-hidden
         />
 
         <div
-          className={`relative inline-block w-full ${sizeClasses[size]} bg-[#1C1F4A] rounded-xl border border-[#2D3748] shadow-xl text-left overflow-hidden`}
+          className={`relative inline-block w-full ${sizeClasses[size]} bg-[#1C1F4A] rounded-xl border border-[#2D3748] shadow-xl text-left overflow-hidden lp-scale-in`}
           role="dialog"
           aria-modal="true"
           aria-labelledby="modal-title"
@@ -32,10 +32,10 @@ const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
             <button
               type="button"
               onClick={onClose}
-              className="p-2 rounded-lg text-[#9CA3AF] hover:bg-[#2D3748] hover:text-white transition-colors"
+              className="icon-btn text-[#9CA3AF] hover:bg-[#2D3748] hover:text-white transition-colors btn-animated"
               aria-label="Close"
             >
-              <FaTimes className="w-5 h-5" />
+              <FaTimes className="w-4 h-4" aria-hidden />
             </button>
           </div>
 

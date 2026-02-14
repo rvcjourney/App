@@ -2,7 +2,7 @@ import { supabase } from '../config/supabase';
 
 // Used by web app for any non-supabase backend calls.
 // Keep env override, but default to your LAN IP.
-const API_URL = import.meta.env.VITE_API_URL || 'http://192.168.0.130:3000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://192.168.1.12:3000';
 
 // ==========================================
 // TEACHER API FUNCTIONS

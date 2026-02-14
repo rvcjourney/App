@@ -1536,7 +1536,7 @@ app.listen(PORT, HOST, () => {
   console.log('🚀 VideoSDK Token Server Started');
   console.log('='.repeat(50));
   console.log(`📍 Server running at: http://localhost:${PORT}`);
-  console.log(`📍 Also reachable at: http://192.168.0.130:${PORT}`);
+  console.log(`📍 Also reachable at: http://192.168.1.12:${PORT}`);
   console.log('\n📌 Available Endpoints:');
   console.log(`   POST /send-otp        - Send OTP to email`);
   console.log(`   POST /verify-otp      - Verify OTP`);
@@ -1555,7 +1555,7 @@ app.listen(PORT, HOST, () => {
   console.log(`   POST /api/admin/withdrawals/:id/approve - Approve withdrawal`);
   console.log(`   GET  /api/admin/analytics          - Analytics`);
   console.log('\n💡 Use this in your .env:');
-  console.log(`   REACT_APP_AUTH_URL = "http://192.168.0.130:${PORT}"`);
+  console.log(`   REACT_APP_AUTH_URL = "http://192.168.1.12:${PORT}"`);
   console.log('='.repeat(50) + '\n');
 });
 
