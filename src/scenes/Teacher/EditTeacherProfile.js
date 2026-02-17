@@ -12,6 +12,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-simple-toast';
 import { supabase } from '../../../supabase';
+import ChevronRight from '../../assets/icons/ChevronRight';
+import User from '../../assets/icons/User';
 
 export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
   const [fullName, setFullName] = useState('');
@@ -142,8 +144,9 @@ export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <ScrollView>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.backButton}>← Back</Text>
+          <TouchableOpacity style={styles.backButtonContainer} onPress={() => navigation.goBack()}>
+            {/* <Text style={styles.backButton}>← Back</Text> */}
+            <ChevronRight width={24} height={24} fill="#5568FE" style={{ transform: [{ rotate: '180deg' }] }} />
           </TouchableOpacity>
           <Text style={styles.title}>Edit Profile</Text>
         </View>
@@ -151,7 +154,8 @@ export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
         <View style={styles.content}>
           {/* Profile Avatar */}
           <View style={styles.avatarSection}>
-            <Text style={styles.avatar}>👨‍🏫</Text>
+            {/* <Text style={styles.avatar}>👨‍🏫</Text> */}
+            <User width={60} height={60} fill="#5568FE" />
           </View>
 
           {/* Full Name */}
@@ -202,9 +206,9 @@ export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
             />
           </View>
 
-          {/* Price Per Call */}
+          {/* Price Per Hour Call */}
           <View style={styles.fieldSection}>
-            <Text style={styles.label}>Price Per Call (₹)</Text>
+            <Text style={styles.label}>Price Per Hour Call (₹)</Text>
             <View style={styles.priceRow}>
               <TouchableOpacity
                 style={styles.priceAdjustBtn}
@@ -250,7 +254,7 @@ export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
           disabled={saving}
         >
           <Text style={styles.saveButtonText}>
-            {saving ? 'Saving...' : '💾 Save Changes'}
+            {saving ? 'Saving...' : 'Save Changes'}
           </Text>
         </TouchableOpacity>
 
@@ -269,24 +273,33 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 20,
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 18,
     borderBottomColor: '#1C1F4A',
     borderBottomWidth: 1,
   },
 
-  backButton: {
-    color: '#1E90FF',
-    fontSize: 16,
-    fontWeight: '600',
-    marginRight: 10,
+  // backButton: {
+  //   color: '#1E90FF',
+  //   fontSize: 16,
+  //   fontWeight: '600',
+  //   marginRight: 10,
+  // },
+  backButtonContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: '#1C1F4A',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
 
   title: {
     color: '#fff',
     fontSize: 20,
     fontWeight: 'bold',
-    flex: 1,
   },
 
   content: {
@@ -295,9 +308,16 @@ const styles = StyleSheet.create({
   },
 
   avatarSection: {
-    alignItems: 'center',
     marginBottom: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#1C1F4A',
+    borderRadius: 100,
+    width: 80,
+    height: 80,
+    alignSelf: 'center',
   },
+  
 
   avatar: {
     fontSize: 64,

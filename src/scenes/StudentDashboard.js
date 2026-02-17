@@ -124,6 +124,36 @@ export default function StudentDashboard({ navigation }) {
     }
   }, []);
 
+  // Refresh home tab - reload teachers and profile
+  const onRefreshHome = React.useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // Refresh profile
+        const { data: profileRows } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', user.id)
+          .limit(1);
+        const profile = Array.isArray(profileRows) && profileRows.length > 0 ? profileRows[0] : profileRows;
+        if (profile?.full_name) {
+          setStudentName(profile.full_name);
+        }
+
+        // Refresh teachers list
+        const teachersData = await getAllTeachers();
+        setTeachers(teachersData || []);
+        console.log('✅ Home tab refreshed:', teachersData?.length, 'teachers');
+      }
+    } catch (e) {
+      console.error('🔴 Error refreshing home tab:', e);
+      Toast.show('Failed to refresh');
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
+
   // Real-time: bookings (INSERT + UPDATE) so new bookings and teacher-go-live show quickly
   useEffect(() => {
     let bookingsChannel;
@@ -488,14 +518,18 @@ export default function StudentDashboard({ navigation }) {
     return (
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <ScrollView style={{ flex: 1 }}>
-          <View style={styles.header}>
+          <View style={styles.headerTop}>
             <TouchableOpacity onPress={() => {
               setShowBookingModal(false);
               setSelectedTeacher(null);
               setAvailableSlots([]);
               setSelectedSlot(null);
             }}>
-              <Text style={styles.backButton}>← Back</Text>
+              {/* <Text style={styles.backButton}>← Back</Text> */}
+              
+              <View style={styles.backButton}>
+                <ChevronRight width={24} height={24} color="#5568FE" style={{ transform: [{ rotate: '180deg' }] }} />
+              </View>
             </TouchableOpacity>
             <Text style={styles.modalTitle}>Select Available Slot</Text>
           </View>
@@ -507,24 +541,24 @@ export default function StudentDashboard({ navigation }) {
               <View style={[styles.teacherStatusDotModal, { backgroundColor: teacherStatusColor(selectedTeacher.availability_status) }]} />
             </View>
             <Text style={styles.teacherName}>{selectedTeacher.profile?.full_name}</Text>
-            <Text style={styles.teacherSpec}>{selectedTeacher.bio}</Text>
-            <Text style={styles.teacherStatusLabel}>
-              {((selectedTeacher.availability_status || 'offline') === 'online' && 'Online') ||
-                ((selectedTeacher.availability_status || 'offline') === 'away' && 'Away') ||
-                'Offline'}
-            </Text>
-            {/* <Text style={styles.teacherSpec}>{selectedTeacher.specializations?.split(',')[0].trim()}</Text> */}
             <Text style={styles.teacherSpec}>{selectedTeacher.specializations}</Text>
+            <Text style={styles.teacherSpec}>{selectedTeacher.bio}</Text>
+            
             <View style={styles.priceRow}>
               <Text style={styles.priceLabel}>Price: </Text>
               <Text style={styles.priceValue}>₹{selectedTeacher.price_per_call || 500}/60 min</Text>
             </View>
+            {/* <Text style={styles.teacherStatusLabel}>
+              {((selectedTeacher.availability_status || 'offline') === 'online' && 'Online') ||
+                ((selectedTeacher.availability_status || 'offline') === 'away' && 'Away') ||
+                'Offline'}
+            </Text> */}
           </View>
 
           {/* Subject/Topic - show first so it's always visible before selecting slot */}
           {availableSlots.length > 0 && (
             <View style={styles.fieldSection}>
-              <Text style={styles.label}>📚 Subject/Topic *</Text>
+              <Text style={styles.label}>Subject/Topic *</Text>
               <TextInput
                 style={styles.subjectInput}
                 placeholder="e.g., Algebra, Physics Problem Solving"
@@ -537,7 +571,7 @@ export default function StudentDashboard({ navigation }) {
 
           {/* Available Slots */}
           <View style={styles.fieldSection}>
-            <Text style={styles.label}>📅 Available Slots (Next 30 Days)</Text>
+            <Text style={styles.label}>Available Slots (Next 30 Days)</Text>
 
             {slotsLoading ? (
               <View style={{ paddingVertical: 20, alignItems: 'center' }}>
@@ -707,7 +741,12 @@ export default function StudentDashboard({ navigation }) {
             </TouchableOpacity>
           </View>
         )}
-        <ScrollView showsVerticalScrollIndicator={false}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefreshHome} colors={['#5568FE']} />
+          }
+        >
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.welcome}>Welcome 👋</Text>
@@ -869,8 +908,8 @@ export default function StudentDashboard({ navigation }) {
                     <Text style={styles.sectionCount}>{pendingBookings.length}</Text>
                   </View>
                   {pendingBookings.map(booking => (
-                    <TouchableOpacity 
-                      key={booking.id} 
+                    <TouchableOpacity
+                      key={booking.id}
                       style={[styles.bookingCard, styles.pendingCard]}
                       activeOpacity={0.7}
                       onPress={() => {
@@ -1311,13 +1350,27 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
 
+  // teacherCard: {
+  //   backgroundColor: '#1C1F4A',
+  //   borderRadius: 12,
+  //   padding: 15,
+  //   flexDirection: 'row',
+  //   alignItems: 'center',
+  // },
+
   teacherCard: {
-    backgroundColor: '#1C1F4A',
-    borderRadius: 12,
-    padding: 15,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
+  backgroundColor: '#1C1F4A',
+  borderRadius: 16,  // softer corners
+  padding: 16,
+  flexDirection: 'row',
+  alignItems: 'center',
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.2,
+  shadowRadius: 6,
+  elevation: 3,
+},
+
 
   teacherCardContent: {
     flex: 1,
@@ -1342,6 +1395,7 @@ const styles = StyleSheet.create({
 
   teacherModalAvatarWrapper: {
     position: 'relative',
+    // flexDirection: 'row',
     alignSelf: 'center',
   },
 
@@ -1451,8 +1505,8 @@ const styles = StyleSheet.create({
     borderTopColor: '#1C1F4A',
     borderTopWidth: 1,
     justifyContent: 'space-around',
-    paddingVertical: 12,
-    paddingBottom: 20,
+    paddingVertical: 5,
+    paddingBottom: 2,
   },
 
   navItem: {
@@ -1687,15 +1741,13 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 18,
     fontWeight: 'bold',
-    flex: 1,
-    textAlign: 'center',
   },
 
-  backButton: {
-    color: '#1E90FF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
+  // backButton: {
+  //   color: '#1E90FF',
+  //   fontSize: 16,
+  //   fontWeight: '600',
+  // },
 
   teacherInfoCard: {
     backgroundColor: '#1C1F4A',
@@ -1812,10 +1864,17 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
 
+  // slotCardSelected: {
+  //   borderColor: '#1E90FF',
+  //   backgroundColor: '#252965',
+  // },
+
   slotCardSelected: {
-    borderColor: '#1E90FF',
-    backgroundColor: '#252965',
-  },
+  borderColor: '#5568FE',
+  backgroundColor: '#2A2F6B',
+  transform: [{ scale: 1.02 }],
+},
+
 
   slotCardBooked: {
     backgroundColor: '#3A3A3A',
@@ -1953,12 +2012,26 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  confirmBtn: {
-    flex: 1,
-    backgroundColor: '#1E90FF',
-    paddingVertical: 12,
-    borderRadius: 10,
-  },
+  // confirmBtn: {
+  //   flex: 1,
+  //   backgroundColor: '#1E90FF',
+  //   paddingVertical: 12,
+  //   borderRadius: 10,
+  // },
+
+confirmBtn: {
+  flex: 1,
+  backgroundColor: '#5568FE',   // softer premium blue
+  paddingVertical: 14,
+  borderRadius: 12,
+  alignItems: 'center',
+  elevation: 5,                 // Android shadow
+  shadowColor: '#5568FE',        // iOS shadow
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.3,
+  shadowRadius: 6,
+},
+
 
   confirmBtnDisabled: {
     opacity: 0.6,
@@ -2284,8 +2357,8 @@ const styles = StyleSheet.create({
   },
 
   completedBadge: {
-    backgroundColor: '#4CAF50',
-    color: '#fff',
+    backgroundColor: '#4c56af',
+    color: '#ffffff',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 6,
@@ -2431,9 +2504,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 8,
   },
-  snackbarBtnText: {
-    color: '#fff',
-    fontSize: 13,
-    fontWeight: '600',
+  snackbarBtnText: { color: '#fff', fontSize: 13, fontWeight: '600', },
+
+  backButton: {
+    width: 40, 
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: '#1C1F4A',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+
+   headerTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    // marginBottom: 10,
   },
 });
+

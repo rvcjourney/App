@@ -72,6 +72,7 @@ const requestPermissions = async () => {
 
 export default function Meeting({ navigation, route }) {
   const [permissionsGranted, setPermissionsGranted] = useState(false);
+  const [meetingStartTime, setMeetingStartTime] = useState(null);
 
   console.log('Meeting component mounted - function signature is valid');
   console.log('Route params:', route?.params);
@@ -117,6 +118,9 @@ export default function Meeting({ navigation, route }) {
 
   const handleMeetingJoined = async () => {
     console.log('📞 Meeting joined! Teacher:', isTeacher, 'BookingId:', bookingId);
+    
+    // Record when the meeting started (for calculating duration later)
+    setMeetingStartTime(new Date());
     
     // If teacher is starting the meeting, notify the student
     if (isTeacher && bookingId) {
@@ -181,7 +185,13 @@ export default function Meeting({ navigation, route }) {
     // When teacher leaves, mark booking as completed in DB
     if (isTeacher && bookingId && meetingId) {
       try {
-        await endMeeting(bookingId, meetingId);
+        // Calculate meeting duration in minutes
+        const duration = meetingStartTime 
+          ? Math.round((new Date() - meetingStartTime) / 60000) 
+          : 60; // Default to 60 minutes if start time not tracked
+        
+        console.log(`⏱️ Meeting duration: ${duration} minutes`);
+        await endMeeting(bookingId, meetingId, duration);
       } catch (e) {
         console.error("Error ending meeting in DB:", e);
       }

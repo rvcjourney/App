@@ -15,6 +15,7 @@ import Toast from 'react-native-simple-toast';
 import { supabase } from '../../../supabase';
 import { API_URL } from '../../api/api';
 import RazorpayCheckout from 'react-native-razorpay';
+import ChevronRight from '../../assets/icons/ChevronRight';
 
 const isNetworkError = (error) => {
   if (!error) return false;
@@ -65,8 +66,12 @@ export default function StudentCheckout({
       setStudentInfo(user);
 
       // Try to fetch admin charges for this teacher
-      const basePrice = teacher?.price_per_call || 600;
-      const adminCharge = 150;
+      const teacherRate = teacher?.price_per_call; 
+      console.log(teacherRate);
+      
+      const gstAmount = Math.round(teacherRate * 0.18); // 18% GST
+      const platformFeeAmount = Math.round(teacherRate * 0.075); // 7.5% Platform Fee
+      const grossAmount = Math.round(teacherRate + gstAmount + platformFeeAmount); // Teacher Rate + 18% + 7.5%
       
       try {
         const chargesResponse = await fetch(
@@ -77,16 +82,20 @@ export default function StudentCheckout({
         if (chargesResponse.ok) {
           const chargesData = await chargesResponse.json();
           setCharges(chargesData?.data || {
-            base_charge_amount: basePrice,
-            admin_charge_amount: adminCharge,
-            total_amount: basePrice + adminCharge,
+            teacher_rate: teacherRate,
+            gross_amount: grossAmount,
+            gst_amount: gstAmount,
+            platform_fee_amount: platformFeeAmount,
+            total_amount: grossAmount,
           });
         } else {
           // API not available, use fallback
           setCharges({
-            base_charge_amount: basePrice,
-            admin_charge_amount: adminCharge,
-            total_amount: basePrice + adminCharge,
+            teacher_rate: teacherRate,
+            gross_amount: grossAmount,
+            gst_amount: gstAmount,
+            platform_fee_amount: platformFeeAmount,
+            total_amount: grossAmount,
           });
         }
       } catch (apiError) {
@@ -96,10 +105,18 @@ export default function StudentCheckout({
           console.warn('Admin charges API not available, using defaults:', apiError.message);
         }
         // Use default charges if API fails
+        const teacherRate = teacher?.price_per_call;
+        // const grossAmount = Math.round(teacherRate / 0.745);
+        const gstAmount = Math.round(teacherRate * 0.18);
+        const platformFeeAmount = Math.round(teacherRate * 0.075);
+        const grossAmount = Math.round(teacherRate + gstAmount + platformFeeAmount);
+        
         setCharges({
-          base_charge_amount: basePrice,
-          admin_charge_amount: adminCharge,
-          total_amount: basePrice + adminCharge,
+          teacher_rate: teacherRate,
+          gross_amount: grossAmount,
+          gst_amount: gstAmount,
+          platform_fee_amount: platformFeeAmount,
+          total_amount: grossAmount,
         });
       }
     } catch (error) {
@@ -144,9 +161,9 @@ export default function StudentCheckout({
           bookingId: booking.id,
           studentId: studentInfo.id,
           teacherId: teacher.id,
-          basePrice: charges.base_charge_amount || teacher.price_per_call,
-          adminCharge: charges.admin_charge_amount || 150,
-          totalAmount: charges.total_amount || (charges.base_charge_amount + charges.admin_charge_amount),
+          basePrice: charges.teacher_rate || teacher.price_per_call,
+          adminCharge: charges.gst_amount || Math.round((charges.total_amount || 0) * 0.18),
+          totalAmount: charges.total_amount || charges.gross_amount,
         }),
       });
 
@@ -166,9 +183,9 @@ export default function StudentCheckout({
         description: `Booking with ${teacher.profile?.full_name || 'Teacher'}`,
         currency: 'INR',
         key: orderData.keyId, // Razorpay Key ID from server
-        amount: orderData.amount * 100, // Convert to paise
+        amount: orderData.amount, // Convert to paise
         order_id: orderData.orderId,
-        name: 'LearnEasy',
+        name: 'Connectiqo',
         prefill: {
           email: studentInfo.email,
           contact: studentInfo.phone || '',
@@ -217,8 +234,8 @@ export default function StudentCheckout({
           bookingId: booking.id,
           studentId: studentInfo.id,
           teacherId: teacher.id,
-          basePrice: charges.base_charge_amount,
-          adminCharge: charges.admin_charge_amount,
+          basePrice: charges.teacher_rate,
+          adminCharge: charges.gst_amount,
           totalAmount: charges.total_amount,
         }),
       });
@@ -276,17 +293,19 @@ export default function StudentCheckout({
     );
   }
 
-  const basePrice = charges.base_charge_amount || teacher.price_per_call;
-  const adminCharge = charges.admin_charge_amount || 150;
-  const platformFee = 100;
-  const totalAmount = basePrice + adminCharge;
+  const teacherRate = charges.teacher_rate || teacher.price_per_call;
+  const gstAmount = charges.gst_amount || Math.round(teacherRate * 0.18);
+  const platformFeeAmount = charges.platform_fee_amount || Math.round(teacherRate * 0.075);
+  const grossAmount = charges.gross_amount || Math.round(teacherRate + gstAmount + platformFeeAmount);
+  const totalAmount = charges.total_amount || grossAmount;
 
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backBtn}>← Back</Text>
+        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+          {/* <Text style={styles.backBtn}>← Back</Text> */}
+           <ChevronRight width={24} height={24} color="#5568FE" style={{ transform: [{ rotate: '180deg' }] }} /> 
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Checkout</Text>
       </View>
@@ -304,27 +323,30 @@ export default function StudentCheckout({
               <View style={styles.teacherDetails}>
                 <Text style={styles.teacherName}>{teacher.profile?.full_name}</Text>
                 <Text style={styles.teacherSpec}>
-                  {teacher.specializations?.split(',')[0].trim()}
+                  {teacher.specializations}
                 </Text>
+                <Text style={styles.teacherSpec}>
+                  {teacher.bio}
+                </Text> 
               </View>
             </View>
 
             <View style={styles.divider} />
 
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>📅 Date & Time:</Text>
+              <Text style={styles.infoLabel}>Date & Time:</Text>
               <Text style={styles.infoValue}>
                 {slot ? new Date(slot.start_time).toLocaleDateString() : 'TBD'}
               </Text>
             </View>
 
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>⏱️ Duration:</Text>
+              <Text style={styles.infoLabel}>Duration:</Text>
               <Text style={styles.infoValue}>60 minutes</Text>
             </View>
 
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>📚 Topic:</Text>
+              <Text style={styles.infoLabel}>Topic:</Text>
               <Text style={styles.infoValue}>{booking?.subject || 'Not specified'}</Text>
             </View>
           </View>
@@ -332,125 +354,145 @@ export default function StudentCheckout({
 
         {/* Price Breakdown */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Price Breakdown</Text>
+          <Text style={styles.sectionTitle}>💰 Price Breakdown</Text>
 
           <View style={styles.priceCard}>
             <View style={styles.priceRow}>
-              <View>
-                <Text style={styles.priceLabel}>Teacher Hourly Rate</Text>
-                <Text style={styles.priceSubtext}>Charged by teacher</Text>
+              <View style={styles.priceLeft}>
+                <Text style={styles.priceLabel}>Teacher Rate</Text>
+                {/* <Text style={styles.priceSubtext}>Net amount to teacher</Text> */}
               </View>
-              <Text style={styles.priceAmount}>₹{basePrice}</Text>
+              <View style={styles.priceRight}>
+                <Text style={styles.priceAmount}>₹{teacherRate}</Text>
+                {/* <Text style={styles.pricePercentage}>74.5%</Text> */}
+              </View>
             </View>
 
             <View style={styles.divider} />
 
             <View style={styles.priceRow}>
-              <View>
-                <Text style={styles.priceLabel}>Charges</Text>
-                <Text style={styles.priceSubtext}>Platform + Convenience fee</Text>
+              <View style={styles.priceLeft}>
+                <Text style={styles.priceLabel}>GST</Text>
+                {/* <Text style={styles.priceSubtext}>Government tax</Text> */}
+                <Text style={styles.pricePercentage}>18%</Text>
               </View>
-              <Text style={[styles.priceAmount, { color: '#FF9800' }]}>+₹{adminCharge}</Text>
+              <View style={styles.priceRight}>
+                <Text style={[styles.priceAmount, styles.feeAmount]}>+₹{gstAmount}</Text>
+              </View>
             </View>
 
-            <View style={styles.divider} />
+            <View style={styles.priceRow}>
+              <View style={styles.priceLeft}>
+                <Text style={styles.priceLabel}>Platform Fee</Text>
+                {/* <Text style={styles.priceSubtext}>Service charges</Text> */}
+                <Text style={styles.pricePercentage}>7.5%</Text>
+              </View>
+              <View style={styles.priceRight}>
+                <Text style={[styles.priceAmount, styles.feeAmount]}>+₹{platformFeeAmount}</Text>
+                
+              </View>
+            </View>
+
+            {/* <View style={styles.totalDivider} /> */}
 
             <View style={[styles.priceRow, styles.totalRow]}>
-              <Text style={styles.totalLabel}>Total Amount</Text>
-              <Text style={styles.totalAmount}>₹{totalAmount}</Text>
+              <View style={styles.priceLeft}>
+                <Text style={styles.totalLabel}>Total Amount</Text>
+                {/* <Text style={styles.totalSubtext}>Amount you pay</Text> */}
+              </View>
+              <View style={styles.priceRight}>
+                <Text style={styles.totalAmount}>₹{totalAmount}</Text>
+              </View>
             </View>
           </View>
         </View>
 
-        {/* Payment Info */}
+        {/* What Happens Next */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>What Happens Next</Text>
+          <Text style={styles.sectionTitle}>📋 What Happens Next</Text>
 
-          <View style={styles.infoBox}>
+          <View style={styles.stepsContainer}>
             <View style={styles.infoStep}>
-              <Text style={styles.stepNumber}>1</Text>
+              <View style={styles.stepIcon}>
+                <Text style={styles.stepNumber}>1</Text>
+              </View>
               <Text style={styles.stepText}>
-                Complete payment via Razorpay (card, UPI, or net banking)
+                Complete secure payment via Razorpay
               </Text>
             </View>
 
             <View style={styles.infoStep}>
-              <Text style={styles.stepNumber}>2</Text>
+              <View style={styles.stepIcon}>
+                <Text style={styles.stepNumber}>2</Text>
+              </View>
               <Text style={styles.stepText}>
-                Teacher receives payment notification
+                Teacher gets instant notification
               </Text>
             </View>
 
             <View style={styles.infoStep}>
-              <Text style={styles.stepNumber}>3</Text>
+              <View style={styles.stepIcon}>
+                <Text style={styles.stepNumber}>3</Text>
+              </View>
               <Text style={styles.stepText}>
-                Your booking is confirmed
+                Your booking is confirmed automatically
               </Text>
             </View>
 
             <View style={styles.infoStep}>
-              <Text style={styles.stepNumber}>4</Text>
+              <View style={styles.stepIcon}>
+                <Text style={styles.stepNumber}>4</Text>
+              </View>
               <Text style={styles.stepText}>
-                Join the meeting at the scheduled time
+                Join the meeting at scheduled time
               </Text>
             </View>
           </View>
         </View>
 
-        {/* Teacher Earnings */}
-        {/* <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Teacher Earnings</Text>
-
-          <View style={styles.earningsBox}>
-            <View style={styles.earningsRow}>
-              <Text style={styles.earningsLabel}>You Pay:</Text>
-              <Text style={styles.earningsValue}>₹{totalAmount}</Text>
-            </View>
-
-            <View style={styles.earningsRow}>
-              <Text style={styles.earningsLabel}>Admin Commission:</Text>
-              <Text style={styles.earningsValue}>-₹{adminCharge}</Text>
-            </View>
-
-            <View style={styles.earningsRow}>
-              <Text style={styles.earningsLabel}>Platform Fee:</Text>
-              <Text style={styles.earningsValue}>-₹{platformFee}</Text>
-            </View>
-
-            <View style={[styles.earningsRow, styles.teacherEarnRow]}>
-              <Text style={styles.teacherEarnLabel}>Teacher Gets:</Text>
-              <Text style={styles.teacherEarnValue}>₹{totalAmount - adminCharge - platformFee}</Text>
-            </View>
-          </View>
-        </View> */}
-
-        {/* Terms */}
+        {/* Security & Terms */}
         <View style={styles.section}>
-          <View style={styles.termsBox}>
+          <View style={styles.securityBox}>
+            <Text style={styles.securityTitle}>🔒 Secure & Protected</Text>
             <Text style={styles.termsText}>
-              ✓ Secure payment via Razorpay
+              ✓ Encrypted payment via Razorpay
             </Text>
             <Text style={styles.termsText}>
-              ✓ Your booking is confirmed after payment
+              ✓ Instant booking confirmation
             </Text>
             <Text style={styles.termsText}>
-              ✓ You can reschedule or cancel with 24 hours notice
+              ✓ 24-hour cancellation policy
+            </Text>
+            <Text style={styles.termsText}>
+              ✓ Money-back guarantee
             </Text>
           </View>
         </View>
+        <View style={{ height: 80 }} /> 
       </ScrollView>
 
-      {/* Payment Button */}
+      {/* Enhanced Payment Button */}
       <View style={styles.footer}>
+        {/* <View style={styles.paymentSummary}>
+          <Text style={styles.paymentSummaryLabel}>Total Amount</Text>
+          <Text style={styles.paymentSummaryAmount}>₹{totalAmount}</Text>
+        </View> */}
         <TouchableOpacity
           style={[styles.payBtn, processing && styles.payBtnDisabled]}
           onPress={handlePayment}
           disabled={processing}
+          activeOpacity={0.8}
         >
           {processing ? (
-            <ActivityIndicator color="#fff" size="small" />
+            <>
+              <ActivityIndicator color="#fff" size="small" style={{marginRight: 8}} />
+              <Text style={styles.payBtnText}>Processing...</Text>
+            </>
           ) : (
-            <Text style={styles.payBtnText}>Pay ₹{totalAmount}</Text>
+            <>
+              <Text style={styles.payBtnText}>💳 Pay Now</Text>
+              <Text style={styles.payBtnSubtext}>₹{totalAmount}</Text>
+            </>
           )}
         </TouchableOpacity>
       </View>
@@ -505,10 +547,15 @@ const styles = StyleSheet.create({
   },
 
   backBtn: {
-    color: '#5568FE',
     fontSize: 16,
     fontWeight: '600',
-    marginRight: 15,
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: '#1C1F4A',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
 
   headerTitle: {
@@ -575,6 +622,7 @@ const styles = StyleSheet.create({
   teacherSpec: {
     color: '#999',
     fontSize: 12,
+    marginTop: 2,
   },
 
   divider: {
@@ -653,31 +701,71 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
 
-  infoBox: {
+  priceLeft: {
+    flex: 1,
+  },
+
+  priceRight: {
+    alignItems: 'flex-end',
+    minWidth: 80,
+  },
+
+  pricePercentage: {
+    color: '#5568FE',
+    fontSize: 12,
+    fontWeight: '500',
+    backgroundColor: '#5568FE20',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
+    alignSelf: 'flex-start',
+  },
+
+  feeAmount: {
+    color: '#FF9800',
+  },
+
+  totalDivider: {
+    height: 2,
+    backgroundColor: '#5568FE',
+    marginVertical: 8,
+    borderRadius: 1,
+  },
+
+  stepsContainer: {
     backgroundColor: '#1C1F4A',
     borderRadius: 12,
-    padding: 15,
+    padding: 16,
   },
 
   infoStep: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 12,
+    marginBottom: 14,
+  },
+
+  stepIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#5568FE',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
   },
 
   stepNumber: {
-    color: '#5568FE',
-    fontSize: 16,
+    color: '#fff',
+    fontSize: 13,
     fontWeight: '700',
-    marginRight: 12,
-    width: 25,
   },
 
   stepText: {
     color: '#ccc',
-    fontSize: 12,
+    fontSize: 13,
     flex: 1,
-    lineHeight: 18,
+    lineHeight: 19,
+    marginTop: 2,
   },
 
   earningsBox: {
@@ -729,17 +817,26 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
 
-  termsBox: {
+  securityBox: {
     backgroundColor: '#1C1F4A',
     borderRadius: 12,
-    padding: 15,
+    padding: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: '#4CAF50',
+  },
+
+  securityTitle: {
+    color: '#4CAF50',
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 10,
   },
 
   termsText: {
     color: '#ccc',
     fontSize: 12,
     lineHeight: 20,
-    marginBottom: 8,
+    marginBottom: 6,
   },
 
   footer: {
@@ -749,16 +846,48 @@ const styles = StyleSheet.create({
     right: 0,
     backgroundColor: '#0B0D2A',
     paddingHorizontal: 20,
-    paddingVertical: 15,
+    paddingVertical: 16,
     borderTopColor: '#2A2D5A',
     borderTopWidth: 1,
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+  },
+
+  paymentSummary: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+    paddingHorizontal: 4,
+  },
+
+  paymentSummaryLabel: {
+    color: '#ccc',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+
+  paymentSummaryAmount: {
+    color: '#4CAF50',
+    fontSize: 16,
+    fontWeight: '700',
   },
 
   payBtn: {
     backgroundColor: '#5568FE',
-    paddingVertical: 14,
-    borderRadius: 10,
+    paddingVertical: 16,
+    borderRadius: 12,
     alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    elevation: 4,
+    shadowColor: '#5568FE',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
   },
 
   payBtnDisabled: {
@@ -769,6 +898,13 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '700',
+    marginRight: 8,
+  },
+
+  payBtnSubtext: {
+    color: '#E3F2FD',
+    fontSize: 14,
+    fontWeight: '600',
   },
 
   loadingText: {

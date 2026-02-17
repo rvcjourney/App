@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-simple-toast';
 import { supabase } from '../../../supabase';
 import { getTeacherWeeklyAvailability, setTeacherWeeklyAvailability, generateAvailabilitySlots } from '../../database/database';
+import ChevronRight from '../../assets/icons/ChevronRight';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const TIME_SLOTS = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00'];
@@ -149,20 +150,21 @@ export default function TeacherAvailability({ navigation }) {
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.backButton}>← Back</Text>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            {/* <Text style={styles.backButton}>← Back</Text> */}
+            <ChevronRight width={24} height={24} color="#5568FE" style={{ transform: [{ rotate: '180deg' }] }} />
           </TouchableOpacity>
           <Text style={styles.title}>Set Your Availability</Text>
         </View>
 
         {/* Info Card */}
         <View style={styles.infoCard}>
-          <Text style={styles.infoTitle}>📅 How it works</Text>
+          <Text style={styles.infoTitle}>How it works</Text>
           <Text style={styles.infoText}>
             Set your weekly availability schedule. Students can only book you during these times.
           </Text>
           <Text style={styles.infoText}>
-            💡 Tip: Availability slots are generated automatically for 30 days from today.
+            <Text style={styles.infoTitle}>Tip: </Text>Availability slots are generated automatically for 30 days from today.
           </Text>
         </View>
 
@@ -306,7 +308,7 @@ export default function TeacherAvailability({ navigation }) {
           disabled={saving}
         >
           <Text style={styles.saveButtonText}>
-            {saving ? 'Saving...' : '💾 Save Availability'}
+            {saving ? 'Saving...' : 'Save Availability'}
           </Text>
         </TouchableOpacity>
 
@@ -342,6 +344,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginRight: 15,
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: '#1C1F4A',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
   title: {
     color: '#fff',

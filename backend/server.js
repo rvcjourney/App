@@ -28,6 +28,14 @@ const app = express();
 const supabaseUrl = process.env.SUPABASE_URL || 'https://your-project.supabase.co';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
+console.log('🔵 [SERVER] Supabase Config:');
+console.log('  URL:', supabaseUrl);
+console.log('  Service Role Key Present:', !!supabaseKey, `(${supabaseKey?.length || 0} chars)`);
+
+if (!supabaseKey) {
+  console.error('🔴 [CRITICAL] SUPABASE_SERVICE_ROLE_KEY is not set! Payments will fail.');
+}
+
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Store OTPs in memory (in production, use Redis or database)
@@ -94,11 +102,11 @@ async function sendOTPEmail(email, otp) {
   const mailOptions = {
     from: EMAIL_USER,
     to: email,
-    subject: 'Your Verification OTP - LearnEasy App',
+    subject: 'Your Verification OTP - Connectiqo Platform',
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #1E2BFF; text-align: center;">Email Verification</h2>
-        <p>Welcome to LearnEasy!</p>
+        <p>Welcome to Connectiqo!</p>
         <p>Your One-Time Password (OTP) for email verification is:</p>
         <div style="background: #f0f0f0; padding: 20px; text-align: center; border-radius: 10px; margin: 20px 0;">
           <h1 style="color: #1E2BFF; letter-spacing: 5px; margin: 0;">${otp}</h1>
@@ -332,6 +340,47 @@ app.get('/health', (req, res) => {
 });
 
 /**
+ * GET /api/diagnostics
+ * Check database connectivity and RLS configuration
+ */
+app.get('/api/diagnostics', async (req, res) => {
+  try {
+    const diagnostics = {
+      timestamp: new Date().toISOString(),
+      supabase: {
+        url: process.env.SUPABASE_URL ? '✅ Set' : '❌ Not set',
+        serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ? '✅ Set' : '❌ Not set',
+        keyLength: process.env.SUPABASE_SERVICE_ROLE_KEY?.length || 0,
+      },
+      database: {
+        connected: false,
+        bookingsTableExists: false,
+        error: null,
+      },
+    };
+
+    // Test database connectivity
+    const { data: bookingCount, error: bookingsError } = await supabase
+      .from('bookings')
+      .select('id', { count: 'exact', head: true });
+
+    if (bookingsError) {
+      diagnostics.database.error = bookingsError.message;
+    } else {
+      diagnostics.database.connected = true;
+      diagnostics.database.bookingsTableExists = true;
+    }
+
+    res.json(diagnostics);
+  } catch (error) {
+    res.status(500).json({
+      error: 'Diagnostics check failed',
+      message: error.message,
+    });
+  }
+});
+
+/**
  * POST /validate-token
  * 
  * Validates if a token is valid (optional)
@@ -545,16 +594,25 @@ app.post('/api/meetings/end', async (req, res) => {
       .eq('id', bookingId)
       .single();
 
+    if (!bookingData) {
+      return res.status(404).json({
+        success: false,
+        error: 'Booking not found',
+      });
+    }
+
     // Update booking with meeting ended time
     const { error: updateError } = await supabase
       .from('bookings')
       .update({
         status: 'completed',
         meeting_ended_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(), // Explicitly set updated_at to trigger real-time subscriptions
       })
       .eq('id', bookingId);
 
     if (updateError) throw updateError;
+    console.log(`✅ Booking updated: status='completed' for bookingId=${bookingId}`);
 
     // Update meeting log
     await supabase
@@ -565,23 +623,68 @@ app.post('/api/meetings/end', async (req, res) => {
       })
       .eq('booking_id', bookingId);
 
+    // Get earnings record for this booking and update status
+    const { data: earningsData } = await supabase
+      .from('teacher_earnings')
+      .select('*')
+      .eq('booking_id', bookingId)
+      .single();
+
+    if (earningsData && earningsData.status === 'pending') {
+      // Update earnings status to completed
+      await supabase
+        .from('teacher_earnings')
+        .update({
+          status: 'completed',
+          completed_at: new Date().toISOString(),
+        })
+        .eq('id', earningsData.id);
+
+      // Update teacher's wallet - add to total/available balance, reduce pending
+      const { data: wallet } = await supabase
+        .from('teacher_wallet')
+        .select('*')
+        .eq('teacher_id', bookingData.teacher_id)
+        .single();
+
+      if (wallet) {
+        const teacherEarn = parseFloat(earningsData.total_collected || 0) - parseFloat(earningsData.admin_deduction || 0) - parseFloat(earningsData.platform_fee || 0);
+        const newTotalBalance = (wallet.total_balance || 0) + teacherEarn;
+        const newAvailableBalance = (wallet.available_balance || 0) + teacherEarn;
+        const newPendingBalance = Math.max(0, (wallet.pending_balance || 0) - teacherEarn);
+
+        await supabase
+          .from('teacher_wallet')
+          .update({
+            total_balance: newTotalBalance,
+            available_balance: newAvailableBalance,
+            pending_balance: newPendingBalance,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('teacher_id', bookingData.teacher_id);
+
+        console.log(`✅ Wallet updated: +₹${teacherEarn} added to teacher ${bookingData.teacher_id}`);
+      }
+    }
+
     // Create notification for both
+    const teacherEarnAmount = parseFloat(earningsData?.total_collected || 0) - parseFloat(earningsData?.admin_deduction || 0) - parseFloat(earningsData?.platform_fee || 0);
     await supabase
       .from('notifications')
       .insert([
         {
           user_id: bookingData.student_id,
-          notification_type: 'meeting_started',
+          notification_type: 'meeting_completed',
           title: '✅ Session Completed',
-          message: `Your session with ${bookingData.teacher_id} has been completed.`,
+          message: `Your session has been completed successfully. Duration: ${duration || 60} minutes.`,
           booking_id: bookingId,
           is_read: false,
         },
         {
           user_id: bookingData.teacher_id,
-          notification_type: 'meeting_started',
-          title: '✅ Session Completed',
-          message: `Your session has been completed. Duration: ${duration || 60} minutes.`,
+          notification_type: 'earnings_added',
+          title: '💰 Earnings Added',
+          message: `Session completed! ₹${teacherEarnAmount} has been added to your wallet.`,
           booking_id: bookingId,
           is_read: false,
         },
@@ -826,7 +929,23 @@ app.post('/api/payments/verify', async (req, res) => {
       });
     }
 
+    // Validate amounts
+    if (!basePrice || basePrice <= 0 || !totalAmount || totalAmount <= 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid payment amounts',
+        details: { basePrice, totalAmount },
+      });
+    }
+
     console.log('🔵 Verifying payment:', razorpayPaymentId);
+    console.log('📌 Request payload:', {
+      bookingId,
+      studentId,
+      teacherId,
+      basePrice,
+      totalAmount,
+    });
 
     // Verify signature
     const crypto = require('crypto');
@@ -864,14 +983,22 @@ app.post('/api/payments/verify', async (req, res) => {
 
     if (paymentError) {
       console.error('🔴 Payment creation error:', paymentError);
-      throw paymentError;
+      // Still log payment, but continue - might be duplicate
     }
 
-    console.log('✅ Payment created:', payment[0].id);
+    console.log('✅ Payment created:', payment?.[0]?.id);
 
-    // Create teacher earnings record
-    const platformFee = 100; // Fixed platform fee
-    const teacherEarn = totalAmount - adminCharge - platformFee;
+    // Create teacher earnings record (PENDING - will be completed after meeting)
+    // Calculate percentage-based deductions: GST 18% + Platform Fee 7.5% = 25.5% total deductions
+    // Use basePrice to calculate fees (not totalAmount which already includes fees)
+    const gstAmount = Math.round(basePrice * 0.18); // 18% GST
+    const platformFeeAmount = Math.round(basePrice * 0.075); // 7.5% Platform Fee
+    const teacherEarn = basePrice; // Teacher gets 100% of their rate (fees already deducted from student)
+
+    if (!payment || !payment[0]) {
+      console.error('🔴 Payment record was not created');
+      throw new Error('Payment record creation returned no data');
+    }
 
     const { data: earnings, error: earningsError } = await supabase
       .from('teacher_earnings')
@@ -880,119 +1007,166 @@ app.post('/api/payments/verify', async (req, res) => {
         payment_id: payment[0].id,
         booking_id: bookingId,
         total_collected: totalAmount,
-        admin_deduction: adminCharge,
-        platform_fee: platformFee,
-        status: 'pending',
+        admin_deduction: gstAmount, // Store GST as admin_deduction
+        platform_fee: platformFeeAmount, // Store percentage-based platform fee
+        status: 'pending', // Will change to 'completed' after meeting ends
       }])
       .select();
 
     if (earningsError) {
       console.error('🔴 Earnings creation error:', earningsError);
-      throw earningsError;
+      // Log but continue - not critical for payment completion
     }
 
-    console.log('✅ Earnings record created. Teacher will earn:', teacherEarn);
+    console.log('✅ Earnings record created (PENDING). Breakdown:', {
+      totalCollected: totalAmount,
+      gstDeduction: gstAmount,
+      platformFee: platformFeeAmount,
+      teacherEarn: teacherEarn
+    });
 
-    // Update booking status and confirm
+    // Update booking payment status and auto-confirm (teacher availability already set)
     const { data: updatedBooking, error: bookingError } = await supabase
       .from('bookings')
       .update({
-        payment_status: 'completed',
+        payment_status: 'completed', // Payment is done
+        status: 'confirmed', // Auto-confirm since teacher has set availability slots
         total_price: totalAmount,
         payment_id: payment[0].id,
-        status: 'confirmed', // Mark booking as confirmed after payment
-        teacher_confirmed_at: new Date().toISOString(), // Auto-confirm at payment time
+        updated_at: new Date().toISOString(), // Ensure timestamp updates for real-time
       })
       .eq('id', bookingId)
       .select();
 
     if (bookingError) {
-      console.warn('⚠️ Booking update error:', bookingError);
+      console.error('🔴 Booking update error:', bookingError);
+      // Don't throw - log and continue
     } else {
-      console.log(`✅ Booking status updated to confirmed`);
+      console.log(`✅ Booking auto-confirmed (teacher availability already set)`);
+      console.log(`✅ Booking status: payment_status='completed', status='confirmed'`);
+      console.log('📌 Updated booking:', updatedBooking);
     }
 
-    // Update teacher wallet
-    const { data: wallet } = await supabase
-      .from('teacher_wallet')
-      .select('*')
-      .eq('teacher_id', teacherId)
-      .single();
+    // NOTE: Wallet is NOT updated here - it will be updated when meeting ends
+    // Ensure wallet exists for teacher (create if not)
+    try {
+      const { data: wallet, error: walletQueryError } = await supabase
+        .from('teacher_wallet')
+        .select('*')
+        .eq('teacher_id', teacherId)
+        .single();
 
-    if (wallet) {
-      const newBalance = (wallet.total_balance || 0) + teacherEarn;
-      await supabase
-        .from('teacher_wallet')
-        .update({
-          total_balance: newBalance,
-          available_balance: newBalance,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('teacher_id', teacherId);
-    } else {
-      // Create wallet if not exists
-      await supabase
-        .from('teacher_wallet')
-        .insert([{
-          teacher_id: teacherId,
-          total_balance: teacherEarn,
-          available_balance: teacherEarn,
-          created_at: new Date().toISOString(),
-        }]);
+      if (walletQueryError && walletQueryError.code !== 'PGRST116') { // PGRST116 = not found
+        console.warn('⚠️ Wallet query error:', walletQueryError);
+      }
+
+      if (!wallet) {
+        // Create wallet if not exists (with zero balance)
+        const { error: walletCreateError } = await supabase
+          .from('teacher_wallet')
+          .insert([{
+            teacher_id: teacherId,
+            total_balance: 0,
+            available_balance: 0,
+            pending_balance: teacherEarn,
+            created_at: new Date().toISOString(),
+          }]);
+        
+        if (walletCreateError) {
+          console.warn('⚠️ Wallet creation error:', walletCreateError);
+        } else {
+          console.log('✅ Wallet created with pending balance');
+        }
+      } else {
+        // Update pending balance
+        const newPending = (wallet.pending_balance || 0) + teacherEarn;
+        const { error: walletUpdateError } = await supabase
+          .from('teacher_wallet')
+          .update({
+            pending_balance: newPending,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('teacher_id', teacherId);
+        
+        if (walletUpdateError) {
+          console.warn('⚠️ Wallet update error:', walletUpdateError);
+        } else {
+          console.log('✅ Wallet pending balance updated');
+        }
+      }
+    } catch (walletError) {
+      console.warn('⚠️ Wallet operation failed:', walletError.message);
+      // Don't throw - wallet is non-critical
     }
-
-    console.log('✅ Wallet updated');
 
     // Update order status
-    await supabase
+    const { error: orderUpdateError } = await supabase
       .from('razorpay_orders')
       .update({
         status: 'paid',
         paid_at: new Date().toISOString(),
       })
       .eq('razorpay_order_id', razorpayOrderId);
+    
+    if (orderUpdateError) {
+      console.warn('⚠️ Order status update error:', orderUpdateError);
+    } else {
+      console.log('✅ Razorpay order status updated to paid');
+    }
 
     // Send notification to student
-    await supabase
-      .from('notifications')
-      .insert([{
-        user_id: studentId,
-        notification_type: 'payment_confirmed',
-        title: '✅ Payment Successful',
-        message: `Your booking with teacher is confirmed. Session will start at the scheduled time.`,
-        booking_id: bookingId,
-        is_read: false,
-      }]);
+    try {
+      await supabase
+        .from('notifications')
+        .insert([{
+          user_id: studentId,
+          notification_type: 'payment_confirmed',
+          title: '✅ Payment Successful',
+          message: `Your booking with teacher is confirmed. Session will start at the scheduled time.`,
+          booking_id: bookingId,
+          is_read: false,
+        }]);
+    } catch (err) {
+      console.warn('⚠️ Student notification error:', err.message);
+    }
 
     // Send notification to teacher
-    await supabase
-      .from('notifications')
-      .insert([{
-        user_id: teacherId,
-        notification_type: 'payment_received',
-        title: '💰 Payment Received',
-        message: `A student has booked and paid for your session. ₹${teacherEarn} added to your wallet.`,
-        booking_id: bookingId,
-        is_read: false,
-      }]);
+    try {
+      await supabase
+        .from('notifications')
+        .insert([{
+          user_id: teacherId,
+          notification_type: 'payment_received',
+          title: '💰 New Booking Confirmed',
+          message: `A student has booked and paid for your session. ₹${teacherEarn} will be added to your wallet after the session is completed.`,
+          booking_id: bookingId,
+          is_read: false,
+        }]);
+    } catch (err) {
+      console.warn('⚠️ Teacher notification error:', err.message);
+    }
 
     res.json({
       success: true,
       message: 'Payment verified successfully',
-      payment: payment[0],
+      paymentId: payment?.[0]?.id,
+      bookingUpdated: !bookingError && updatedBooking?.length > 0,
+      bookingUpdateError: bookingError?.message,
       earnings: {
         totalCollected: totalAmount,
         adminDeduction: adminCharge,
-        platformFee: platformFee,
+        platformFee: platformFeeAmount,
         teacherEarn: teacherEarn,
       },
     });
   } catch (error) {
     console.error('🔴 Error verifying payment:', error.message);
+    console.error('Full error stack:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to verify payment',
       message: error.message,
+      details: error.details || error.toString(),
     });
   }
 });
@@ -1133,28 +1307,41 @@ app.get('/api/teacher/earnings/:teacherId', async (req, res) => {
       .single();
 
     // Get recent earnings
-    const { data: earnings } = await supabase
+    const { data: earnings, error: earningsError } = await supabase
       .from('teacher_earnings')
       .select('*')
       .eq('teacher_id', teacherId)
       .order('created_at', { ascending: false })
       .limit(50);
 
+    if (earningsError) {
+      console.error('🔴 Error fetching earnings:', earningsError);
+    }
+
+    console.log('✅ Earnings fetched:', earnings?.length || 0, 'records');
+
+    // Calculate teacher_earn for each earning record (since it's not stored)
+    const earningsWithCalculation = (earnings || []).map(earning => ({
+      ...earning,
+      teacher_earn: parseFloat(earning.total_collected || 0) - parseFloat(earning.admin_deduction || 0) - parseFloat(earning.platform_fee || 0),
+    }));
+
     // Get withdrawal eligibility
     const { data: eligibility } = await supabase
       .rpc('get_withdrawal_eligibility', { p_teacher_id: teacherId });
 
-    console.log('✅ Earnings fetched');
+    console.log('✅ Earnings response prepared');
 
     res.json({
       success: true,
       wallet: wallet || {
         total_balance: 0,
         available_balance: 0,
+        pending_balance: 0,
         minimum_balance_reached: false,
         one_month_covered: false,
       },
-      earnings: earnings || [],
+      earnings: earningsWithCalculation,
       eligibility: eligibility?.[0] || null,
     });
   } catch (error) {
@@ -1162,6 +1349,7 @@ app.get('/api/teacher/earnings/:teacherId', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to fetch earnings',
+      message: error.message,
     });
   }
 });
@@ -1483,12 +1671,18 @@ app.get('/api/admin/analytics', async (req, res) => {
     const total = totalRevenue?.reduce((sum, p) => sum + p.total_amount, 0) || 0;
 
     // Get top teachers by earnings
-    const { data: topTeachers } = await supabase
+    const { data: topTeachersData } = await supabase
       .from('teacher_earnings')
-      .select('teacher_id, teacher_earn')
+      .select('teacher_id, total_collected, admin_deduction, platform_fee')
       .eq('status', 'pending')
-      .order('teacher_earn', { ascending: false })
+      .order('total_collected', { ascending: false })
       .limit(10);
+
+    // Calculate teacher_earn for each and group by teacher_id
+    const topTeachersByEarnings = (topTeachersData || []).map(e => ({
+      teacher_id: e.teacher_id,
+      teacher_earn: parseFloat(e.total_collected || 0) - parseFloat(e.admin_deduction || 0) - parseFloat(e.platform_fee || 0),
+    }));
 
     // Get pending withdrawals
     const { data: pendingWithdrawals } = await supabase
@@ -1506,7 +1700,7 @@ app.get('/api/admin/analytics', async (req, res) => {
         totalRevenue: total,
         totalPayments: totalRevenue?.length || 0,
         pendingWithdrawals: totalPending,
-        topTeachers: topTeachers || [],
+        topTeachers: topTeachersByEarnings,
       },
     });
   } catch (error) {

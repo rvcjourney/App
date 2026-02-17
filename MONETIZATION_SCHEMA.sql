@@ -53,10 +53,10 @@ CREATE TABLE IF NOT EXISTS teacher_earnings (
     booking_id uuid REFERENCES bookings(id) ON DELETE CASCADE,
     
     -- Earnings breakdown
-    total_collected DECIMAL(10, 2) NOT NULL, -- Total from student (750)
-    admin_deduction DECIMAL(10, 2) NOT NULL DEFAULT 150, -- Admin charge deducted (150)
-    platform_fee DECIMAL(10, 2) NOT NULL DEFAULT 100, -- Platform fee (100) - 13.33%
-    teacher_earn DECIMAL(10, 2) GENERATED ALWAYS AS (total_collected - admin_deduction - platform_fee) STORED, -- Net earning (500)
+    total_collected DECIMAL(10, 2) NOT NULL, -- Total from student (1000)
+    admin_deduction DECIMAL(10, 2) NOT NULL, -- GST (18% of total)
+    platform_fee DECIMAL(10, 2) NOT NULL, -- Platform fee (15% of total)
+    teacher_earn DECIMAL(10, 2) NOT NULL, -- Net earning (67% of total - calculated in backend)
     
     -- Status
     status VARCHAR(50) DEFAULT 'pending', -- pending, credited, withdrawn

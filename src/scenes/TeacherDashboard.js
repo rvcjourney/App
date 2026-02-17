@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-simple-toast';
 import { SCREEN_NAMES } from '../navigators/screenNames';
 import { supabase } from '../../supabase';
-import { getTeacherProfile, getTeacherBookings, getTeacherTodayCallHistory } from '../database/database';
+import { getTeacherProfile, getTeacherBookings, getTeacherTodayCallHistory, getTeacherEarnings, getTeacherTodayEarnings } from '../database/database';
 import Home from '../assets/icons/Home';
 import DollarSign from '../assets/icons/DollarSign';
 import Phone from '../assets/icons/Phone';
@@ -33,59 +33,33 @@ import CheckCircle from '../assets/icons/CheckCircle';
 import MoneyBag from '../assets/icons/MoneyBag';
 
 
-// Mock data for teacher earnings
-const mockEarnings = {
-  weekly: [
-    { day: 'Mon', amount: 2500 },
-    { day: 'Tue', amount: 3000 },
-    { day: 'Wed', amount: 2800 },
-    { day: 'Thu', amount: 3500 },
-    { day: 'Fri', amount: 4000 },
-    { day: 'Sat', amount: 3200 },
-    { day: 'Sun', amount: 2700 },
-  ],
-  monthly: [
-    { month: 'Week 1', amount: 18000 },
-    { month: 'Week 2', amount: 22000 },
-    { month: 'Week 3', amount: 19500 },
-    { month: 'Week 4', amount: 24000 },
-  ],
-  yearly: [
-    { month: 'Jan', amount: 85000 },
-    { month: 'Feb', amount: 92000 },
-    { month: 'Mar', amount: 88000 },
-    { month: 'Apr', amount: 95000 },
-    { month: 'May', amount: 102000 },
-    { month: 'Jun', amount: 98000 },
-    { month: 'Jul', amount: 105000 },
-    { month: 'Aug', amount: 100000 },
-    { month: 'Sep', amount: 97000 },
-    { month: 'Oct', amount: 108000 },
-    { month: 'Nov', amount: 115000 },
-    { month: 'Dec', amount: 120000 },
-  ],
-};
-
 export default function TeacherDashboard({ navigation }) {
   const [activeTab, setActiveTab] = useState('home');
   const [earningsFilter, setEarningsFilter] = useState('weekly');
-  const [teacherName, setTeacherName] = useState('Teacher');
-  const [pricePerCall, setPricePerCall] = useState(500);
-  const [rating, setRating] = useState(4.8);
+  const [teacherName, setTeacherName] = useState('Teacher Name');
+  const [pricePerCall, setPricePerCall] = useState(0);
+  const [rating, setRating] = useState(0.0);
   const [followers, setFollowers] = useState(0);
-  const [specializations, setSpecializations] = useState('');
+  const [specializations, setSpecializations] = useState('Subject Name');
   const [upcomingBookings, setUpcomingBookings] = useState([]);
   const [todayCallHistory, setTodayCallHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [teacherStatus, setTeacherStatus] = useState('offline'); // 'online' | 'away' | 'offline'
   const [profileIncomplete, setProfileIncomplete] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [earningsData, setEarningsData] = useState({
+    weekly: [{ day: 'Mon', amount: 0 }, { day: 'Tue', amount: 0 }, { day: 'Wed', amount: 0 }, { day: 'Thu', amount: 0 }, { day: 'Fri', amount: 0 }, { day: 'Sat', amount: 0 }, { day: 'Sun', amount: 0 }],
+    monthly: [{ month: 'Week 1', amount: 0 }, { month: 'Week 2', amount: 0 }, { month: 'Week 3', amount: 0 }, { month: 'Week 4', amount: 0 }, { month: 'Week 5', amount: 0 }],
+    yearly: [{ month: 'Jan', amount: 0 }, { month: 'Feb', amount: 0 }, { month: 'Mar', amount: 0 }, { month: 'Apr', amount: 0 }, { month: 'May', amount: 0 }, { month: 'Jun', amount: 0 }, { month: 'Jul', amount: 0 }, { month: 'Aug', amount: 0 }, { month: 'Sep', amount: 0 }, { month: 'Oct', amount: 0 }, { month: 'Nov', amount: 0 }, { month: 'Dec', amount: 0 }]
+  });
+  const [earningsLoading, setEarningsLoading] = useState(false);
+  const [todayEarnings, setTodayEarnings] = useState({ totalAmount: 0, sessionsCount: 0, pendingAmount: 0, pendingCount: 0 });
   const loadTeacherProfileRef = useRef(null);
 
   // Function to load teacher profile data
   const loadTeacherProfile = async () => {
     try {
-      console.log('🔵 [TeacherDashboard] Loading profile...');
+      console.log('🔵 [TeacherDashboard] Loading profile... Time:', new Date().toLocaleTimeString());
 
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
@@ -125,16 +99,20 @@ export default function TeacherDashboard({ navigation }) {
           setProfileIncomplete(true);
         }
 
-        // Get teacher's bookings (include today and future; exclude only cancelled)
+        // Get teacher's bookings (include today and future; only show confirmed bookings)
         try {
           const bookingsData = await getTeacherBookings(user.id);
           console.log('📚 [TeacherDashboard] Bookings fetched:', bookingsData?.length, bookingsData);
           if (bookingsData && bookingsData.length > 0) {
             const now = new Date();
-            const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            // Use UTC dates for comparison to match ISO format in database
+            const startOfTodayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
             const upcoming = bookingsData.filter(b => {
               const bookedAt = new Date(b.booked_date);
-              return bookedAt >= startOfToday && b.status !== 'cancelled';
+              // Only show confirmed/ongoing bookings (not pending, not cancelled, not completed)
+              const isUpcoming = bookedAt >= startOfTodayUTC && (b.status === 'confirmed' || b.status === 'ongoing');
+              console.log(`📅 [TeacherDashboard] Booking ${b.id}: status='${b.status}', date=${bookedAt.toISOString()}, startOfToday=${startOfTodayUTC.toISOString()}, isUpcoming=${isUpcoming}`);
+              return isUpcoming;
             });
             console.log('📅 [TeacherDashboard] Upcoming bookings filtered:', upcoming.length, upcoming);
             setUpcomingBookings(upcoming);
@@ -154,6 +132,24 @@ export default function TeacherDashboard({ navigation }) {
         } catch (historyErr) {
           console.error('🔴 [TeacherDashboard] Error fetching call history:', historyErr);
           setTodayCallHistory([]);
+        }
+
+        // Fetch earnings data
+        try {
+          const earnings = await getTeacherEarnings(user.id);
+          if (earnings) {
+            setEarningsData(earnings);
+          }
+        } catch (earningsErr) {
+          console.error('🔴 [TeacherDashboard] Error fetching earnings:', earningsErr);
+        }
+
+        // Fetch today's earnings
+        try {
+          const todayData = await getTeacherTodayEarnings(user.id);
+          setTodayEarnings(todayData);
+        } catch (todayErr) {
+          console.error('🔴 [TeacherDashboard] Error fetching today earnings:', todayErr);
         }
       }
 
@@ -254,8 +250,8 @@ export default function TeacherDashboard({ navigation }) {
           .on(
             'postgres_changes',
             { event: 'INSERT', schema: 'public', table: 'bookings', filter: `teacher_id=eq.${user.id}` },
-            () => {
-              console.log('📡 New booking (INSERT)');
+            (payload) => {
+              console.log('📡 New booking (INSERT):', payload?.new?.id);
               Toast.show('📚 New booking! A student scheduled a session.');
               if (loadTeacherProfileRef.current) loadTeacherProfileRef.current();
             }
@@ -263,8 +259,8 @@ export default function TeacherDashboard({ navigation }) {
           .on(
             'postgres_changes',
             { event: 'UPDATE', schema: 'public', table: 'bookings', filter: `teacher_id=eq.${user.id}` },
-            () => {
-              console.log('📡 Booking updated');
+            (payload) => {
+              console.log('📡 Booking updated (UPDATE):', payload?.new?.id, 'Status:', payload?.new?.status, 'Updated_at:', payload?.new?.updated_at);
               if (loadTeacherProfileRef.current) loadTeacherProfileRef.current();
             }
           )
@@ -289,7 +285,17 @@ export default function TeacherDashboard({ navigation }) {
     };
 
     setupSubscriptions();
+    
+    // Fallback: Poll for booking updates every 8 seconds (in case real-time subscriptions are slow)
+    const bookingsPollInterval = setInterval(() => {
+      if (loadTeacherProfileRef.current) {
+        console.log('🔄 [TeacherDashboard] Polling for booking updates...');
+        loadTeacherProfileRef.current();
+      }
+    }, 8000); // 8 seconds - more frequent to catch meeting completions faster
+    
     return () => {
+      clearInterval(bookingsPollInterval);
       if (bookingsChannel) supabase.removeChannel(bookingsChannel);
       if (notificationsChannel) supabase.removeChannel(notificationsChannel);
     };
@@ -347,7 +353,7 @@ export default function TeacherDashboard({ navigation }) {
             <View style={styles.profileSection}>
               <TouchableOpacity onPress={handleStatusPress} style={styles.profileImageWrapper} activeOpacity={0.8}>
                 <View style={styles.profileImageContainer}>
-                  <Users width={48} height={48} fill="#5568FE" />
+                  <User width={48} height={48} fill="#5568FE" />
                 </View>
                 <View style={[styles.statusDot, { backgroundColor: statusColor[teacherStatus] }]} />
               </TouchableOpacity>
@@ -424,23 +430,34 @@ export default function TeacherDashboard({ navigation }) {
             <Text style={styles.sectionTitle}>Today's Earnings</Text>
           </View>
 
-          <View style={styles.earningsCard}>
-            <Text style={styles.earningsAmount}>₹3,200</Text>
-            <Text style={styles.earningsText}>from 5 sessions</Text>
+          <TouchableOpacity
+            style={styles.earningsCard}
+            onPress={() => navigation.navigate(SCREEN_NAMES.TeacherEarnings)}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.earningsAmount}>₹{todayEarnings.totalAmount.toLocaleString()}</Text>
+            <Text style={styles.earningsText}>
+              from {todayEarnings.sessionsCount} completed session{todayEarnings.sessionsCount !== 1 ? 's' : ''}
+            </Text>
+            {todayEarnings.pendingCount > 0 && (
+              <Text style={styles.earningsPending}>
+                ⏳ ₹{todayEarnings.pendingAmount.toLocaleString()} pending ({todayEarnings.pendingCount} session{todayEarnings.pendingCount !== 1 ? 's' : ''})
+              </Text>
+            )}
             <View style={styles.earningsBar}>
-              <View style={[styles.earningsBarFill, { width: '75%' }]} />
+              <View style={[styles.earningsBarFill, { width: `${Math.min((todayEarnings.totalAmount / 5000) * 100, 100)}%` }]} />
             </View>
-            <Text style={styles.earningsTarget}>Target: ₹5,000/day</Text>
-          </View>
+            {/* <Text style={styles.earningsTarget}>Target: ₹5,000/day</Text> */}
+          </TouchableOpacity>
 
           {/* Recent Activity */}
-          <View style={{ height: 100 }} />
+          {/* <View style={{ height: 100 }} /> */}
         </ScrollView>
 
         {/* Bottom Navigation */}
         <View style={styles.bottomNav}>
           <TouchableOpacity
-            style={[styles.navItem, activeTab === 'home' && styles.navItemActive]}
+            style={[styles.navItem, activeTab === 'home']}
             onPress={() => setActiveTab('home')}
           >
             <Home width={24} height={24} fill={activeTab === 'home' ? '#5568FE' : '#999'} />
@@ -448,7 +465,7 @@ export default function TeacherDashboard({ navigation }) {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.navItem, activeTab === 'earnings' && styles.navItemActive]}
+            style={[styles.navItem, activeTab === 'earnings']}
             onPress={() => setActiveTab('earnings')}
           >
             <DollarSign width={24} height={24} fill={activeTab === 'earnings' ? '#5568FE' : '#999'} />
@@ -456,15 +473,34 @@ export default function TeacherDashboard({ navigation }) {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.navItem, activeTab === 'calls' && styles.navItemActive]}
+            style={[styles.navItem, activeTab === 'calls']}
             onPress={() => setActiveTab('calls')}
           >
-            <Phone width={24} height={24} fill={activeTab === 'calls' ? '#5568FE' : '#999'} />
+            <View style={{ position: 'relative' }}>
+              <Phone width={24} height={24} fill={activeTab === 'calls' ? '#5568FE' : '#999'} />
+              {upcomingBookings.filter(b => b.status === 'confirmed' && !b.meeting_id).length > 0 && (
+                <View style={{
+                  position: 'absolute',
+                  top: -8,
+                  right: -8,
+                  backgroundColor: '#22c55e',
+                  borderRadius: 10,
+                  width: 20,
+                  height: 20,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}>
+                  <Text style={{ color: 'white', fontSize: 12, fontWeight: 'bold' }}>
+                    {upcomingBookings.filter(b => b.status === 'confirmed' && !b.meeting_id).length}
+                  </Text>
+                </View>
+              )}
+            </View>
             <Text style={styles.navLabel}>Calls</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.navItem, activeTab === 'settings' && styles.navItemActive]}
+            style={[styles.navItem, activeTab === 'settings']}
             onPress={() => setActiveTab('settings')}
           >
             <Settings width={24} height={24} fill={activeTab === 'settings' ? '#5568FE' : '#999'} />
@@ -479,17 +515,22 @@ export default function TeacherDashboard({ navigation }) {
   if (activeTab === 'earnings') {
     const currentData =
       earningsFilter === 'weekly'
-        ? mockEarnings.weekly
+        ? earningsData.weekly
         : earningsFilter === 'monthly'
-          ? mockEarnings.monthly
-          : mockEarnings.yearly;
+          ? earningsData.monthly
+          : earningsData.yearly;
 
     const totalEarnings = currentData.reduce((sum, item) => sum + item.amount, 0);
-    const maxAmount = Math.max(...currentData.map(item => item.amount));
+    const maxAmount = Math.max(...currentData.map(item => item.amount), 1); // Ensure at least 1 to avoid division by zero
 
     return (
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-        <ScrollView showsVerticalScrollIndicator={false}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#5568FE']} />
+          }
+        >
           <View style={styles.header}>
             <View style={styles.welcomeContainer}>
               <Text style={styles.welcome}>Earnings Analytics</Text>
@@ -547,19 +588,25 @@ export default function TeacherDashboard({ navigation }) {
           <View style={styles.breakdownContainer}>
             <Text style={styles.breakdownTitle}>Earnings Breakdown</Text>
             <View style={styles.breakdownItem}>
-              <Text style={styles.breakdownLabel}>Total Earnings</Text>
-              <Text style={styles.breakdownValue}>₹{totalEarnings.toLocaleString()}</Text>
+              <Text style={styles.breakdownLabel}>Gross Earnings</Text>
+              <Text style={styles.breakdownValue}>₹{Math.round(totalEarnings / 0.67).toLocaleString()}</Text>
             </View>
             <View style={styles.breakdownItem}>
-              <Text style={styles.breakdownLabel}>Platform Fee (5%)</Text>
-              <Text style={styles.breakdownValue}>-₹{Math.round(totalEarnings * 0.05).toLocaleString()}</Text>
+              <Text style={styles.breakdownLabel}>GST (18%)</Text>
+              <Text style={styles.breakdownValue}>-₹{Math.round((totalEarnings / 0.67) * 0.18).toLocaleString()}</Text>
+            </View>
+            <View style={styles.breakdownItem}>
+              <Text style={styles.breakdownLabel}>Platform Fee (15%)</Text>
+              <Text style={styles.breakdownValue}>-₹{Math.round((totalEarnings / 0.67) * 0.15).toLocaleString()}</Text>
             </View>
             <View style={[styles.breakdownItem, styles.breakdownItemLast]}>
-              <Text style={styles.breakdownLabel}>Net Earnings</Text>
-              <Text style={styles.breakdownValueNet}>₹{Math.round(totalEarnings * 0.95).toLocaleString()}</Text>
+              <Text style={styles.breakdownLabel}>Net Earnings (67%)</Text>
+              <Text style={styles.breakdownValueNet}>₹{totalEarnings.toLocaleString()}</Text>
             </View>
           </View>
+          <View style={{ marginBottom: 80 }} />
         </ScrollView>
+        
 
         <View style={styles.bottomNav}>
           <TouchableOpacity
@@ -571,7 +618,7 @@ export default function TeacherDashboard({ navigation }) {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.navItem, styles.navItemActive]}
+            style={[styles.navItem]}
             onPress={() => setActiveTab('earnings')}
           >
             <DollarSign width={22} height={22} fill={activeTab === 'earnings' ? '#5568FE' : '#999'} />
@@ -595,15 +642,23 @@ export default function TeacherDashboard({ navigation }) {
           </TouchableOpacity>
         </View>
       </SafeAreaView>
+
     );
   }
 
   // CALLS TAB
   if (activeTab === 'calls') {
-    // Show all confirmed bookings as scheduled lectures (no pending/confirmation step)
+    // Show confirmed bookings (auto-confirmed when student pays - teacher availability already set)
     const confirmedBookings = upcomingBookings.filter(b => b.status === 'confirmed');
-    const ongoingBookings = upcomingBookings.filter(b => b.status === 'ongoing' && b.meeting_id);
     const liveBookings = confirmedBookings.filter(b => b.meeting_id); // Meetings that have started
+    const readyToStart = confirmedBookings.filter(b => !b.meeting_id); // Ready to join
+    
+    console.log('📊 [TeacherDashboard] Booking stats:', {
+      total: upcomingBookings.length,
+      confirmed: confirmedBookings.length,
+      live: liveBookings.length,
+      readyToStart: readyToStart.length,
+    });
 
     return (
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -656,19 +711,19 @@ export default function TeacherDashboard({ navigation }) {
             </>
           )}
 
-          {/* Upcoming Calls - Scheduled Lectures */}
+          {/* Upcoming Calls - Confirmed & Ready to Start */}
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>📌 Scheduled Lectures</Text>
+            <Text style={styles.sectionTitle}>📅 Upcoming Calls</Text>
           </View>
 
-          {confirmedBookings.filter(b => !b.meeting_id).length === 0 ? (
+          {readyToStart.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyIcon}>📭</Text>
-              <Text style={styles.emptyText}>No scheduled lectures</Text>
-              <Text style={styles.emptySubtext}>Student bookings will appear here</Text>
+              <Text style={styles.emptyText}>No upcoming calls</Text>
+              <Text style={styles.emptySubtext}>Booked sessions will appear here</Text>
             </View>
           ) : (
-            confirmedBookings.filter(b => !b.meeting_id).map(booking => (
+            readyToStart.map(booking => (
               <TouchableOpacity
                 key={booking.id}
                 style={styles.callCard}
@@ -696,6 +751,8 @@ export default function TeacherDashboard({ navigation }) {
               </TouchableOpacity>
             ))
           )}
+
+          {/* Confirmed Calls - Ready to start */}
 
           {/* Call History - today only; after the day ends history is not visible */}
           <View style={styles.sectionHeader}>
@@ -750,7 +807,7 @@ export default function TeacherDashboard({ navigation }) {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.navItem, styles.navItemActive]}
+            style={[styles.navItem]}
             onPress={() => setActiveTab('calls')}
           >
             <Phone width={22} height={22} fill={activeTab === 'calls' ? '#5568FE' : '#999'} />
@@ -777,7 +834,7 @@ export default function TeacherDashboard({ navigation }) {
           <View style={styles.header}>
             <View style={styles.settingsHeaderContainer}>
               <Text style={styles.welcome}>Settings</Text>
-              <Settings width={24} height={24} fill="#5568FE" />
+              {/* <Settings width={24} height={24} fill="#5568FE" /> */}
             </View>
           </View>
 
@@ -785,7 +842,7 @@ export default function TeacherDashboard({ navigation }) {
           <View style={styles.profileSettingsCard}>
             <TouchableOpacity onPress={handleStatusPress} style={styles.profileImageWrapperSettings} activeOpacity={0.8}>
               <View style={[styles.profileImageContainer, styles.profileImageContainerSettings]}>
-                <Users width={64} height={64} fill="#5568FE" />
+                <User width={64} height={64} fill="#5568FE" />
               </View>
               <View style={[styles.statusDot, styles.statusDotSettings, { backgroundColor: statusColor[teacherStatus] }]} />
             </TouchableOpacity>
@@ -817,7 +874,7 @@ export default function TeacherDashboard({ navigation }) {
 
             <TouchableOpacity style={styles.settingItem} onPress={() => Alert.alert('Bank Account')}>
               <View style={styles.settingIconContainer}>
-                <Users width={20} height={20} fill="#5568FE" />
+                <User width={20} height={20} fill="#5568FE" />
               </View>
               <Text style={styles.settingText}>Bank Account</Text>
               <ChevronRight width={16} height={16} fill="#999999" />
@@ -915,7 +972,7 @@ export default function TeacherDashboard({ navigation }) {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.navItem, styles.navItemActive]}
+            style={[styles.navItem]}
             onPress={() => setActiveTab('settings')}
           >
             <Settings width={22} height={22} fill={activeTab === 'settings' ? '#5568FE' : '#999'} />
@@ -1129,6 +1186,11 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginBottom: 12,
   },
+  earningsPending: {
+    color: '#FF9800',
+    fontSize: 12,
+    marginBottom: 12,
+  },
   earningsBar: {
     height: 8,
     backgroundColor: '#2E2E5E',
@@ -1308,7 +1370,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   breakdownValue: {
-    color: '#fff',
+    color: '#2ECC71',
     fontSize: 13,
     fontWeight: 'bold',
   },

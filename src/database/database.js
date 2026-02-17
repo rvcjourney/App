@@ -1033,37 +1033,44 @@ export const startMeeting = async (bookingId, meetingId) => {
 /**
  * End a meeting
  */
-export const endMeeting = async (bookingId, meetingId) => {
+export const endMeeting = async (bookingId, meetingId, duration = 60) => {
   try {
-    console.log('🔵 Ending meeting...');
+    console.log('🔵 Ending meeting... BookingId:', bookingId);
     
-    // Update booking
-    const { data: bookingData, error: bookingError } = await supabase
-      .from('bookings')
-      .update({
-        meeting_ended_at: new Date(),
-        status: 'completed'
+    // Call backend endpoint to handle meeting completion
+    // This will:
+    // 1. Update booking status to 'completed'
+    // 2. Update meeting log with end time
+    // 3. Change earnings status from 'pending' to 'completed'
+    // 4. Update teacher's wallet with earned amount
+    
+    const backendUrl = process.env.REACT_APP_AUTH_URL || 'http://192.168.0.183:3000';
+    console.log('🌐 Backend URL:', backendUrl);
+    
+    const response = await fetch(`${backendUrl}/api/meetings/end`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        bookingId: bookingId,
+        duration: duration
       })
-      .eq('id', bookingId)
-      .select();
+    });
 
-    if (bookingError) throw bookingError;
-
-    // Update meeting log
-    const { data: logData, error: logError } = await supabase
-      .from('meeting_logs')
-      .update({
-        ended_at: new Date()
-      })
-      .eq('meeting_id', meetingId)
-      .select();
-
-    if (logError) throw logError;
-
-    console.log('✅ Meeting ended:', meetingId);
-    return { booking: bookingData?.[0], log: logData?.[0] };
+    console.log('📤 Backend response status:', response.status);
+    
+    const data = await response.json();
+    console.log('📨 Backend response data:', JSON.stringify(data, null, 2));
+    
+    if (data.success) {
+      console.log('✅ Meeting ended successfully:', data.bookingId);
+      console.log('💰 Teacher earnings updated and wallet credited');
+      return { success: true, bookingId: data.bookingId };
+    } else {
+      console.error('⚠️ Failed to end meeting - Error:', data.error);
+      throw new Error(data.error || 'Failed to end meeting');
+    }
   } catch (error) {
-    console.error('🔴 Error ending meeting:', error);
+    console.error('🔴 Error ending meeting:', error.message);
     throw error;
   }
 };
@@ -1139,5 +1146,196 @@ export const getMeetingHistory = async (userId, isTeacher = false) => {
   } catch (error) {
     console.error('🔴 Error fetching meeting history:', error);
     throw error;
+  }
+};
+
+/**
+ * Calculate teacher earnings for different time periods
+ * Uses teacher_earnings table which has actual amounts after deductions
+ */
+export const getTeacherEarnings = async (teacherId) => {
+  try {
+    console.log('🔵 Fetching teacher earnings...');
+    
+    // Get completed earnings only (not pending)
+    const { data: earnings, error } = await supabase
+      .from('teacher_earnings')
+      .select('*')
+      .eq('teacher_id', teacherId)
+      .eq('status', 'completed')
+      .order('created_at', { ascending: false }); // Use created_at as fallback
+
+    if (error) {
+      console.error('🔴 Error querying earnings:', error);
+      throw error;
+    }
+
+    console.log('✅ Earnings fetched from DB:', earnings?.length || 0, 'records');
+
+    // Transform earnings array to add teacher_earn calculation
+    const earningsWithCalculation = (earnings || []).map(e => ({
+      ...e,
+      teacher_earn: parseFloat(e.total_collected || 0) - parseFloat(e.admin_deduction || 0) - parseFloat(e.platform_fee || 0),
+    }));
+
+    if (!earningsWithCalculation || earningsWithCalculation.length === 0) {
+      console.log('✅ No completed earnings found');
+      return { 
+        weekly: [{ day: 'Mon', amount: 0 }, { day: 'Tue', amount: 0 }, { day: 'Wed', amount: 0 }, { day: 'Thu', amount: 0 }, { day: 'Fri', amount: 0 }, { day: 'Sat', amount: 0 }, { day: 'Sun', amount: 0 }],
+        monthly: [{ month: 'Week 1', amount: 0 }, { month: 'Week 2', amount: 0 }, { month: 'Week 3', amount: 0 }, { month: 'Week 4', amount: 0 }, { month: 'Week 5', amount: 0 }],
+        yearly: [{ month: 'Jan', amount: 0 }, { month: 'Feb', amount: 0 }, { month: 'Mar', amount: 0 }, { month: 'Apr', amount: 0 }, { month: 'May', amount: 0 }, { month: 'Jun', amount: 0 }, { month: 'Jul', amount: 0 }, { month: 'Aug', amount: 0 }, { month: 'Sep', amount: 0 }, { month: 'Oct', amount: 0 }, { month: 'Nov', amount: 0 }, { month: 'Dec', amount: 0 }],
+        totalEarned: 0, 
+        pendingCount: 0 
+      };
+    }
+
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+
+    // Initialize data structures
+    const weeklyData = {};
+    const monthlyData = {};
+    const yearlyData = {};
+
+    // Calculate earnings from completed sessions
+    earningsWithCalculation.forEach(earning => {
+      // Use completed_at if available, otherwise use created_at
+      const earningDate = earning.completed_at ? new Date(earning.completed_at) : new Date(earning.created_at);
+      const amount = parseFloat(earning.teacher_earn) || 0;
+
+      console.log('Processing earning:', { date: earningDate, amount, status: earning.status });
+
+      // Weekly: Last 7 days
+      const daysDiff = Math.floor((now - earningDate) / (1000 * 60 * 60 * 24));
+      if (daysDiff <= 7 && daysDiff >= 0) {
+        const dayName = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][earningDate.getDay()];
+        weeklyData[dayName] = (weeklyData[dayName] || 0) + amount;
+      }
+
+      // Monthly: Current month by week
+      if (earningDate.getFullYear() === currentYear && earningDate.getMonth() === currentMonth) {
+        const weekOfMonth = Math.ceil(earningDate.getDate() / 7);
+        const weekKey = `Week ${weekOfMonth}`;
+        monthlyData[weekKey] = (monthlyData[weekKey] || 0) + amount;
+      }
+
+      // Yearly: Current year by month
+      if (earningDate.getFullYear() === currentYear) {
+        const monthName = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][earningDate.getMonth()];
+        yearlyData[monthName] = (yearlyData[monthName] || 0) + amount;
+      }
+    });
+
+    // Format weekly data (ensure all 7 days)
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const formattedWeekly = days.map(day => ({
+      day,
+      amount: Math.round((weeklyData[day] || 0) * 100) / 100
+    }));
+
+    // Format monthly data (weeks 1-5)
+    const formattedMonthly = [];
+    for (let i = 1; i <= 5; i++) {
+      formattedMonthly.push({
+        month: `Week ${i}`,
+        amount: Math.round(((monthlyData[`Week ${i}`] || 0) * 100) / 100)
+      });
+    }
+
+    // Format yearly data (all months)
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const formattedYearly = months.map(month => ({
+      month,
+      amount: Math.round(((yearlyData[month] || 0) * 100) / 100)
+    }));
+
+    // Get pending earnings count
+    const { count: pendingCount } = await supabase
+      .from('teacher_earnings')
+      .select('*', { count: 'exact', head: true })
+      .eq('teacher_id', teacherId)
+      .eq('status', 'pending');
+
+    const totalEarned = earningsWithCalculation.reduce((sum, e) => sum + (parseFloat(e.teacher_earn) || 0), 0);
+
+    console.log('✅ Earnings calculated:', { totalEarned, pendingCount });
+    return {
+      weekly: formattedWeekly,
+      monthly: formattedMonthly,
+      yearly: formattedYearly,
+      totalEarned: Math.round(totalEarned * 100) / 100,
+      pendingCount: pendingCount || 0
+    };
+  } catch (error) {
+    console.error('🔴 Error fetching earnings:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get teacher's today earnings (completed sessions only)
+ */
+export const getTeacherTodayEarnings = async (teacherId) => {
+  try {
+    console.log('🔵 Fetching today earnings...');
+    
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+    console.log('Date range:', startOfToday.toISOString(), '-', endOfToday.toISOString());
+
+    // Get completed earnings for today (check both completed_at and created_at)
+    const { data: earnings, error } = await supabase
+      .from('teacher_earnings')
+      .select('*')
+      .eq('teacher_id', teacherId)
+      .eq('status', 'completed');
+
+    if (error) {
+      console.error('🔴 Error querying today earnings:', error);
+      throw error;
+    }
+
+    // Filter in JavaScript to handle null completed_at
+    const todayCompletedEarnings = (earnings || []).filter(e => {
+      const checkDate = e.completed_at ? new Date(e.completed_at) : new Date(e.created_at);
+      return checkDate >= startOfToday && checkDate <= endOfToday;
+    });
+
+    console.log('Today completed earnings:', todayCompletedEarnings.length);
+
+    const totalAmount = todayCompletedEarnings.reduce((sum, e) => sum + (parseFloat(e.total_collected || 0) - parseFloat(e.admin_deduction || 0) - parseFloat(e.platform_fee || 0)), 0);
+    const sessionsCount = todayCompletedEarnings.length;
+
+    // Get pending earnings for today (sessions booked but not yet completed) - check created_at
+    const { data: pendingEarnings } = await supabase
+      .from('teacher_earnings')
+      .select('*')
+      .eq('teacher_id', teacherId)
+      .eq('status', 'pending');
+
+    // Filter in JavaScript
+    const todayPendingEarnings = (pendingEarnings || []).filter(e => {
+      const createdDate = new Date(e.created_at);
+      return createdDate >= startOfToday && createdDate <= endOfToday;
+    });
+
+    console.log('Today pending earnings:', todayPendingEarnings.length);
+
+    const pendingAmount = todayPendingEarnings.reduce((sum, e) => sum + (parseFloat(e.total_collected || 0) - parseFloat(e.admin_deduction || 0) - parseFloat(e.platform_fee || 0)), 0);
+    const pendingCount = todayPendingEarnings.length;
+
+    console.log('✅ Today earnings:', { totalAmount, sessionsCount, pendingAmount, pendingCount });
+    return {
+      totalAmount: Math.round(totalAmount * 100) / 100,
+      sessionsCount,
+      pendingAmount: Math.round(pendingAmount * 100) / 100,
+      pendingCount
+    };
+  } catch (error) {
+    console.error('🔴 Error fetching today earnings:', error);
+    return { totalAmount: 0, sessionsCount: 0, pendingAmount: 0, pendingCount: 0 };
   }
 };

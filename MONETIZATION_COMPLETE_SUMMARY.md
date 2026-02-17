@@ -129,17 +129,17 @@ MONETIZATION_TECHNICAL_ARCHITECTURE.md
 ```
 STUDENT BOOKS TEACHER
         ↓
-Price Shown: ₹750
-(₹600 teaching + ₹150 admin fee)
+Price Shown: ₹1000
+(Total amount including GST & Platform Fee)
         ↓
-STUDENT PAYS ₹750 VIA RAZORPAY
+STUDENT PAYS ₹1000 VIA RAZORPAY
         ↓
 PAYMENT VERIFIED ✓
         ↓
-Money Split:
-├─ ₹150 → Admin Commission
-├─ ₹100 → Platform Fee
-└─ ₹500 → Teacher's Wallet
+Money Split (Percentage-based):
+├─ ₹180 → GST (18%)
+├─ ₹150 → Platform Fee (15%)
+└─ ₹670 → Teacher's Wallet (67%)
         ↓
 TEACHER WALLET UPDATED ✓
         ↓

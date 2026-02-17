@@ -148,7 +148,7 @@ export default function EditStudentProfile({ navigation, onSaveSuccess }) {
             <ChevronRight width={24} height={24} fill="#5568FE" style={{ transform: [{ rotate: '180deg' }] }} />
           </TouchableOpacity>
           <Text style={styles.title}>Edit Profile</Text>
-          <View style={{ width: 40 }} />
+          <View style={{ width: 0 }} />
         </View>
 
         <View style={styles.content}>
@@ -288,7 +288,6 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 18,
     borderBottomColor: '#1C1F4A',
@@ -302,6 +301,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#1C1F4A',
     justifyContent: 'center',
     alignItems: 'center',
+    marginRight: '10',
   },
 
   title: {
