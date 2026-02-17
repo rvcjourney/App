@@ -1,0 +1,41 @@
+/* App-specific overrides – small layout helpers */
+#root {
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0;
+  text-align: left;
+}
+
+body {
+  width: 100%;
+  height: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Main app container used across pages */
+.app-container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: clamp(1rem, 3vw, 2rem);
+}
+
+.card {
+  background: var(--color-app-card);
+  border-radius: 12px;
+  padding: 1rem;
+  border: 1px solid var(--color-app-border);
+  box-shadow: 0 6px 18px rgba(3,6,23,0.6);
+}
+
+/* subtle entrance for sections */
+.section-entrance { opacity: 0; transform: translateY(8px); animation: lp-scale-in 320ms cubic-bezier(.2,.9,.25,1) forwards; }
+
+/* Desktop nav spacing – applies when navbar shows links (768px+) */
+@media (min-width: 768px) {
+  .btn-mod {
+    gap: 10px;
+    margin-right: 20px;
+  }
+}

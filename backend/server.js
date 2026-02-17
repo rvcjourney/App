@@ -1314,18 +1314,6 @@ app.get('/api/teacher/earnings/:teacherId', async (req, res) => {
       .order('created_at', { ascending: false })
       .limit(50);
 
-    if (earningsError) {
-      console.error('🔴 Error fetching earnings:', earningsError);
-    }
-
-    console.log('✅ Earnings fetched:', earnings?.length || 0, 'records');
-
-    // Calculate teacher_earn for each earning record (since it's not stored)
-    const earningsWithCalculation = (earnings || []).map(earning => ({
-      ...earning,
-      teacher_earn: parseFloat(earning.total_collected || 0) - parseFloat(earning.admin_deduction || 0) - parseFloat(earning.platform_fee || 0),
-    }));
-
     // Get withdrawal eligibility
     const { data: eligibility } = await supabase
       .rpc('get_withdrawal_eligibility', { p_teacher_id: teacherId });
@@ -1341,7 +1329,7 @@ app.get('/api/teacher/earnings/:teacherId', async (req, res) => {
         minimum_balance_reached: false,
         one_month_covered: false,
       },
-      earnings: earningsWithCalculation,
+      earnings: earnings || [],
       eligibility: eligibility?.[0] || null,
     });
   } catch (error) {
@@ -1717,7 +1705,7 @@ app.listen(PORT, HOST, () => {
   console.log('🚀 VideoSDK Token Server Started');
   console.log('='.repeat(50));
   console.log(`📍 Server running at: http://localhost:${PORT}`);
-  console.log(`📍 Also reachable at: http://192.168.0.183:${PORT}`);
+  console.log(`📍 Also reachable at: http://192.168.1.12:${PORT}`);
   console.log('\n📌 Available Endpoints:');
   console.log(`   POST /send-otp        - Send OTP to email`);
   console.log(`   POST /verify-otp      - Verify OTP`);
@@ -1736,7 +1724,7 @@ app.listen(PORT, HOST, () => {
   console.log(`   POST /api/admin/withdrawals/:id/approve - Approve withdrawal`);
   console.log(`   GET  /api/admin/analytics          - Analytics`);
   console.log('\n💡 Use this in your .env:');
-  console.log(`   REACT_APP_AUTH_URL = "http://192.168.0.183:${PORT}"`);
+  console.log(`   REACT_APP_AUTH_URL = "http://192.168.1.12:${PORT}"`);
   console.log('='.repeat(50) + '\n');
 });
 
