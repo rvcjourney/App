@@ -34,7 +34,7 @@ body {
   min-height: 100vh;
   background-color: var(--color-app-bg);
   color: var(--color-app-text);
-  padding: 2rem;
+  padding: 0;
 }
 
 #root {

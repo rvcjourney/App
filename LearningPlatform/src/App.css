@@ -39,3 +39,70 @@ body {
     margin-right: 20px;
   }
 }
+
+/* *******************************NAVBAR CSS**************************************** */
+
+.navbar-brand span {
+  font-size: 18px;
+}
+
+.nav-link {
+  transition: 0.2s ease;
+}
+
+.nav-link:hover {
+  background: rgba(255,255,255,0.1);
+  border-radius: 8px;
+}
+
+.dropdown-menu {
+  border-radius: 12px;
+}
+
+.gradient-navbar {
+  background: linear-gradient(90deg, #1e3c72, #2a5298);
+}
+
+.modern-navbar {
+  background: linear-gradient(135deg, #0f172a, #1e3a8a);
+  backdrop-filter: blur(10px);
+}
+
+.bg-glass {
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(10px);
+}
+
+/* *******************************MODAL CSS**************************************** */
+
+/* Dark Admin Modal UI */
+.modern-modal {
+  background: #1c1f4a;
+  border: 1px solid #2d3748;
+  border-radius: 14px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+}
+
+/* Fade animation fix for React modal */
+.modal.fade.show {
+  background: rgba(0,0,0,0.6);
+}
+
+/* *******************************DATATABLE CSS**************************************** */
+
+.modern-table {
+  background: #1c1f4a;
+  border: 1px solid #2d3748;
+  border-radius: 12px;
+}
+
+.table-dark th,
+.table-dark td {
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.table-hover tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
