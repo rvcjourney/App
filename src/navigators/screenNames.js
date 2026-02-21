@@ -11,6 +11,7 @@ export const SCREEN_NAMES = {
   ScheduleLecture: "ScheduleLecture",
   TeacherEarnings: "TeacherEarnings",
   WithdrawalRequest: "WithdrawalRequest",
+  BankAccountSettings: "BankAccountSettings",
   StudentCheckout: "StudentCheckout",
 
   // Super Admin

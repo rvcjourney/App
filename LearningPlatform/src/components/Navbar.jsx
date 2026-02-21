@@ -81,7 +81,7 @@
 
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FaHome, FaChalkboardTeacher, FaUserGraduate, FaBars, FaUserCircle } from 'react-icons/fa';
+import { FaHome, FaChalkboardTeacher, FaUserGraduate, FaMoneyBillWave, FaBars, FaUserCircle } from 'react-icons/fa';
 import '../App.css';
 
 const Navbar = () => {
@@ -94,6 +94,7 @@ const Navbar = () => {
     { to: '/', label: 'Dashboard', icon: FaHome },
     { to: '/teachers', label: 'Teachers', icon: FaChalkboardTeacher },
     { to: '/students', label: 'Students', icon: FaUserGraduate },
+    { to: '/finance', label: 'Finance', icon: FaMoneyBillWave },
   ];
 
   return (

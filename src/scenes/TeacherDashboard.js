@@ -872,7 +872,10 @@ export default function TeacherDashboard({ navigation }) {
               <Text style={styles.settingValue}>₹{pricePerCall}</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.settingItem} onPress={() => Alert.alert('Bank Account')}>
+            <TouchableOpacity
+              style={styles.settingItem}
+              onPress={() => navigation.navigate(SCREEN_NAMES.BankAccountSettings)}
+            >
               <View style={styles.settingIconContainer}>
                 <User width={20} height={20} fill="#5568FE" />
               </View>

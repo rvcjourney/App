@@ -188,8 +188,15 @@ ALTER TABLE bookings ADD COLUMN IF NOT EXISTS payment_id uuid REFERENCES payment
 -- Add bank account columns to profiles if not exists
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS bank_account_number VARCHAR(255);
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS bank_ifsc_code VARCHAR(20);
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS bank_name VARCHAR(255);
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS account_holder_name VARCHAR(255);
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS bank_verified boolean DEFAULT false;
+-- RazorpayX Payout: store contact and fund account IDs for reuse
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS razorpay_contact_id VARCHAR(255);
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS razorpay_fund_account_id VARCHAR(255);
+
+-- Add bank_name to withdrawal_requests if not exists
+ALTER TABLE withdrawal_requests ADD COLUMN IF NOT EXISTS bank_name VARCHAR(255);
 
 -- ==========================================
 -- SAMPLE DATA (for testing)
@@ -224,20 +231,18 @@ FROM payments p
 LEFT JOIN teacher_earnings te ON p.id = te.payment_id;
 
 -- View for teacher withdrawal eligibility
+-- Rules: balance > 10,000 and 1 month since last_withdrawal_date (or created_at if never withdrawn)
 CREATE OR REPLACE VIEW teacher_withdrawal_eligibility AS
 SELECT 
     tw.teacher_id,
     tw.total_balance,
     tw.available_balance,
-    tw.minimum_balance_reached,
-    tw.one_month_covered,
+    (tw.total_balance > 10000) AS minimum_balance_reached,
+    (now() >= (COALESCE(tw.last_withdrawal_date, tw.created_at) + interval '1 month')) AS one_month_covered,
+    (tw.total_balance > 10000 AND now() >= (COALESCE(tw.last_withdrawal_date, tw.created_at) + interval '1 month')) AS can_withdraw,
     CASE 
-        WHEN tw.total_balance >= 10000 AND tw.one_month_covered THEN true
-        ELSE false
-    END AS can_withdraw,
-    CASE 
-        WHEN tw.total_balance < 10000 THEN 'Minimum balance not reached: Need ₹' || (10000 - tw.total_balance)
-        WHEN NOT tw.one_month_covered THEN 'Insufficient time: Wait 1 month from account creation'
+        WHEN tw.total_balance <= 10000 THEN 'Balance must be greater than ₹10,000'
+        WHEN now() < (COALESCE(tw.last_withdrawal_date, tw.created_at) + interval '1 month') THEN 'Wait 1 month from ' || CASE WHEN tw.last_withdrawal_date IS NOT NULL THEN 'last withdrawal' ELSE 'account creation' END
         ELSE 'Eligible to withdraw'
     END AS eligibility_reason
 FROM teacher_wallet tw;

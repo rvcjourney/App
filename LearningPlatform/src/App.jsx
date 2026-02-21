@@ -5,6 +5,7 @@ import Footer from './components/Footer';
 import Dashboard from './pages/Dashboard';
 import Teachers from './pages/Teachers';
 import Students from './pages/Students';
+import Finance from './pages/Finance';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 
@@ -22,6 +23,7 @@ function App() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/teachers" element={<Teachers />} />
             <Route path="/students" element={<Students />} />
+            <Route path="/finance" element={<Finance />} />
           </Routes>
         </main>
 

@@ -18,6 +18,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const nodemailer = require('nodemailer');
+const https = require('https');
 const { createClient } = require('@supabase/supabase-js');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
@@ -793,6 +794,46 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET || '',
 });
 
+// RazorpayX Payout API (contacts, fund_accounts, payouts) – same auth as Payments
+const RAZORPAY_X_KEY = process.env.RAZORPAY_KEY_ID || '';
+const RAZORPAY_X_SECRET = process.env.RAZORPAY_KEY_SECRET || '';
+const RAZORPAY_PAYOUT_ACCOUNT = process.env.RAZORPAY_PAYOUT_ACCOUNT_NUMBER || '';
+
+function razorpayXRequest(method, path, body, idempotencyKey = null) {
+  return new Promise((resolve, reject) => {
+    const auth = Buffer.from(`${RAZORPAY_X_KEY}:${RAZORPAY_X_SECRET}`).toString('base64');
+    const data = body ? JSON.stringify(body) : null;
+    const options = {
+      hostname: 'api.razorpay.com',
+      path: `/v1${path}`,
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Basic ${auth}`,
+      },
+    };
+    if (data) options.headers['Content-Length'] = Buffer.byteLength(data);
+    if (idempotencyKey) options.headers['X-Payout-Idempotency'] = idempotencyKey;
+
+    const req = https.request(options, (res) => {
+      let raw = '';
+      res.on('data', (ch) => { raw += ch; });
+      res.on('end', () => {
+        try {
+          const parsed = raw ? JSON.parse(raw) : {};
+          if (res.statusCode >= 200 && res.statusCode < 300) resolve(parsed);
+          else reject(new Error(parsed.error?.description || parsed.error?.reason || raw || `HTTP ${res.statusCode}`));
+        } catch (e) {
+          reject(new Error(raw || e.message));
+        }
+      });
+    });
+    req.on('error', reject);
+    if (data) req.write(data);
+    req.end();
+  });
+}
+
 /**
  * POST /api/payments/create-order
  * Create a Razorpay order for booking payment
@@ -1314,9 +1355,28 @@ app.get('/api/teacher/earnings/:teacherId', async (req, res) => {
       .order('created_at', { ascending: false })
       .limit(50);
 
-    // Get withdrawal eligibility
-    const { data: eligibility } = await supabase
-      .rpc('get_withdrawal_eligibility', { p_teacher_id: teacherId });
+    // Compute withdrawal eligibility: balance > 10,000 and 1 month since last withdrawal or account creation
+    let eligibility = null;
+    if (wallet) {
+      const totalBalance = Number(wallet.total_balance || 0);
+      const referenceDate = wallet.last_withdrawal_date ? new Date(wallet.last_withdrawal_date) : new Date(wallet.created_at);
+      const oneMonthLater = new Date(referenceDate);
+      oneMonthLater.setMonth(oneMonthLater.getMonth() + 1);
+      const now = new Date();
+      const minimumBalanceReached = totalBalance > 10000;
+      const oneMonthCovered = now >= oneMonthLater;
+      const canWithdraw = minimumBalanceReached && oneMonthCovered;
+      let eligibilityReason = 'Eligible to withdraw';
+      if (!minimumBalanceReached) eligibilityReason = `Balance must be greater than ₹10,000 (current: ₹${totalBalance.toLocaleString()})`;
+      else if (!oneMonthCovered) eligibilityReason = `Wait until ${oneMonthLater.toLocaleDateString()} (1 month from ${wallet.last_withdrawal_date ? 'last withdrawal' : 'account creation'})`;
+      eligibility = {
+        can_withdraw: canWithdraw,
+        eligibility_reason: eligibilityReason,
+        minimum_balance_reached: minimumBalanceReached,
+        one_month_covered: oneMonthCovered,
+        next_eligible_date: oneMonthCovered ? null : oneMonthLater.toISOString(),
+      };
+    }
 
     console.log('✅ Earnings response prepared');
 
@@ -1326,11 +1386,10 @@ app.get('/api/teacher/earnings/:teacherId', async (req, res) => {
         total_balance: 0,
         available_balance: 0,
         pending_balance: 0,
-        minimum_balance_reached: false,
-        one_month_covered: false,
+        last_withdrawal_date: null,
       },
       earnings: earnings || [],
-      eligibility: eligibility?.[0] || null,
+      eligibility,
     });
   } catch (error) {
     console.error('🔴 Error fetching earnings:', error.message);
@@ -1391,39 +1450,42 @@ app.post('/api/teacher/withdrawal/request', async (req, res) => {
       });
     }
 
-    // Check minimum balance
-    if (wallet.total_balance < 10000) {
+    // Minimum balance: must be greater than ₹10,000
+    if (wallet.total_balance <= 10000) {
       return res.status(400).json({
         success: false,
-        error: 'Minimum balance of ₹10,000 required',
+        error: 'Balance must be greater than ₹10,000 to withdraw',
         currentBalance: wallet.total_balance,
       });
     }
 
-    // Check if one month has passed
-    const accountCreatedDate = new Date(wallet.created_at);
-    const oneMonthLater = new Date(accountCreatedDate);
+    // One month rule: from last withdrawal date, or from account creation if never withdrawn
+    const referenceDate = wallet.last_withdrawal_date ? new Date(wallet.last_withdrawal_date) : new Date(wallet.created_at);
+    const oneMonthLater = new Date(referenceDate);
     oneMonthLater.setMonth(oneMonthLater.getMonth() + 1);
 
     if (new Date() < oneMonthLater) {
+      const fromLabel = wallet.last_withdrawal_date ? 'last withdrawal' : 'account creation';
       return res.status(400).json({
         success: false,
-        error: 'Please wait for 1 month from account creation',
-        eligibleDate: oneMonthLater,
+        error: `Please wait for 1 month from ${fromLabel} to withdraw again`,
+        eligibleDate: oneMonthLater.toISOString(),
       });
     }
 
     // Create withdrawal request
+    const insertRow = {
+      teacher_id: teacherId,
+      amount: amount,
+      status: 'pending',
+      bank_account_number: bankAccountNumber,
+      bank_ifsc_code: bankIFSCCode,
+      account_holder_name: accountHolderName,
+    };
+    if (bankName) insertRow.bank_name = bankName;
     const { data: withdrawal, error: withdrawalError } = await supabase
       .from('withdrawal_requests')
-      .insert([{
-        teacher_id: teacherId,
-        amount: amount,
-        status: 'pending',
-        bank_account_number: bankAccountNumber,
-        bank_ifsc_code: bankIFSCCode,
-        account_holder_name: accountHolderName,
-      }])
+      .insert([insertRow])
       .select();
 
     if (withdrawalError) throw withdrawalError;
@@ -1535,32 +1597,68 @@ app.patch('/api/admin/teacher/:teacherId/wallet', async (req, res) => {
   }
 });
 
+/** Mask account number: show only last 6 digits */
+function maskAccountNumber(accountNumber) {
+  if (!accountNumber || typeof accountNumber !== 'string') return '******';
+  const s = accountNumber.replace(/\D/g, '');
+  if (s.length <= 6) return '******' + s;
+  return '******' + s.slice(-6);
+}
+
 /**
  * GET /api/admin/withdrawals
- * Get all pending withdrawal requests (Admin only)
+ * Get all pending withdrawal requests (Admin only).
+ * Returns sender info, available balance, account masked (last 6 digits), bank name.
  */
 app.get('/api/admin/withdrawals', async (req, res) => {
   try {
     console.log('🔵 Fetching withdrawal requests');
 
-    const { data, error } = await supabase
+    const { data: withdrawals, error } = await supabase
       .from('withdrawal_requests')
-      .select(`
-        *,
-        teacher:teacher_id(profile:profiles(full_name, email))
-      `)
+      .select('*')
       .eq('status', 'pending')
       .order('requested_at', { ascending: false });
 
     if (error) throw error;
 
-    console.log('✅ Withdrawal requests fetched:', data?.length);
+    const list = withdrawals || [];
+    if (list.length === 0) {
+      return res.json({ success: true, data: [], count: 0 });
+    }
 
-    res.json({
-      success: true,
-      data: data || [],
-      count: data?.length || 0,
+    const teacherIds = [...new Set(list.map((w) => w.teacher_id))];
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, full_name, email')
+      .in('id', teacherIds);
+    const { data: wallets } = await supabase
+      .from('teacher_wallet')
+      .select('teacher_id, available_balance, total_balance')
+      .in('teacher_id', teacherIds);
+
+    const profileMap = (profiles || []).reduce((acc, p) => { acc[p.id] = p; return acc; }, {});
+    const walletMap = (wallets || []).reduce((acc, w) => { acc[w.teacher_id] = w; return acc; }, {});
+
+    const data = list.map((w) => {
+      const profile = profileMap[w.teacher_id] || {};
+      const wallet = walletMap[w.teacher_id] || {};
+      return {
+        ...w,
+        bank_account_number_masked: maskAccountNumber(w.bank_account_number),
+        bank_account_number: undefined,
+        sender: {
+          full_name: profile.full_name,
+          email: profile.email,
+          teacher_id: w.teacher_id,
+        },
+        available_balance: wallet.available_balance ?? 0,
+        total_balance: wallet.total_balance ?? 0,
+      };
     });
+
+    console.log('✅ Withdrawal requests fetched:', data.length);
+    res.json({ success: true, data, count: data.length });
   } catch (error) {
     console.error('🔴 Error fetching withdrawals:', error.message);
     res.status(500).json({
@@ -1571,8 +1669,88 @@ app.get('/api/admin/withdrawals', async (req, res) => {
 });
 
 /**
+ * GET /api/admin/withdrawals/:id
+ * Get single withdrawal request detail (sender info, balance, masked account).
+ */
+app.get('/api/admin/withdrawals/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { data: w, error } = await supabase
+      .from('withdrawal_requests')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error || !w) {
+      return res.status(404).json({ success: false, error: 'Withdrawal request not found' });
+    }
+
+    const [profileRes, walletRes] = await Promise.all([
+      supabase.from('profiles').select('id, full_name, email').eq('id', w.teacher_id).single(),
+      supabase.from('teacher_wallet').select('teacher_id, available_balance, total_balance').eq('teacher_id', w.teacher_id).single(),
+    ]);
+
+    const profile = profileRes.data || {};
+    const wallet = walletRes.data || {};
+
+    res.json({
+      success: true,
+      data: {
+        ...w,
+        bank_account_number: undefined,
+        bank_account_number_masked: maskAccountNumber(w.bank_account_number),
+        bank_name: w.bank_name || null,
+        sender: {
+          full_name: profile.full_name,
+          email: profile.email,
+          teacher_id: w.teacher_id,
+        },
+        available_balance: wallet.available_balance ?? 0,
+        total_balance: wallet.total_balance ?? 0,
+      },
+    });
+  } catch (error) {
+    console.error('🔴 Error fetching withdrawal detail:', error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * GET /api/admin/withdrawals/:id/reveal
+ * Reveal full account number for admin (eye icon). Use sparingly.
+ */
+app.get('/api/admin/withdrawals/:id/reveal', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { data: w, error } = await supabase
+      .from('withdrawal_requests')
+      .select('id, teacher_id, bank_account_number, bank_ifsc_code, bank_name, account_holder_name')
+      .eq('id', id)
+      .single();
+
+    if (error || !w) {
+      return res.status(404).json({ success: false, error: 'Withdrawal request not found' });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        bank_account_number: w.bank_account_number,
+        bank_ifsc_code: w.bank_ifsc_code,
+        bank_name: w.bank_name || null,
+        account_holder_name: w.account_holder_name,
+      },
+    });
+  } catch (error) {
+    console.error('🔴 Error revealing account:', error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
  * POST /api/admin/withdrawals/:withdrawalId/approve
- * Admin approves and processes withdrawal
+ * Admin approves and processes withdrawal. If RAZORPAY_PAYOUT_ACCOUNT_NUMBER is set,
+ * creates RazorpayX Contact (if needed), Fund account (if needed), and Payout.
  */
 app.post('/api/admin/withdrawals/:withdrawalId/approve', async (req, res) => {
   try {
@@ -1581,7 +1759,6 @@ app.post('/api/admin/withdrawals/:withdrawalId/approve', async (req, res) => {
 
     console.log('🔵 Approving withdrawal:', withdrawalId);
 
-    // Get withdrawal request
     const { data: withdrawal } = await supabase
       .from('withdrawal_requests')
       .select('*')
@@ -1595,7 +1772,7 @@ app.post('/api/admin/withdrawals/:withdrawalId/approve', async (req, res) => {
       });
     }
 
-    // Update withdrawal status
+    // Mark as processing first
     const { data: updated, error: updateError } = await supabase
       .from('withdrawal_requests')
       .update({
@@ -1610,27 +1787,121 @@ app.post('/api/admin/withdrawals/:withdrawalId/approve', async (req, res) => {
 
     if (updateError) throw updateError;
 
-    // Here you would integrate with Razorpay Payouts API
-    // For now, mark as pending processing
-    // In production: await razorpay.payouts.create(payoutDetails);
+    let payoutId = null;
+    let finalStatus = 'processing';
+    const payoutAccount = (RAZORPAY_PAYOUT_ACCOUNT || '').trim();
 
-    console.log('✅ Withdrawal marked as processing:', withdrawalId);
+    if (payoutAccount) {
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id, full_name, email, razorpay_contact_id, razorpay_fund_account_id')
+          .eq('id', withdrawal.teacher_id)
+          .single();
 
-    // Send notification to teacher
+        let contactId = profile?.razorpay_contact_id;
+        let fundAccountId = profile?.razorpay_fund_account_id;
+
+        if (!contactId) {
+          const phone = (profile?.phone || '0000000000').replace(/\D/g, '').slice(0, 10) || '0000000000';
+          const contactRes = await razorpayXRequest('POST', '/contacts', {
+            name: (profile?.full_name || withdrawal.account_holder_name || 'Teacher').substring(0, 50),
+            email: profile?.email || `teacher-${withdrawal.teacher_id}@placeholder.local`,
+            contact: phone,
+            type: 'vendor',
+            reference_id: `teacher_${withdrawal.teacher_id}`,
+          });
+          contactId = contactRes.id;
+          await supabase.from('profiles').update({ razorpay_contact_id: contactId }).eq('id', withdrawal.teacher_id);
+        }
+
+        if (!fundAccountId) {
+          const faRes = await razorpayXRequest('POST', '/fund_accounts', {
+            contact_id: contactId,
+            account_type: 'bank_account',
+            bank_account: {
+              name: withdrawal.account_holder_name || profile?.full_name || 'Teacher',
+              ifsc: (withdrawal.bank_ifsc_code || '').trim(),
+              account_number: String(withdrawal.bank_account_number || '').replace(/\D/g, ''),
+            },
+          });
+          fundAccountId = faRes.id;
+          await supabase.from('profiles').update({ razorpay_fund_account_id: fundAccountId }).eq('id', withdrawal.teacher_id);
+        }
+
+        const amountPaise = Math.max(100, Math.round(Number(withdrawal.amount) * 100));
+        const payoutRes = await razorpayXRequest(
+          'POST',
+          '/payouts',
+          {
+            account_number: payoutAccount,
+            fund_account_id: fundAccountId,
+            amount: amountPaise,
+            currency: 'INR',
+            mode: 'IMPS',
+            purpose: 'payout',
+            reference_id: `wd_${withdrawalId}`,
+            narration: 'Teacher withdrawal',
+          },
+          withdrawalId
+        );
+        payoutId = payoutRes.id;
+        finalStatus = payoutRes.status === 'queued' || payoutRes.status === 'processing' || payoutRes.status === 'reversed' ? 'processing' : 'completed';
+        if (payoutRes.status === 'processed' || payoutRes.status === 'completed') finalStatus = 'completed';
+        console.log('✅ Razorpay payout created:', payoutId, payoutRes.status);
+      } catch (payoutErr) {
+        console.error('🔴 Razorpay payout error:', payoutErr.message);
+        await supabase
+          .from('withdrawal_requests')
+          .update({
+            status: 'processing',
+            rejected_reason: payoutErr.message,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', withdrawalId);
+        return res.status(500).json({
+          success: false,
+          error: 'Payout failed',
+          message: payoutErr.message,
+        });
+      }
+    } else {
+      console.log('⚠️ RAZORPAY_PAYOUT_ACCOUNT_NUMBER not set – skipping actual payout');
+    }
+
+    const updatePayload = {
+      status: finalStatus,
+      updated_at: new Date().toISOString(),
+    };
+    if (payoutId) updatePayload.razorpay_payout_id = payoutId;
+    if (finalStatus === 'completed') updatePayload.completed_at = new Date().toISOString();
+
+    await supabase.from('withdrawal_requests').update(updatePayload).eq('id', withdrawalId);
+
+    // Reset one-month condition after redeem/withdraw: set last_withdrawal_date so next withdrawal is allowed only after 1 month
+    const { data: w } = await supabase.from('teacher_wallet').select('withdrawn_amount').eq('teacher_id', withdrawal.teacher_id).single();
+    const currentWithdrawn = Number(w?.withdrawn_amount || 0);
     await supabase
-      .from('notifications')
-      .insert([{
-        user_id: withdrawal.teacher_id,
-        notification_type: 'withdrawal_approved',
-        title: '✅ Withdrawal Approved',
-        message: `Your withdrawal of ₹${withdrawal.amount} has been approved. Amount will be transferred to your bank account within 2-3 business days.`,
-        is_read: false,
-      }]);
+      .from('teacher_wallet')
+      .update({
+        last_withdrawal_date: new Date().toISOString(),
+        withdrawn_amount: currentWithdrawn + Number(withdrawal.amount),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('teacher_id', withdrawal.teacher_id);
+
+    await supabase.from('notifications').insert([{
+      user_id: withdrawal.teacher_id,
+      notification_type: 'withdrawal_approved',
+      title: '✅ Withdrawal Approved',
+      message: `Your withdrawal of ₹${withdrawal.amount} has been approved. Your amount will be redeemed in your bank within 24hrs.`,
+      is_read: false,
+    }]);
 
     res.json({
       success: true,
-      message: 'Withdrawal approved and processing',
-      data: updated[0],
+      message: payoutId ? 'Withdrawal approved and payout initiated' : 'Withdrawal approved and processing',
+      data: { ...updated[0], status: finalStatus, razorpay_payout_id: payoutId },
     });
   } catch (error) {
     console.error('🔴 Error approving withdrawal:', error.message);
@@ -1705,7 +1976,7 @@ app.listen(PORT, HOST, () => {
   console.log('🚀 VideoSDK Token Server Started');
   console.log('='.repeat(50));
   console.log(`📍 Server running at: http://localhost:${PORT}`);
-  console.log(`📍 Also reachable at: http://192.168.1.12:${PORT}`);
+  console.log(`📍 Also reachable at: http://192.168.0.130:${PORT}`);
   console.log('\n📌 Available Endpoints:');
   console.log(`   POST /send-otp        - Send OTP to email`);
   console.log(`   POST /verify-otp      - Verify OTP`);
@@ -1724,7 +1995,7 @@ app.listen(PORT, HOST, () => {
   console.log(`   POST /api/admin/withdrawals/:id/approve - Approve withdrawal`);
   console.log(`   GET  /api/admin/analytics          - Analytics`);
   console.log('\n💡 Use this in your .env:');
-  console.log(`   REACT_APP_AUTH_URL = "http://192.168.1.12:${PORT}"`);
+  console.log(`   REACT_APP_AUTH_URL = "http://192.168.0.130:${PORT}"`);
   console.log('='.repeat(50) + '\n');
 });
 

@@ -168,7 +168,11 @@ export default function AdminDashboard({ navigation }) {
 
       const result = await response.json();
       if (result.success) {
-        Toast.show('Withdrawal approved');
+        Toast.show('Withdrawal approved – transfer will be initiated');
+        setShowRequestModal(false);
+        setSelectedRequest(null);
+        setRequestDetail(null);
+        setRevealedAccount(null);
         await loadWithdrawals();
       } else {
         Alert.alert('Error', result.error);
@@ -176,6 +180,42 @@ export default function AdminDashboard({ navigation }) {
     } catch (error) {
       console.error('Error:', error);
       Alert.alert('Error', error.message);
+    }
+  };
+
+  const [showRequestModal, setShowRequestModal] = useState(false);
+
+  const openRequestDetail = async (withdrawal) => {
+    setSelectedRequest(withdrawal);
+    setShowRequestModal(true);
+    setRequestDetail(null);
+    setRevealedAccount(null);
+    setDetailLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/api/admin/withdrawals/${withdrawal.id}`);
+      const json = await res.json();
+      if (json.success && json.data) setRequestDetail(json.data);
+      else Toast.show('Failed to load request details');
+    } catch (e) {
+      Toast.show('Failed to load request details');
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const toggleRevealAccount = async () => {
+    if (!selectedRequest) return;
+    if (revealedAccount) {
+      setRevealedAccount(null);
+      return;
+    }
+    try {
+      const res = await fetch(`${API_URL}/api/admin/withdrawals/${selectedRequest.id}/reveal`);
+      const json = await res.json();
+      if (json.success && json.data) setRevealedAccount(json.data);
+      else Toast.show('Failed to load account details');
+    } catch (e) {
+      Toast.show('Failed to load account details');
     }
   };
 
@@ -212,36 +252,38 @@ export default function AdminDashboard({ navigation }) {
   );
 
   // ==========================================
-  // RENDER: WITHDRAWALS TAB
+  // RENDER: WITHDRAWALS / PAYMENT REQUESTS TAB
   // ==========================================
   const renderWithdrawalsTab = () => (
     <View style={styles.tabContent}>
-      <Text style={styles.tabTitle}>Pending Withdrawal Requests</Text>
+      <Text style={styles.tabTitle}>Payment Requests</Text>
       <Text style={styles.tabDescription}>
-        Review and approve teacher withdrawal requests
+        Review teacher redemption requests. Tap a request to see full details and approve.
       </Text>
 
       {withdrawals.length === 0 ? (
         <View style={styles.emptyState}>
           <Text style={styles.emptyIcon}>📭</Text>
-          <Text style={styles.emptyText}>No pending withdrawals</Text>
+          <Text style={styles.emptyText}>No pending payment requests</Text>
         </View>
       ) : (
-        withdrawals.map(withdrawal => (
-          <View key={withdrawal.id} style={styles.withdrawalCard}>
+        withdrawals.map((withdrawal) => (
+          <TouchableOpacity
+            key={withdrawal.id}
+            style={styles.withdrawalCard}
+            onPress={() => openRequestDetail(withdrawal)}
+            activeOpacity={0.8}
+          >
             <View style={styles.withdrawalHeader}>
-              <Text style={styles.teacherName}>{withdrawal.account_holder_name}</Text>
-              <Text style={styles.withdrawalAmount}>₹{withdrawal.amount}</Text>
+              <Text style={styles.teacherName}>
+                {withdrawal.sender?.full_name || withdrawal.account_holder_name}
+              </Text>
+              <Text style={styles.withdrawalAmount}>₹{Number(withdrawal.amount).toLocaleString()}</Text>
             </View>
-
             <View style={styles.withdrawalDetails}>
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Account Number:</Text>
-                <Text style={styles.detailValue}>****{withdrawal.bank_account_number?.slice(-4)}</Text>
-              </View>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>IFSC:</Text>
-                <Text style={styles.detailValue}>{withdrawal.bank_ifsc_code}</Text>
+                <Text style={styles.detailLabel}>Account:</Text>
+                <Text style={styles.detailValue}>{withdrawal.bank_account_number_masked || '******'}</Text>
               </View>
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Requested:</Text>
@@ -250,31 +292,8 @@ export default function AdminDashboard({ navigation }) {
                 </Text>
               </View>
             </View>
-
-            <TouchableOpacity
-              style={styles.approveBtn}
-              onPress={() => {
-                Alert.alert(
-                  'Approve Withdrawal?',
-                  `Approve ₹${withdrawal.amount} withdrawal for ${withdrawal.account_holder_name}?`,
-                  [
-                    { text: 'Cancel', onPress: () => {} },
-                    {
-                      text: 'Approve',
-                      onPress: () =>
-                        handleApproveWithdrawal(
-                          withdrawal.id,
-                          withdrawal.teacher_id,
-                          withdrawal.amount
-                        ),
-                    },
-                  ]
-                );
-              }}
-            >
-              <Text style={styles.approveBtnText}>✓ Approve</Text>
-            </TouchableOpacity>
-          </View>
+            <Text style={styles.tapToView}>Tap to view details →</Text>
+          </TouchableOpacity>
         ))
       )}
     </View>
@@ -351,7 +370,7 @@ export default function AdminDashboard({ navigation }) {
               activeTab === 'withdrawals' && styles.tabButtonTextActive,
             ]}
           >
-            📤 Withdrawals
+            💳 Payment Requests
           </Text>
         </TouchableOpacity>
 
@@ -385,6 +404,146 @@ export default function AdminDashboard({ navigation }) {
           {activeTab === 'analytics' && renderAnalyticsTab()}
         </ScrollView>
       )}
+
+      {/* Payment Request Detail Modal */}
+      <Modal visible={showRequestModal} animationType="slide" transparent>
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Payment Request Details</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowRequestModal(false);
+                  setSelectedRequest(null);
+                  setRequestDetail(null);
+                  setRevealedAccount(null);
+                }}
+              >
+                <Text style={styles.closeBtn}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            {detailLoading ? (
+              <View style={styles.detailLoadingBox}>
+                <ActivityIndicator size="large" color="#5568FE" />
+                <Text style={styles.detailLoadingText}>Loading request...</Text>
+              </View>
+            ) : requestDetail ? (
+              <ScrollView style={styles.requestDetailScroll} showsVerticalScrollIndicator={false}>
+                <Text style={styles.detailSectionTitle}>Sender info</Text>
+                <View style={styles.detailBlock}>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Name</Text>
+                    <Text style={styles.detailValue}>
+                      {requestDetail.sender?.full_name || requestDetail.account_holder_name}
+                    </Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Email</Text>
+                    <Text style={styles.detailValue}>{requestDetail.sender?.email || '—'}</Text>
+                  </View>
+                </View>
+
+                <Text style={styles.detailSectionTitle}>Balance</Text>
+                <View style={styles.detailBlock}>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Available balance</Text>
+                    <Text style={styles.detailValue}>
+                      ₹{Number(requestDetail.available_balance ?? 0).toLocaleString()}
+                    </Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Total balance</Text>
+                    <Text style={styles.detailValue}>
+                      ₹{Number(requestDetail.total_balance ?? 0).toLocaleString()}
+                    </Text>
+                  </View>
+                </View>
+
+                <Text style={styles.detailSectionTitle}>Account info</Text>
+                <View style={styles.detailBlock}>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Bank name</Text>
+                    <Text style={styles.detailValue}>
+                      {revealedAccount?.bank_name || requestDetail.bank_name || '—'}
+                    </Text>
+                  </View>
+                  <View style={[styles.detailRow, styles.accountRow]}>
+                    <View>
+                      <Text style={styles.detailLabel}>Account number</Text>
+                      <Text style={styles.detailValue}>
+                        {revealedAccount
+                          ? revealedAccount.bank_account_number
+                          : (requestDetail.bank_account_number_masked || '******')}
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.eyeBtn}
+                      onPress={toggleRevealAccount}
+                    >
+                      <Text style={styles.eyeBtnText}>{revealedAccount ? '🙈 Hide' : '👁 Show'}</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>IFSC</Text>
+                    <Text style={styles.detailValue}>
+                      {requestDetail.bank_ifsc_code || '—'}
+                    </Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Account holder</Text>
+                    <Text style={styles.detailValue}>
+                      {requestDetail.account_holder_name || '—'}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.detailBlock}>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Requested amount</Text>
+                    <Text style={[styles.detailValue, styles.amountHighlight]}>
+                      ₹{Number(requestDetail.amount).toLocaleString()}
+                    </Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Requested at</Text>
+                    <Text style={styles.detailValue}>
+                      {requestDetail.requested_at
+                        ? new Date(requestDetail.requested_at).toLocaleString()
+                        : '—'}
+                    </Text>
+                  </View>
+                </View>
+
+                <TouchableOpacity
+                  style={styles.approveBtn}
+                  onPress={() => {
+                    Alert.alert(
+                      'Approve payment request?',
+                      `Approve ₹${requestDetail.amount} transfer to ${requestDetail.sender?.full_name || requestDetail.account_holder_name}? The transfer will be initiated after approval.`,
+                      [
+                        { text: 'Cancel', onPress: () => {} },
+                        {
+                          text: 'Approve',
+                          onPress: () =>
+                            handleApproveWithdrawal(
+                              requestDetail.id,
+                              requestDetail.teacher_id,
+                              requestDetail.amount
+                            ),
+                        },
+                      ]
+                    );
+                  }}
+                >
+                  <Text style={styles.approveBtnText}>✓ Approve & start transfer</Text>
+                </TouchableOpacity>
+              </ScrollView>
+            ) : (
+              <Text style={styles.detailLoadingText}>Could not load request.</Text>
+            )}
+          </View>
+        </SafeAreaView>
+      </Modal>
 
       {/* Charge Modal */}
       <Modal visible={showChargeModal} animationType="slide" transparent>
@@ -656,6 +815,61 @@ const styles = StyleSheet.create({
   emptyText: {
     color: '#999',
     fontSize: 14,
+  },
+
+  tapToView: {
+    color: '#5568FE',
+    fontSize: 12,
+    marginTop: 8,
+    textAlign: 'right',
+  },
+
+  detailLoadingBox: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  detailLoadingText: {
+    color: '#999',
+    fontSize: 14,
+  },
+  requestDetailScroll: {
+    flex: 1,
+  },
+  detailSectionTitle: {
+    color: '#5568FE',
+    fontSize: 13,
+    fontWeight: '700',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  detailBlock: {
+    backgroundColor: '#1C1F4A',
+    borderRadius: 12,
+    padding: 15,
+    marginBottom: 12,
+  },
+  accountRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  eyeBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#2A2D5A',
+    borderRadius: 8,
+  },
+  eyeBtnText: {
+    color: '#5568FE',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  amountHighlight: {
+    color: '#FF9800',
+    fontSize: 16,
+    fontWeight: '700',
   },
 
   // Analytics

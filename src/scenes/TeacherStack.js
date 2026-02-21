@@ -9,6 +9,7 @@ import Meeting from "./meeting";
 import { SCREEN_NAMES } from "../navigators/screenNames";
 import TeacherEarnings from "./Teacher/TeacherEarnings";
 import WithdrawalRequest from "./Teacher/WithdrawalRequest";
+import BankAccountSettings from "./Teacher/BankAccountSettings";
 
 const RootStack = createStackNavigator();
 
@@ -47,7 +48,10 @@ export default function TeacherStack() {
         name={SCREEN_NAMES.WithdrawalRequest}
         component={WithdrawalRequest}
       />
-      
+      <RootStack.Screen
+        name={SCREEN_NAMES.BankAccountSettings}
+        component={BankAccountSettings}
+      />
     </RootStack.Navigator>
   );
 }

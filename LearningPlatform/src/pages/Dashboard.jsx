@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
-import { FaChalkboardTeacher, FaUserGraduate, FaCalendarCheck } from 'react-icons/fa';
+import { Link } from 'react-router-dom';
+import { FaChalkboardTeacher, FaUserGraduate, FaCalendarCheck, FaMoneyBillWave } from 'react-icons/fa';
 import { getDashboardStats } from '../services/api';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://192.168.0.130:3000';
 
 const Dashboard = () => {
   const [stats, setStats] = useState({
@@ -8,10 +11,16 @@ const Dashboard = () => {
     totalStudents: 0,
     totalBookings: 0,
   });
+  const [withdrawals, setWithdrawals] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [withdrawalsLoading, setWithdrawalsLoading] = useState(true);
 
   useEffect(() => {
     loadStats();
+  }, []);
+
+  useEffect(() => {
+    loadWithdrawals();
   }, []);
 
   const loadStats = async () => {
@@ -23,6 +32,23 @@ const Dashboard = () => {
       console.error('Error loading dashboard stats:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadWithdrawals = async () => {
+    try {
+      setWithdrawalsLoading(true);
+      const res = await fetch(`${API_URL}/api/admin/withdrawals`);
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data)) {
+        setWithdrawals(json.data);
+      } else {
+        setWithdrawals([]);
+      }
+    } catch (_) {
+      setWithdrawals([]);
+    } finally {
+      setWithdrawalsLoading(false);
     }
   };
 
@@ -86,6 +112,64 @@ const Dashboard = () => {
             })}
           </div>
         )}
+
+        {/* Withdrawal requests – summary with link to Finance (full payouts as on mobile admin) */}
+        <section className="mt-5">
+          <div className="d-flex justify-content-between align-items-center mb-3">
+            <h5 className="fw-bold text-white mb-0 d-flex align-items-center gap-2">
+              <FaMoneyBillWave className="text-warning" />
+              Withdrawal requests
+            </h5>
+            <Link to="/finance" className="btn btn-sm btn-warning text-dark">
+              Manage payouts →
+            </Link>
+          </div>
+          {withdrawalsLoading ? (
+            <div className="d-flex justify-content-center py-4">
+              <div className="spinner-border text-warning" role="status"></div>
+            </div>
+          ) : (
+            <div className="card bg-secondary bg-opacity-10 border border-secondary shadow-lg">
+              <div className="card-body p-0">
+                <div className="table-responsive">
+                  <table className="table table-dark table-hover mb-0">
+                    <thead>
+                      <tr>
+                        <th className="border-secondary">Name</th>
+                        <th className="border-secondary">Account</th>
+                        <th className="border-secondary text-end">Amount</th>
+                        <th className="border-secondary">Requested</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {withdrawals.length === 0 ? (
+                        <tr>
+                          <td colSpan={4} className="text-center text-secondary py-4">
+                            No pending withdrawal requests
+                          </td>
+                        </tr>
+                      ) : (
+                        withdrawals.slice(0, 5).map((req) => (
+                          <tr key={req.id}>
+                            <td className="border-secondary">{req.sender?.full_name || req.account_holder_name || '—'}</td>
+                            <td className="border-secondary font-monospace">{req.bank_account_number_masked || '******'}</td>
+                            <td className="border-secondary text-end text-warning fw-bold">₹{Number(req.amount).toLocaleString()}</td>
+                            <td className="border-secondary text-secondary">{req.requested_at ? new Date(req.requested_at).toLocaleString() : '—'}</td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+                {withdrawals.length > 5 && (
+                  <div className="card-footer bg-dark border-secondary text-secondary small">
+                    +{withdrawals.length - 5} more. <Link to="/finance" className="text-warning">View all in Finance</Link>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </section>
       </div>
     </div>
   );

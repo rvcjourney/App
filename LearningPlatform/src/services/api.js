@@ -2,7 +2,7 @@ import { supabase } from '../config/supabase';
 
 // Used by web app for any non-supabase backend calls.
 // Keep env override, but default to your LAN IP.
-const API_URL = import.meta.env.VITE_API_URL || 'http://192.168.1.12:3000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://192.168.0.130:3000';
 
 // ==========================================
 // TEACHER API FUNCTIONS
@@ -265,4 +265,73 @@ export const getAuditLog = async (userId, userType) => {
     console.error('Error fetching audit log:', error);
     throw error;
   }
+};
+
+// ==========================================
+// ADMIN PAYOUT / WITHDRAWAL API (same as mobile admin)
+// ==========================================
+
+export const getAdminWithdrawals = async () => {
+  const res = await fetch(`${API_URL}/api/admin/withdrawals`);
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Failed to load withdrawals');
+  return json.data || [];
+};
+
+export const getAdminWithdrawalDetail = async (id) => {
+  const res = await fetch(`${API_URL}/api/admin/withdrawals/${id}`);
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Failed to load request');
+  return json.data;
+};
+
+export const getAdminWithdrawalReveal = async (id) => {
+  const res = await fetch(`${API_URL}/api/admin/withdrawals/${id}/reveal`);
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Failed to reveal account');
+  return json.data;
+};
+
+export const approveAdminWithdrawal = async (withdrawalId, adminId) => {
+  const res = await fetch(`${API_URL}/api/admin/withdrawals/${withdrawalId}/approve`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ adminId: adminId || 'web-admin' }),
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Failed to approve');
+  return json;
+};
+
+export const getAdminAnalytics = async () => {
+  const res = await fetch(`${API_URL}/api/admin/analytics`);
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Failed to load analytics');
+  return json.analytics || {};
+};
+
+// ==========================================
+// ADMIN CHARGES (teacher base + admin charge)
+// ==========================================
+
+export const getAdminCharges = async (teacherId) => {
+  const res = await fetch(`${API_URL}/api/admin/charges/${teacherId}`);
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Failed to load charges');
+  return json.data || null;
+};
+
+export const setAdminCharges = async (teacherId, baseCharge, adminCharge) => {
+  const res = await fetch(`${API_URL}/api/admin/charges/set`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      teacherId,
+      baseCharge: Number(baseCharge),
+      adminCharge: Number(adminCharge),
+    }),
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Failed to set charges');
+  return json;
 };

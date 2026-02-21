@@ -42,6 +42,7 @@ export default function SuperAdminDashboard({ navigation }) {
   const [userCount, setUserCount] = useState(0);
   const [bookingCount, setBookingCount] = useState(0);
   const [pendingWithdrawalsCount, setPendingWithdrawalsCount] = useState(0);
+  const [withdrawalRequests, setWithdrawalRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -58,9 +59,14 @@ export default function SuperAdminDashboard({ navigation }) {
         const res = await fetch(`${API_URL}/api/admin/withdrawals`);
         const json = await res.json();
         if (json.success && Array.isArray(json.data)) {
+          setWithdrawalRequests(json.data);
           setPendingWithdrawalsCount(json.data.length);
+        } else {
+          setWithdrawalRequests([]);
+          setPendingWithdrawalsCount(0);
         }
       } catch (_) {
+        setWithdrawalRequests([]);
         setPendingWithdrawalsCount(0);
       }
     } catch (e) {
@@ -222,6 +228,38 @@ export default function SuperAdminDashboard({ navigation }) {
           <ChevronRight width={22} height={22} fill="#6b7280" />
         </TouchableOpacity>
 
+        {/* Withdrawal requests – shown on admin dashboard */}
+        <Text style={styles.sectionTitle}>Withdrawal requests</Text>
+        {withdrawalRequests.length === 0 ? (
+          <View style={styles.emptyWithdrawals}>
+            <Text style={styles.emptyWithdrawalsText}>No pending withdrawal requests</Text>
+          </View>
+        ) : (
+          <View style={styles.withdrawalList}>
+            {withdrawalRequests.slice(0, 5).map((req) => (
+              <View key={req.id} style={styles.withdrawalRow}>
+                <View style={styles.withdrawalRowLeft}>
+                  <Text style={styles.withdrawalName}>{req.sender?.full_name || req.account_holder_name || 'Teacher'}</Text>
+                  <Text style={styles.withdrawalMeta}>
+                    {req.bank_account_number_masked || '******'} · {req.requested_at ? new Date(req.requested_at).toLocaleDateString() : ''}
+                  </Text>
+                </View>
+                <Text style={styles.withdrawalAmount}>₹{Number(req.amount).toLocaleString()}</Text>
+              </View>
+            ))}
+            {withdrawalRequests.length > 5 && (
+              <Text style={styles.withdrawalMore}>+{withdrawalRequests.length - 5} more</Text>
+            )}
+            <TouchableOpacity
+              style={styles.viewAllWithdrawalsBtn}
+              onPress={() => navigation.navigate(SCREEN_NAMES.AdminFinance)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.viewAllWithdrawalsBtnText}>View all & approve →</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Logout */}
         <View style={styles.footer}>
           <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.8}>
@@ -354,6 +392,66 @@ const styles = StyleSheet.create({
   cardStat: {
     color: '#6b7280',
     fontSize: 12,
+    fontWeight: '600',
+  },
+  emptyWithdrawals: {
+    backgroundColor: '#1C1F4A',
+    borderRadius: 14,
+    padding: 20,
+    marginBottom: 12,
+    alignItems: 'center',
+  },
+  emptyWithdrawalsText: {
+    color: '#9ca3af',
+    fontSize: 14,
+  },
+  withdrawalList: {
+    backgroundColor: '#1C1F4A',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 12,
+  },
+  withdrawalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#2A2D5A',
+  },
+  withdrawalRowLeft: { flex: 1 },
+  withdrawalName: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  withdrawalMeta: {
+    color: '#9ca3af',
+    fontSize: 12,
+    marginTop: 2,
+  },
+  withdrawalAmount: {
+    color: '#F59E0B',
+    fontSize: 15,
+    fontWeight: '700',
+    marginLeft: 12,
+  },
+  withdrawalMore: {
+    color: '#6b7280',
+    fontSize: 12,
+    paddingVertical: 8,
+    paddingLeft: 4,
+  },
+  viewAllWithdrawalsBtn: {
+    marginTop: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderRadius: 10,
+    backgroundColor: '#F59E0B22',
+  },
+  viewAllWithdrawalsBtnText: {
+    color: '#F59E0B',
+    fontSize: 14,
     fontWeight: '600',
   },
   footer: {

@@ -35,6 +35,7 @@ export default function WithdrawalRequest({ navigation, route }) {
   const [accountNumber, setAccountNumber] = useState('');
   const [ifscCode, setIfscCode] = useState('');
   const [accountHolder, setAccountHolder] = useState('');
+  const [bankName, setBankName] = useState('');
   
   // Bank details from profile
   const [savedBankDetails, setSavedBankDetails] = useState(null);
@@ -50,7 +51,7 @@ export default function WithdrawalRequest({ navigation, route }) {
       if (user) {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('bank_account_number, bank_ifsc_code, account_holder_name')
+          .select('bank_account_number, bank_ifsc_code, account_holder_name, bank_name')
           .eq('id', user.id)
           .single();
 
@@ -116,6 +117,7 @@ export default function WithdrawalRequest({ navigation, route }) {
       const bankNumber = useSavedDetails ? savedBankDetails?.bank_account_number : accountNumber;
       const bankIfsc = useSavedDetails ? savedBankDetails?.bank_ifsc_code : ifscCode;
       const bankHolder = useSavedDetails ? savedBankDetails?.account_holder_name : accountHolder;
+      const bankNameVal = useSavedDetails ? (savedBankDetails?.bank_name || '') : (bankName || '');
 
       const response = await fetch(`${API_URL}/api/teacher/withdrawal/request`, {
         method: 'POST',
@@ -126,6 +128,7 @@ export default function WithdrawalRequest({ navigation, route }) {
           bankAccountNumber: bankNumber,
           bankIFSCCode: bankIfsc,
           accountHolderName: bankHolder,
+          bankName: bankNameVal || undefined,
         }),
       });
 
@@ -133,10 +136,10 @@ export default function WithdrawalRequest({ navigation, route }) {
 
       if (result.success) {
         Toast.show('Withdrawal request submitted successfully!');
-        
+
         Alert.alert(
-          'Success',
-          `Your withdrawal request of ₹${withdrawalAmount} has been submitted.\n\nAdmin will process it within 24-48 hours.`,
+          'Processing',
+          `Your amount will be redeemed in your bank in 24hrs.\n\nRequest of ₹${withdrawalAmount} has been sent to admin for approval. Once approved, the transfer will be initiated.`,
           [
             {
               text: 'OK',
@@ -300,7 +303,7 @@ export default function WithdrawalRequest({ navigation, route }) {
 
               <View style={styles.detail}>
                 <Text style={styles.detailLabel}>Processing Time:</Text>
-                <Text style={styles.detailValue}>2-3 business days</Text>
+                <Text style={styles.detailValue}>Within 24hrs after admin approval</Text>
               </View>
 
               <View style={styles.detail}>
@@ -320,7 +323,7 @@ export default function WithdrawalRequest({ navigation, route }) {
             <View style={styles.termsBox}>
               <Text style={styles.termsTitle}>Before You Withdraw</Text>
               <Text style={styles.term}>✓ Ensure bank details are correct</Text>
-              <Text style={styles.term}>✓ Processing takes 2-3 business days</Text>
+              <Text style={styles.term}>✓ Amount will be in your bank within 24hrs after approval</Text>
               <Text style={styles.term}>✓ No fees charged on withdrawals</Text>
               <Text style={styles.term}>✓ Direct transfer to your bank account</Text>
             </View>
@@ -339,6 +342,15 @@ export default function WithdrawalRequest({ navigation, route }) {
             </View>
           </View>
         </ScrollView>
+
+        {/* Processing status */}
+        {loading && (
+          <View style={styles.processingOverlay}>
+            <ActivityIndicator size="large" color="#5568FE" />
+            <Text style={styles.processingText}>Processing your redemption request...</Text>
+            <Text style={styles.processingSubtext}>Please wait</Text>
+          </View>
+        )}
 
         {/* Submit Button */}
         <View style={styles.footer}>
@@ -632,6 +644,29 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 18,
     marginBottom: 6,
+  },
+
+  processingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(11, 13, 42, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  processingText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    marginTop: 16,
+  },
+  processingSubtext: {
+    color: '#999',
+    fontSize: 13,
+    marginTop: 6,
   },
 
   footer: {
