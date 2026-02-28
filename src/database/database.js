@@ -797,12 +797,14 @@ export const getTeacherSlotsByDateRange = async (teacherId, startDate, endDate) 
  * Book a specific availability slot
  * Creates booking immediately (no teacher confirmation needed)
  * Teacher gets notification about scheduled lecture
+ * 
+ * IMPROVED: Better conflict detection and atomic updates
  */
 export const bookAvailabilitySlot = async (studentId, teacherId, slotId, subject, hoursRequired = 1) => {
   try {
     console.log('🔵 Booking availability slot...');
     
-    // Get slot details
+    // Step 1: Get slot details with FOR UPDATE lock (if supported) or optimistic locking
     const { data: slot, error: slotError } = await supabase
       .from('teacher_availability_slots')
       .select('*')
@@ -811,19 +813,53 @@ export const bookAvailabilitySlot = async (studentId, teacherId, slotId, subject
 
     if (slotError) throw slotError;
 
-    // Check if slot is still available
+    // Step 2: Double-check availability (prevent race conditions)
     if (slot.slot_status !== 'available' || slot.booked_count >= slot.capacity) {
-      throw new Error('Slot is no longer available');
+      throw new Error('Slot is no longer available. Another student may have just booked it.');
     }
 
-    // Create booking with status "pending" (will be confirmed after payment)
+    // Step 3: Calculate new booking count
+    const newBookedCount = slot.booked_count + 1;
+    const isBooked = newBookedCount >= slot.capacity;
+
+    // Step 4: Update slot FIRST with optimistic locking (check current booked_count)
+    // This prevents double-booking if two students try to book simultaneously
+    const { data: updatedSlot, error: updateSlotError } = await supabase
+      .from('teacher_availability_slots')
+      .update({
+        booked_count: newBookedCount,
+        is_booked: isBooked,
+        slot_status: isBooked ? 'booked' : 'available',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', slotId)
+      .eq('booked_count', slot.booked_count) // Optimistic locking: only update if booked_count hasn't changed
+      .select()
+      .single();
+
+    // If update failed, it means slot was booked by someone else (race condition)
+    if (updateSlotError || !updatedSlot) {
+      // Re-check slot status
+      const { data: currentSlot } = await supabase
+        .from('teacher_availability_slots')
+        .select('slot_status, booked_count, capacity')
+        .eq('id', slotId)
+        .single();
+      
+      if (currentSlot?.slot_status === 'booked' || currentSlot?.booked_count >= currentSlot?.capacity) {
+        throw new Error('Slot was just booked by another student. Please select a different time slot.');
+      }
+      throw new Error('Failed to reserve slot. Please try again.');
+    }
+
+    // Step 5: Create booking with status "pending" (will be confirmed after payment)
     const { data: booking, error: bookingError } = await supabase
       .from('bookings')
       .insert([{
         student_id: studentId,
         teacher_id: teacherId,
         availability_slot_id: slotId,
-        booked_date: new Date(slot.start_time),
+        booked_date: new Date(slot.start_time).toISOString(),
         subject: subject,
         status: 'pending', // Pending until payment is verified
         duration_minutes: hoursRequired * 60,
@@ -831,30 +867,96 @@ export const bookAvailabilitySlot = async (studentId, teacherId, slotId, subject
       }])
       .select();
 
-    if (bookingError) throw bookingError;
+    // Step 6: If booking creation fails, rollback slot update
+    if (bookingError) {
+      console.error('🔴 Booking creation failed, rolling back slot update...');
+      // Rollback: decrement booked_count
+      await supabase
+        .from('teacher_availability_slots')
+        .update({
+          booked_count: slot.booked_count, // Revert to original
+          is_booked: slot.booked_count >= slot.capacity,
+          slot_status: slot.booked_count >= slot.capacity ? 'booked' : 'available',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', slotId);
+      throw bookingError;
+    }
 
-    // Update slot booking count
-    const newBookedCount = slot.booked_count + 1;
+    const bookingRecord = booking?.[0];
+    const bookingId = bookingRecord?.id;
+
+    // Step 7: Notify teacher and student that booking was created (pending payment)
+    try {
+      await createNotification(
+        teacherId,
+        'booking_request',
+        '📅 New booking request',
+        'A student has requested a session. They will complete payment to confirm.',
+        bookingId
+      );
+      await createNotification(
+        studentId,
+        'booking_request',
+        '📅 Booking created',
+        'Complete payment to confirm your session with the teacher.',
+        bookingId
+      );
+    } catch (notifErr) {
+      console.warn('⚠️ Could not create booking notifications:', notifErr?.message);
+      // Don't fail the booking if notification fails
+    }
+
+    console.log('✅ Slot booked successfully:', bookingId);
+    return bookingRecord;
+  } catch (error) {
+    console.error('🔴 Error booking slot:', error);
+    throw error;
+  }
+};
+
+/**
+ * Free up a slot when booking is cancelled or payment fails
+ * This ensures slots are released back to available status
+ */
+export const releaseAvailabilitySlot = async (slotId, bookingId = null) => {
+  try {
+    console.log('🔵 Releasing availability slot:', slotId);
+    
+    // Get current slot status
+    const { data: slot, error: slotError } = await supabase
+      .from('teacher_availability_slots')
+      .select('*')
+      .eq('id', slotId)
+      .single();
+
+    if (slotError) {
+      console.error('🔴 Error fetching slot for release:', slotError);
+      return;
+    }
+
+    // Decrement booked_count
+    const newBookedCount = Math.max(0, (slot.booked_count || 0) - 1);
     const isBooked = newBookedCount >= slot.capacity;
 
+    // Update slot status
     const { error: updateError } = await supabase
       .from('teacher_availability_slots')
       .update({
         booked_count: newBookedCount,
         is_booked: isBooked,
         slot_status: isBooked ? 'booked' : 'available',
-        updated_at: new Date()
+        updated_at: new Date().toISOString()
       })
       .eq('id', slotId);
 
-    if (updateError) throw updateError;
-
-    // Don't create notification here - it will be created after payment verification
-    console.log('✅ Slot booked:', booking?.[0]?.id);
-    return booking?.[0];
+    if (updateError) {
+      console.error('🔴 Error releasing slot:', updateError);
+    } else {
+      console.log('✅ Slot released successfully. New booked_count:', newBookedCount);
+    }
   } catch (error) {
-    console.error('🔴 Error booking slot:', error);
-    throw error;
+    console.error('🔴 Error in releaseAvailabilitySlot:', error);
   }
 };
 
@@ -891,23 +993,44 @@ export const createNotification = async (userId, notificationType, title, messag
   }
 };
 
+/** Default page size for notification lists (keeps queries fast) */
+const NOTIFICATION_PAGE_SIZE = 20;
+/** Only fetch recent notifications from main table (days); older are in archive */
+const NOTIFICATION_RECENT_DAYS = 90;
+
 /**
- * Get unread notifications for a user
+ * Get unread notification count for a user (for badge display)
  */
-export const getUnreadNotifications = async (userId) => {
+export const getUnreadNotificationCount = async (userId) => {
   try {
-    console.log('🔵 Fetching unread notifications...');
-    
+    const { count, error } = await supabase
+      .from('notifications')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('is_read', false);
+
+    if (error) throw error;
+    return count ?? 0;
+  } catch (error) {
+    console.error('🔴 Error fetching unread notification count:', error);
+    return 0;
+  }
+};
+
+/**
+ * Get unread notifications for a user (capped for performance)
+ */
+export const getUnreadNotifications = async (userId, limit = 50) => {
+  try {
     const { data, error } = await supabase
       .from('notifications')
       .select('*')
       .eq('user_id', userId)
       .eq('is_read', false)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(limit);
 
     if (error) throw error;
-    
-    console.log('✅ Notifications fetched:', data?.length);
     return data || [];
   } catch (error) {
     console.error('🔴 Error fetching notifications:', error);
@@ -916,27 +1039,66 @@ export const getUnreadNotifications = async (userId) => {
 };
 
 /**
- * Get all notifications for a user
+ * Get notifications for a user with pagination (recent table only; avoids full scan)
  */
-export const getAllNotifications = async (userId, limit = 50) => {
+export const getNotificationsPage = async (userId, { limit = NOTIFICATION_PAGE_SIZE, cursor = null } = {}) => {
   try {
-    console.log('🔵 Fetching all notifications...');
-    
-    const { data, error } = await supabase
+    let query = supabase
       .from('notifications')
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
+      .limit(limit + 1); // fetch one extra to know if there's next page
+
+    if (cursor) {
+      query = query.lt('created_at', cursor);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    const list = data || [];
+    const hasMore = list.length > limit;
+    const items = hasMore ? list.slice(0, limit) : list;
+    const nextCursor = items.length > 0 ? items[items.length - 1].created_at : null;
+
+    return { items, nextCursor, hasMore };
+  } catch (error) {
+    console.error('🔴 Error fetching notifications page:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get recent notifications for a user (last N days from main table only)
+ */
+export const getRecentNotifications = async (userId, days = 30, limit = 50) => {
+  try {
+    const since = new Date();
+    since.setDate(since.getDate() - days);
+
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', userId)
+      .gte('created_at', since.toISOString())
+      .order('created_at', { ascending: false })
       .limit(limit);
 
     if (error) throw error;
-    
-    console.log('✅ Notifications fetched:', data?.length);
     return data || [];
   } catch (error) {
-    console.error('🔴 Error fetching notifications:', error);
+    console.error('🔴 Error fetching recent notifications:', error);
     throw error;
   }
+};
+
+/**
+ * Get all notifications for a user (recent first, paginated - use getNotificationsPage for large lists)
+ */
+export const getAllNotifications = async (userId, limit = NOTIFICATION_PAGE_SIZE) => {
+  const { items } = await getNotificationsPage(userId, { limit });
+  return items;
 };
 
 /**
@@ -944,20 +1106,60 @@ export const getAllNotifications = async (userId, limit = 50) => {
  */
 export const markNotificationAsRead = async (notificationId) => {
   try {
-    console.log('🔵 Marking notification as read...');
-    
     const { data, error } = await supabase
       .from('notifications')
-      .update({ is_read: true })
+      .update({ is_read: true, updated_at: new Date().toISOString() })
       .eq('id', notificationId)
       .select();
 
     if (error) throw error;
-    
-    console.log('✅ Notification marked as read');
     return data?.[0];
   } catch (error) {
     console.error('🔴 Error marking notification:', error);
+    throw error;
+  }
+};
+
+/**
+ * Move read notifications older than retentionDays from notifications to notification_archive.
+ * Call periodically (e.g. from backend cron) to keep notifications table small.
+ */
+export const archiveOldNotifications = async (retentionDays = NOTIFICATION_RECENT_DAYS) => {
+  try {
+    const before = new Date();
+    before.setDate(before.getDate() - retentionDays);
+    const beforeIso = before.toISOString();
+
+    const { data: toArchive, error: fetchErr } = await supabase
+      .from('notifications')
+      .select('id, user_id, notification_type, title, message, booking_id, is_read, created_at')
+      .eq('is_read', true)
+      .lt('created_at', beforeIso)
+      .limit(500);
+
+    if (fetchErr) throw fetchErr;
+    if (!toArchive?.length) return { archived: 0 };
+
+    const archiveRows = toArchive.map((row) => ({
+      user_id: row.user_id,
+      notification_type: row.notification_type,
+      title: row.title,
+      message: row.message,
+      booking_id: row.booking_id,
+      is_read: row.is_read,
+      created_at: row.created_at,
+    }));
+
+    const { error: insertErr } = await supabase.from('notification_archive').insert(archiveRows);
+    if (insertErr) throw insertErr;
+
+    const ids = toArchive.map((r) => r.id);
+    const { error: deleteErr } = await supabase.from('notifications').delete().in('id', ids);
+    if (deleteErr) throw deleteErr;
+
+    return { archived: ids.length };
+  } catch (error) {
+    console.error('🔴 Error archiving notifications:', error);
     throw error;
   }
 };
@@ -1044,7 +1246,7 @@ export const endMeeting = async (bookingId, meetingId, duration = 60) => {
     // 3. Change earnings status from 'pending' to 'completed'
     // 4. Update teacher's wallet with earned amount
     
-    const backendUrl = process.env.REACT_APP_AUTH_URL || 'http://192.168.0.130:3000';
+    const backendUrl = process.env.REACT_APP_AUTH_URL || 'http://192.168.1.18:3000';
     console.log('🌐 Backend URL:', backendUrl);
     
     const response = await fetch(`${backendUrl}/api/meetings/end`, {

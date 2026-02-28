@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { FaChalkboardTeacher, FaUserGraduate, FaCalendarCheck, FaMoneyBillWave } from 'react-icons/fa';
 import { getDashboardStats } from '../services/api';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://192.168.0.130:3000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://192.168.1.18:3000';
 
 const Dashboard = () => {
   const [stats, setStats] = useState({
@@ -27,9 +27,10 @@ const Dashboard = () => {
     try {
       setLoading(true);
       const data = await getDashboardStats();
-      setStats(data);
+      setStats(data || { totalTeachers: 0, totalStudents: 0, totalBookings: 0 });
     } catch (error) {
       console.error('Error loading dashboard stats:', error);
+      setStats({ totalTeachers: 0, totalStudents: 0, totalBookings: 0 });
     } finally {
       setLoading(false);
     }

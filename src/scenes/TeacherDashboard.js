@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-simple-toast';
 import { SCREEN_NAMES } from '../navigators/screenNames';
 import { supabase } from '../../supabase';
-import { getTeacherProfile, getTeacherBookings, getTeacherTodayCallHistory, getTeacherEarnings, getTeacherTodayEarnings } from '../database/database';
+import { getTeacherProfile, getTeacherBookings, getTeacherTodayCallHistory, getTeacherEarnings, getTeacherTodayEarnings, getUnreadNotificationCount } from '../database/database';
 import Home from '../assets/icons/Home';
 import DollarSign from '../assets/icons/DollarSign';
 import Phone from '../assets/icons/Phone';
@@ -54,6 +54,7 @@ export default function TeacherDashboard({ navigation }) {
   });
   const [earningsLoading, setEarningsLoading] = useState(false);
   const [todayEarnings, setTodayEarnings] = useState({ totalAmount: 0, sessionsCount: 0, pendingAmount: 0, pendingCount: 0 });
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const loadTeacherProfileRef = useRef(null);
 
   // Function to load teacher profile data
@@ -98,6 +99,10 @@ export default function TeacherDashboard({ navigation }) {
           // No teacher_profiles row or empty profile → show snackbar to complete profile
           setProfileIncomplete(true);
         }
+
+        // Refresh unread notification count
+        const count = await getUnreadNotificationCount(user.id);
+        setUnreadNotificationCount(count);
 
         // Get teacher's bookings (include today and future; only show confirmed bookings)
         try {
@@ -266,6 +271,16 @@ export default function TeacherDashboard({ navigation }) {
           )
           .subscribe((status) => console.log('📡 Bookings channel:', status));
 
+        // Debounce notification toasts to avoid flood and perceived delay (show latest after 400ms quiet)
+        let notificationDebounceTimer = null;
+        let pendingNotification = null;
+        const showNotificationToast = () => {
+          if (pendingNotification) {
+            const n = pendingNotification;
+            Toast.show(n.title ? `${n.title}\n${n.message || ''}` : n.message || 'New notification');
+            pendingNotification = null;
+          }
+        };
         notificationsChannel = supabase
           .channel(`notifications:teacher_${user.id}`)
           .on(
@@ -273,7 +288,11 @@ export default function TeacherDashboard({ navigation }) {
             { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
             (payload) => {
               const n = payload?.new;
-              if (n?.title || n?.message) Toast.show(n.title ? `${n.title}\n${n.message || ''}` : n.message);
+              if (!n?.title && !n?.message) return;
+              setUnreadNotificationCount((c) => c + 1);
+              pendingNotification = n;
+              if (notificationDebounceTimer) clearTimeout(notificationDebounceTimer);
+              notificationDebounceTimer = setTimeout(showNotificationToast, 400);
             }
           )
           .subscribe((status) => console.log('📡 Notifications channel:', status));
@@ -341,11 +360,29 @@ export default function TeacherDashboard({ navigation }) {
         >
           {/* Header */}
           <View style={styles.header}>
-            <View style={styles.welcomeContainer}>
-              <Text style={styles.welcome}>Welcome Back</Text>
-              <Text style={styles.welcomeWave}>👋</Text>
+            <View style={styles.headerLeft}>
+              <View style={styles.welcomeContainer}>
+                <Text style={styles.welcome}>Welcome Back</Text>
+                <Text style={styles.welcomeWave}>👋</Text>
+              </View>
+              <Text style={styles.teacherName}>{teacherName}</Text>
             </View>
-            <Text style={styles.teacherName}>{teacherName}</Text>
+            <TouchableOpacity
+              style={styles.notificationBellWrap}
+              onPress={() => navigation.navigate(SCREEN_NAMES.Notifications)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.notificationBell}>
+                <Text style={styles.notificationBellIcon}>🔔</Text>
+                {unreadNotificationCount > 0 && (
+                  <View style={styles.notificationBadge}>
+                    <Text style={styles.notificationBadgeText}>
+                      {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </TouchableOpacity>
           </View>
 
           {/* Dashboard Overview */}
@@ -883,11 +920,43 @@ export default function TeacherDashboard({ navigation }) {
               <ChevronRight width={16} height={16} fill="#999999" />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.settingItem} onPress={() => Alert.alert('Notifications')}>
+            <TouchableOpacity style={styles.settingItem} onPress={() => navigation.navigate(SCREEN_NAMES.Notifications)}>
               <View style={styles.settingIconContainer}>
                 <Clock width={20} height={20} fill="#5568FE" />
               </View>
               <Text style={styles.settingText}>Notifications</Text>
+              <ChevronRight width={16} height={16} fill="#999999" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.settingItem}
+              onPress={async () => {
+                try {
+                  const { data: { user } } = await supabase.auth.getUser();
+                  const email = user?.email;
+                  if (!email) {
+                    Alert.alert('Error', 'Could not get your email.');
+                    return;
+                  }
+                  const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase());
+                  if (error) {
+                    if (error.message?.toLowerCase().includes('rate limit')) {
+                      Toast.show('Too many requests. Try again in a few minutes.');
+                    } else {
+                      Toast.show('Could not send reset email. Try again.');
+                    }
+                    return;
+                  }
+                  Alert.alert('Check your email', `A password reset link has been sent to ${email}. Open the link to set a new password.`);
+                } catch (e) {
+                  Toast.show('Something went wrong. Try again.');
+                }
+              }}
+            >
+              <View style={styles.settingIconContainer}>
+                <Text style={{ fontSize: 18 }}>🔒</Text>
+              </View>
+              <Text style={styles.settingText}>Reset Password</Text>
               <ChevronRight width={16} height={16} fill="#999999" />
             </TouchableOpacity>
 
@@ -1002,9 +1071,47 @@ const styles = StyleSheet.create({
 
   // Header
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 15,
     marginTop: 10,
+  },
+  headerLeft: {
+    flex: 1,
+  },
+  notificationBellWrap: {
+    alignSelf: 'flex-start',
+  },
+  notificationBell: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#1C1F4A',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  notificationBellIcon: {
+    fontSize: 22,
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#FF6B6B',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  notificationBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '700',
   },
   welcomeContainer: {
     flexDirection: 'row',

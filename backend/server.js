@@ -18,7 +18,6 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const nodemailer = require('nodemailer');
-const https = require('https');
 const { createClient } = require('@supabase/supabase-js');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
@@ -28,14 +27,6 @@ const app = express();
 // Initialize Supabase
 const supabaseUrl = process.env.SUPABASE_URL || 'https://your-project.supabase.co';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-
-console.log('🔵 [SERVER] Supabase Config:');
-console.log('  URL:', supabaseUrl);
-console.log('  Service Role Key Present:', !!supabaseKey, `(${supabaseKey?.length || 0} chars)`);
-
-if (!supabaseKey) {
-  console.error('🔴 [CRITICAL] SUPABASE_SERVICE_ROLE_KEY is not set! Payments will fail.');
-}
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -103,11 +94,11 @@ async function sendOTPEmail(email, otp) {
   const mailOptions = {
     from: EMAIL_USER,
     to: email,
-    subject: 'Your Verification OTP - Connectiqo Platform',
+    subject: 'Your Verification OTP - LearnEasy App',
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #1E2BFF; text-align: center;">Email Verification</h2>
-        <p>Welcome to Connectiqo!</p>
+        <p>Welcome to LearnEasy!</p>
         <p>Your One-Time Password (OTP) for email verification is:</p>
         <div style="background: #f0f0f0; padding: 20px; text-align: center; border-radius: 10px; margin: 20px 0;">
           <h1 style="color: #1E2BFF; letter-spacing: 5px; margin: 0;">${otp}</h1>
@@ -341,47 +332,6 @@ app.get('/health', (req, res) => {
 });
 
 /**
- * GET /api/diagnostics
- * Check database connectivity and RLS configuration
- */
-app.get('/api/diagnostics', async (req, res) => {
-  try {
-    const diagnostics = {
-      timestamp: new Date().toISOString(),
-      supabase: {
-        url: process.env.SUPABASE_URL ? '✅ Set' : '❌ Not set',
-        serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ? '✅ Set' : '❌ Not set',
-        keyLength: process.env.SUPABASE_SERVICE_ROLE_KEY?.length || 0,
-      },
-      database: {
-        connected: false,
-        bookingsTableExists: false,
-        error: null,
-      },
-    };
-
-    // Test database connectivity
-    const { data: bookingCount, error: bookingsError } = await supabase
-      .from('bookings')
-      .select('id', { count: 'exact', head: true });
-
-    if (bookingsError) {
-      diagnostics.database.error = bookingsError.message;
-    } else {
-      diagnostics.database.connected = true;
-      diagnostics.database.bookingsTableExists = true;
-    }
-
-    res.json(diagnostics);
-  } catch (error) {
-    res.status(500).json({
-      error: 'Diagnostics check failed',
-      message: error.message,
-    });
-  }
-});
-
-/**
  * POST /validate-token
  * 
  * Validates if a token is valid (optional)
@@ -595,25 +545,16 @@ app.post('/api/meetings/end', async (req, res) => {
       .eq('id', bookingId)
       .single();
 
-    if (!bookingData) {
-      return res.status(404).json({
-        success: false,
-        error: 'Booking not found',
-      });
-    }
-
     // Update booking with meeting ended time
     const { error: updateError } = await supabase
       .from('bookings')
       .update({
         status: 'completed',
         meeting_ended_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(), // Explicitly set updated_at to trigger real-time subscriptions
       })
       .eq('id', bookingId);
 
     if (updateError) throw updateError;
-    console.log(`✅ Booking updated: status='completed' for bookingId=${bookingId}`);
 
     // Update meeting log
     await supabase
@@ -624,68 +565,23 @@ app.post('/api/meetings/end', async (req, res) => {
       })
       .eq('booking_id', bookingId);
 
-    // Get earnings record for this booking and update status
-    const { data: earningsData } = await supabase
-      .from('teacher_earnings')
-      .select('*')
-      .eq('booking_id', bookingId)
-      .single();
-
-    if (earningsData && earningsData.status === 'pending') {
-      // Update earnings status to completed
-      await supabase
-        .from('teacher_earnings')
-        .update({
-          status: 'completed',
-          completed_at: new Date().toISOString(),
-        })
-        .eq('id', earningsData.id);
-
-      // Update teacher's wallet - add to total/available balance, reduce pending
-      const { data: wallet } = await supabase
-        .from('teacher_wallet')
-        .select('*')
-        .eq('teacher_id', bookingData.teacher_id)
-        .single();
-
-      if (wallet) {
-        const teacherEarn = parseFloat(earningsData.total_collected || 0) - parseFloat(earningsData.admin_deduction || 0) - parseFloat(earningsData.platform_fee || 0);
-        const newTotalBalance = (wallet.total_balance || 0) + teacherEarn;
-        const newAvailableBalance = (wallet.available_balance || 0) + teacherEarn;
-        const newPendingBalance = Math.max(0, (wallet.pending_balance || 0) - teacherEarn);
-
-        await supabase
-          .from('teacher_wallet')
-          .update({
-            total_balance: newTotalBalance,
-            available_balance: newAvailableBalance,
-            pending_balance: newPendingBalance,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('teacher_id', bookingData.teacher_id);
-
-        console.log(`✅ Wallet updated: +₹${teacherEarn} added to teacher ${bookingData.teacher_id}`);
-      }
-    }
-
     // Create notification for both
-    const teacherEarnAmount = parseFloat(earningsData?.total_collected || 0) - parseFloat(earningsData?.admin_deduction || 0) - parseFloat(earningsData?.platform_fee || 0);
     await supabase
       .from('notifications')
       .insert([
         {
           user_id: bookingData.student_id,
-          notification_type: 'meeting_completed',
+          notification_type: 'meeting_started',
           title: '✅ Session Completed',
-          message: `Your session has been completed successfully. Duration: ${duration || 60} minutes.`,
+          message: `Your session with ${bookingData.teacher_id} has been completed.`,
           booking_id: bookingId,
           is_read: false,
         },
         {
           user_id: bookingData.teacher_id,
-          notification_type: 'earnings_added',
-          title: '💰 Earnings Added',
-          message: `Session completed! ₹${teacherEarnAmount} has been added to your wallet.`,
+          notification_type: 'meeting_started',
+          title: '✅ Session Completed',
+          message: `Your session has been completed. Duration: ${duration || 60} minutes.`,
           booking_id: bookingId,
           is_read: false,
         },
@@ -793,46 +689,6 @@ const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID || '',
   key_secret: process.env.RAZORPAY_KEY_SECRET || '',
 });
-
-// RazorpayX Payout API (contacts, fund_accounts, payouts) – same auth as Payments
-const RAZORPAY_X_KEY = process.env.RAZORPAY_KEY_ID || '';
-const RAZORPAY_X_SECRET = process.env.RAZORPAY_KEY_SECRET || '';
-const RAZORPAY_PAYOUT_ACCOUNT = process.env.RAZORPAY_PAYOUT_ACCOUNT_NUMBER || '';
-
-function razorpayXRequest(method, path, body, idempotencyKey = null) {
-  return new Promise((resolve, reject) => {
-    const auth = Buffer.from(`${RAZORPAY_X_KEY}:${RAZORPAY_X_SECRET}`).toString('base64');
-    const data = body ? JSON.stringify(body) : null;
-    const options = {
-      hostname: 'api.razorpay.com',
-      path: `/v1${path}`,
-      method,
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Basic ${auth}`,
-      },
-    };
-    if (data) options.headers['Content-Length'] = Buffer.byteLength(data);
-    if (idempotencyKey) options.headers['X-Payout-Idempotency'] = idempotencyKey;
-
-    const req = https.request(options, (res) => {
-      let raw = '';
-      res.on('data', (ch) => { raw += ch; });
-      res.on('end', () => {
-        try {
-          const parsed = raw ? JSON.parse(raw) : {};
-          if (res.statusCode >= 200 && res.statusCode < 300) resolve(parsed);
-          else reject(new Error(parsed.error?.description || parsed.error?.reason || raw || `HTTP ${res.statusCode}`));
-        } catch (e) {
-          reject(new Error(raw || e.message));
-        }
-      });
-    });
-    req.on('error', reject);
-    if (data) req.write(data);
-    req.end();
-  });
-}
 
 /**
  * POST /api/payments/create-order
@@ -970,23 +826,7 @@ app.post('/api/payments/verify', async (req, res) => {
       });
     }
 
-    // Validate amounts
-    if (!basePrice || basePrice <= 0 || !totalAmount || totalAmount <= 0) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid payment amounts',
-        details: { basePrice, totalAmount },
-      });
-    }
-
     console.log('🔵 Verifying payment:', razorpayPaymentId);
-    console.log('📌 Request payload:', {
-      bookingId,
-      studentId,
-      teacherId,
-      basePrice,
-      totalAmount,
-    });
 
     // Verify signature
     const crypto = require('crypto');
@@ -1024,22 +864,14 @@ app.post('/api/payments/verify', async (req, res) => {
 
     if (paymentError) {
       console.error('🔴 Payment creation error:', paymentError);
-      // Still log payment, but continue - might be duplicate
+      throw paymentError;
     }
 
-    console.log('✅ Payment created:', payment?.[0]?.id);
+    console.log('✅ Payment created:', payment[0].id);
 
-    // Create teacher earnings record (PENDING - will be completed after meeting)
-    // Calculate percentage-based deductions: GST 18% + Platform Fee 7.5% = 25.5% total deductions
-    // Use basePrice to calculate fees (not totalAmount which already includes fees)
-    const gstAmount = Math.round(basePrice * 0.18); // 18% GST
-    const platformFeeAmount = Math.round(basePrice * 0.075); // 7.5% Platform Fee
-    const teacherEarn = basePrice; // Teacher gets 100% of their rate (fees already deducted from student)
-
-    if (!payment || !payment[0]) {
-      console.error('🔴 Payment record was not created');
-      throw new Error('Payment record creation returned no data');
-    }
+    // Create teacher earnings record
+    const platformFee = 100; // Fixed platform fee
+    const teacherEarn = totalAmount - adminCharge - platformFee;
 
     const { data: earnings, error: earningsError } = await supabase
       .from('teacher_earnings')
@@ -1048,166 +880,119 @@ app.post('/api/payments/verify', async (req, res) => {
         payment_id: payment[0].id,
         booking_id: bookingId,
         total_collected: totalAmount,
-        admin_deduction: gstAmount, // Store GST as admin_deduction
-        platform_fee: platformFeeAmount, // Store percentage-based platform fee
-        status: 'pending', // Will change to 'completed' after meeting ends
+        admin_deduction: adminCharge,
+        platform_fee: platformFee,
+        status: 'pending',
       }])
       .select();
 
     if (earningsError) {
       console.error('🔴 Earnings creation error:', earningsError);
-      // Log but continue - not critical for payment completion
+      throw earningsError;
     }
 
-    console.log('✅ Earnings record created (PENDING). Breakdown:', {
-      totalCollected: totalAmount,
-      gstDeduction: gstAmount,
-      platformFee: platformFeeAmount,
-      teacherEarn: teacherEarn
-    });
+    console.log('✅ Earnings record created. Teacher will earn:', teacherEarn);
 
-    // Update booking payment status and auto-confirm (teacher availability already set)
+    // Update booking status and confirm
     const { data: updatedBooking, error: bookingError } = await supabase
       .from('bookings')
       .update({
-        payment_status: 'completed', // Payment is done
-        status: 'confirmed', // Auto-confirm since teacher has set availability slots
+        payment_status: 'completed',
         total_price: totalAmount,
         payment_id: payment[0].id,
-        updated_at: new Date().toISOString(), // Ensure timestamp updates for real-time
+        status: 'confirmed', // Mark booking as confirmed after payment
+        teacher_confirmed_at: new Date().toISOString(), // Auto-confirm at payment time
       })
       .eq('id', bookingId)
       .select();
 
     if (bookingError) {
-      console.error('🔴 Booking update error:', bookingError);
-      // Don't throw - log and continue
+      console.warn('⚠️ Booking update error:', bookingError);
     } else {
-      console.log(`✅ Booking auto-confirmed (teacher availability already set)`);
-      console.log(`✅ Booking status: payment_status='completed', status='confirmed'`);
-      console.log('📌 Updated booking:', updatedBooking);
+      console.log(`✅ Booking status updated to confirmed`);
     }
 
-    // NOTE: Wallet is NOT updated here - it will be updated when meeting ends
-    // Ensure wallet exists for teacher (create if not)
-    try {
-      const { data: wallet, error: walletQueryError } = await supabase
+    // Update teacher wallet
+    const { data: wallet } = await supabase
+      .from('teacher_wallet')
+      .select('*')
+      .eq('teacher_id', teacherId)
+      .single();
+
+    if (wallet) {
+      const newBalance = (wallet.total_balance || 0) + teacherEarn;
+      await supabase
         .from('teacher_wallet')
-        .select('*')
-        .eq('teacher_id', teacherId)
-        .single();
-
-      if (walletQueryError && walletQueryError.code !== 'PGRST116') { // PGRST116 = not found
-        console.warn('⚠️ Wallet query error:', walletQueryError);
-      }
-
-      if (!wallet) {
-        // Create wallet if not exists (with zero balance)
-        const { error: walletCreateError } = await supabase
-          .from('teacher_wallet')
-          .insert([{
-            teacher_id: teacherId,
-            total_balance: 0,
-            available_balance: 0,
-            pending_balance: teacherEarn,
-            created_at: new Date().toISOString(),
-          }]);
-        
-        if (walletCreateError) {
-          console.warn('⚠️ Wallet creation error:', walletCreateError);
-        } else {
-          console.log('✅ Wallet created with pending balance');
-        }
-      } else {
-        // Update pending balance
-        const newPending = (wallet.pending_balance || 0) + teacherEarn;
-        const { error: walletUpdateError } = await supabase
-          .from('teacher_wallet')
-          .update({
-            pending_balance: newPending,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('teacher_id', teacherId);
-        
-        if (walletUpdateError) {
-          console.warn('⚠️ Wallet update error:', walletUpdateError);
-        } else {
-          console.log('✅ Wallet pending balance updated');
-        }
-      }
-    } catch (walletError) {
-      console.warn('⚠️ Wallet operation failed:', walletError.message);
-      // Don't throw - wallet is non-critical
+        .update({
+          total_balance: newBalance,
+          available_balance: newBalance,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('teacher_id', teacherId);
+    } else {
+      // Create wallet if not exists
+      await supabase
+        .from('teacher_wallet')
+        .insert([{
+          teacher_id: teacherId,
+          total_balance: teacherEarn,
+          available_balance: teacherEarn,
+          created_at: new Date().toISOString(),
+        }]);
     }
+
+    console.log('✅ Wallet updated');
 
     // Update order status
-    const { error: orderUpdateError } = await supabase
+    await supabase
       .from('razorpay_orders')
       .update({
         status: 'paid',
         paid_at: new Date().toISOString(),
       })
       .eq('razorpay_order_id', razorpayOrderId);
-    
-    if (orderUpdateError) {
-      console.warn('⚠️ Order status update error:', orderUpdateError);
-    } else {
-      console.log('✅ Razorpay order status updated to paid');
-    }
 
     // Send notification to student
-    try {
-      await supabase
-        .from('notifications')
-        .insert([{
-          user_id: studentId,
-          notification_type: 'payment_confirmed',
-          title: '✅ Payment Successful',
-          message: `Your booking with teacher is confirmed. Session will start at the scheduled time.`,
-          booking_id: bookingId,
-          is_read: false,
-        }]);
-    } catch (err) {
-      console.warn('⚠️ Student notification error:', err.message);
-    }
+    await supabase
+      .from('notifications')
+      .insert([{
+        user_id: studentId,
+        notification_type: 'payment_confirmed',
+        title: '✅ Payment Successful',
+        message: `Your booking with teacher is confirmed. Session will start at the scheduled time.`,
+        booking_id: bookingId,
+        is_read: false,
+      }]);
 
     // Send notification to teacher
-    try {
-      await supabase
-        .from('notifications')
-        .insert([{
-          user_id: teacherId,
-          notification_type: 'payment_received',
-          title: '💰 New Booking Confirmed',
-          message: `A student has booked and paid for your session. ₹${teacherEarn} will be added to your wallet after the session is completed.`,
-          booking_id: bookingId,
-          is_read: false,
-        }]);
-    } catch (err) {
-      console.warn('⚠️ Teacher notification error:', err.message);
-    }
+    await supabase
+      .from('notifications')
+      .insert([{
+        user_id: teacherId,
+        notification_type: 'payment_received',
+        title: '💰 Payment Received',
+        message: `A student has booked and paid for your session. ₹${teacherEarn} added to your wallet.`,
+        booking_id: bookingId,
+        is_read: false,
+      }]);
 
     res.json({
       success: true,
       message: 'Payment verified successfully',
-      paymentId: payment?.[0]?.id,
-      bookingUpdated: !bookingError && updatedBooking?.length > 0,
-      bookingUpdateError: bookingError?.message,
+      payment: payment[0],
       earnings: {
         totalCollected: totalAmount,
         adminDeduction: adminCharge,
-        platformFee: platformFeeAmount,
+        platformFee: platformFee,
         teacherEarn: teacherEarn,
       },
     });
   } catch (error) {
     console.error('🔴 Error verifying payment:', error.message);
-    console.error('Full error stack:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to verify payment',
       message: error.message,
-      details: error.details || error.toString(),
     });
   }
 });
@@ -1348,55 +1133,35 @@ app.get('/api/teacher/earnings/:teacherId', async (req, res) => {
       .single();
 
     // Get recent earnings
-    const { data: earnings, error: earningsError } = await supabase
+    const { data: earnings } = await supabase
       .from('teacher_earnings')
       .select('*')
       .eq('teacher_id', teacherId)
       .order('created_at', { ascending: false })
       .limit(50);
 
-    // Compute withdrawal eligibility: balance > 10,000 and 1 month since last withdrawal or account creation
-    let eligibility = null;
-    if (wallet) {
-      const totalBalance = Number(wallet.total_balance || 0);
-      const referenceDate = wallet.last_withdrawal_date ? new Date(wallet.last_withdrawal_date) : new Date(wallet.created_at);
-      const oneMonthLater = new Date(referenceDate);
-      oneMonthLater.setMonth(oneMonthLater.getMonth() + 1);
-      const now = new Date();
-      const minimumBalanceReached = totalBalance > 10000;
-      const oneMonthCovered = now >= oneMonthLater;
-      const canWithdraw = minimumBalanceReached && oneMonthCovered;
-      let eligibilityReason = 'Eligible to withdraw';
-      if (!minimumBalanceReached) eligibilityReason = `Balance must be greater than ₹10,000 (current: ₹${totalBalance.toLocaleString()})`;
-      else if (!oneMonthCovered) eligibilityReason = `Wait until ${oneMonthLater.toLocaleDateString()} (1 month from ${wallet.last_withdrawal_date ? 'last withdrawal' : 'account creation'})`;
-      eligibility = {
-        can_withdraw: canWithdraw,
-        eligibility_reason: eligibilityReason,
-        minimum_balance_reached: minimumBalanceReached,
-        one_month_covered: oneMonthCovered,
-        next_eligible_date: oneMonthCovered ? null : oneMonthLater.toISOString(),
-      };
-    }
+    // Get withdrawal eligibility
+    const { data: eligibility } = await supabase
+      .rpc('get_withdrawal_eligibility', { p_teacher_id: teacherId });
 
-    console.log('✅ Earnings response prepared');
+    console.log('✅ Earnings fetched');
 
     res.json({
       success: true,
       wallet: wallet || {
         total_balance: 0,
         available_balance: 0,
-        pending_balance: 0,
-        last_withdrawal_date: null,
+        minimum_balance_reached: false,
+        one_month_covered: false,
       },
       earnings: earnings || [],
-      eligibility,
+      eligibility: eligibility?.[0] || null,
     });
   } catch (error) {
     console.error('🔴 Error fetching earnings:', error.message);
     res.status(500).json({
       success: false,
       error: 'Failed to fetch earnings',
-      message: error.message,
     });
   }
 });
@@ -1450,42 +1215,39 @@ app.post('/api/teacher/withdrawal/request', async (req, res) => {
       });
     }
 
-    // Minimum balance: must be greater than ₹10,000
-    if (wallet.total_balance <= 10000) {
+    // Check minimum balance
+    if (wallet.total_balance < 10000) {
       return res.status(400).json({
         success: false,
-        error: 'Balance must be greater than ₹10,000 to withdraw',
+        error: 'Minimum balance of ₹10,000 required',
         currentBalance: wallet.total_balance,
       });
     }
 
-    // One month rule: from last withdrawal date, or from account creation if never withdrawn
-    const referenceDate = wallet.last_withdrawal_date ? new Date(wallet.last_withdrawal_date) : new Date(wallet.created_at);
-    const oneMonthLater = new Date(referenceDate);
+    // Check if one month has passed
+    const accountCreatedDate = new Date(wallet.created_at);
+    const oneMonthLater = new Date(accountCreatedDate);
     oneMonthLater.setMonth(oneMonthLater.getMonth() + 1);
 
     if (new Date() < oneMonthLater) {
-      const fromLabel = wallet.last_withdrawal_date ? 'last withdrawal' : 'account creation';
       return res.status(400).json({
         success: false,
-        error: `Please wait for 1 month from ${fromLabel} to withdraw again`,
-        eligibleDate: oneMonthLater.toISOString(),
+        error: 'Please wait for 1 month from account creation',
+        eligibleDate: oneMonthLater,
       });
     }
 
     // Create withdrawal request
-    const insertRow = {
-      teacher_id: teacherId,
-      amount: amount,
-      status: 'pending',
-      bank_account_number: bankAccountNumber,
-      bank_ifsc_code: bankIFSCCode,
-      account_holder_name: accountHolderName,
-    };
-    if (bankName) insertRow.bank_name = bankName;
     const { data: withdrawal, error: withdrawalError } = await supabase
       .from('withdrawal_requests')
-      .insert([insertRow])
+      .insert([{
+        teacher_id: teacherId,
+        amount: amount,
+        status: 'pending',
+        bank_account_number: bankAccountNumber,
+        bank_ifsc_code: bankIFSCCode,
+        account_holder_name: accountHolderName,
+      }])
       .select();
 
     if (withdrawalError) throw withdrawalError;
@@ -1597,68 +1359,32 @@ app.patch('/api/admin/teacher/:teacherId/wallet', async (req, res) => {
   }
 });
 
-/** Mask account number: show only last 6 digits */
-function maskAccountNumber(accountNumber) {
-  if (!accountNumber || typeof accountNumber !== 'string') return '******';
-  const s = accountNumber.replace(/\D/g, '');
-  if (s.length <= 6) return '******' + s;
-  return '******' + s.slice(-6);
-}
-
 /**
  * GET /api/admin/withdrawals
- * Get all pending withdrawal requests (Admin only).
- * Returns sender info, available balance, account masked (last 6 digits), bank name.
+ * Get all pending withdrawal requests (Admin only)
  */
 app.get('/api/admin/withdrawals', async (req, res) => {
   try {
     console.log('🔵 Fetching withdrawal requests');
 
-    const { data: withdrawals, error } = await supabase
+    const { data, error } = await supabase
       .from('withdrawal_requests')
-      .select('*')
+      .select(`
+        *,
+        teacher:teacher_id(profile:profiles(full_name, email))
+      `)
       .eq('status', 'pending')
       .order('requested_at', { ascending: false });
 
     if (error) throw error;
 
-    const list = withdrawals || [];
-    if (list.length === 0) {
-      return res.json({ success: true, data: [], count: 0 });
-    }
+    console.log('✅ Withdrawal requests fetched:', data?.length);
 
-    const teacherIds = [...new Set(list.map((w) => w.teacher_id))];
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('id, full_name, email')
-      .in('id', teacherIds);
-    const { data: wallets } = await supabase
-      .from('teacher_wallet')
-      .select('teacher_id, available_balance, total_balance')
-      .in('teacher_id', teacherIds);
-
-    const profileMap = (profiles || []).reduce((acc, p) => { acc[p.id] = p; return acc; }, {});
-    const walletMap = (wallets || []).reduce((acc, w) => { acc[w.teacher_id] = w; return acc; }, {});
-
-    const data = list.map((w) => {
-      const profile = profileMap[w.teacher_id] || {};
-      const wallet = walletMap[w.teacher_id] || {};
-      return {
-        ...w,
-        bank_account_number_masked: maskAccountNumber(w.bank_account_number),
-        bank_account_number: undefined,
-        sender: {
-          full_name: profile.full_name,
-          email: profile.email,
-          teacher_id: w.teacher_id,
-        },
-        available_balance: wallet.available_balance ?? 0,
-        total_balance: wallet.total_balance ?? 0,
-      };
+    res.json({
+      success: true,
+      data: data || [],
+      count: data?.length || 0,
     });
-
-    console.log('✅ Withdrawal requests fetched:', data.length);
-    res.json({ success: true, data, count: data.length });
   } catch (error) {
     console.error('🔴 Error fetching withdrawals:', error.message);
     res.status(500).json({
@@ -1669,88 +1395,8 @@ app.get('/api/admin/withdrawals', async (req, res) => {
 });
 
 /**
- * GET /api/admin/withdrawals/:id
- * Get single withdrawal request detail (sender info, balance, masked account).
- */
-app.get('/api/admin/withdrawals/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { data: w, error } = await supabase
-      .from('withdrawal_requests')
-      .select('*')
-      .eq('id', id)
-      .single();
-
-    if (error || !w) {
-      return res.status(404).json({ success: false, error: 'Withdrawal request not found' });
-    }
-
-    const [profileRes, walletRes] = await Promise.all([
-      supabase.from('profiles').select('id, full_name, email').eq('id', w.teacher_id).single(),
-      supabase.from('teacher_wallet').select('teacher_id, available_balance, total_balance').eq('teacher_id', w.teacher_id).single(),
-    ]);
-
-    const profile = profileRes.data || {};
-    const wallet = walletRes.data || {};
-
-    res.json({
-      success: true,
-      data: {
-        ...w,
-        bank_account_number: undefined,
-        bank_account_number_masked: maskAccountNumber(w.bank_account_number),
-        bank_name: w.bank_name || null,
-        sender: {
-          full_name: profile.full_name,
-          email: profile.email,
-          teacher_id: w.teacher_id,
-        },
-        available_balance: wallet.available_balance ?? 0,
-        total_balance: wallet.total_balance ?? 0,
-      },
-    });
-  } catch (error) {
-    console.error('🔴 Error fetching withdrawal detail:', error.message);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * GET /api/admin/withdrawals/:id/reveal
- * Reveal full account number for admin (eye icon). Use sparingly.
- */
-app.get('/api/admin/withdrawals/:id/reveal', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { data: w, error } = await supabase
-      .from('withdrawal_requests')
-      .select('id, teacher_id, bank_account_number, bank_ifsc_code, bank_name, account_holder_name')
-      .eq('id', id)
-      .single();
-
-    if (error || !w) {
-      return res.status(404).json({ success: false, error: 'Withdrawal request not found' });
-    }
-
-    res.json({
-      success: true,
-      data: {
-        bank_account_number: w.bank_account_number,
-        bank_ifsc_code: w.bank_ifsc_code,
-        bank_name: w.bank_name || null,
-        account_holder_name: w.account_holder_name,
-      },
-    });
-  } catch (error) {
-    console.error('🔴 Error revealing account:', error.message);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
  * POST /api/admin/withdrawals/:withdrawalId/approve
- * Admin approves and processes withdrawal. If RAZORPAY_PAYOUT_ACCOUNT_NUMBER is set,
- * creates RazorpayX Contact (if needed), Fund account (if needed), and Payout.
+ * Admin approves and processes withdrawal
  */
 app.post('/api/admin/withdrawals/:withdrawalId/approve', async (req, res) => {
   try {
@@ -1759,6 +1405,7 @@ app.post('/api/admin/withdrawals/:withdrawalId/approve', async (req, res) => {
 
     console.log('🔵 Approving withdrawal:', withdrawalId);
 
+    // Get withdrawal request
     const { data: withdrawal } = await supabase
       .from('withdrawal_requests')
       .select('*')
@@ -1772,7 +1419,7 @@ app.post('/api/admin/withdrawals/:withdrawalId/approve', async (req, res) => {
       });
     }
 
-    // Mark as processing first
+    // Update withdrawal status
     const { data: updated, error: updateError } = await supabase
       .from('withdrawal_requests')
       .update({
@@ -1787,121 +1434,27 @@ app.post('/api/admin/withdrawals/:withdrawalId/approve', async (req, res) => {
 
     if (updateError) throw updateError;
 
-    let payoutId = null;
-    let finalStatus = 'processing';
-    const payoutAccount = (RAZORPAY_PAYOUT_ACCOUNT || '').trim();
+    // Here you would integrate with Razorpay Payouts API
+    // For now, mark as pending processing
+    // In production: await razorpay.payouts.create(payoutDetails);
 
-    if (payoutAccount) {
-      try {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('id, full_name, email, razorpay_contact_id, razorpay_fund_account_id')
-          .eq('id', withdrawal.teacher_id)
-          .single();
+    console.log('✅ Withdrawal marked as processing:', withdrawalId);
 
-        let contactId = profile?.razorpay_contact_id;
-        let fundAccountId = profile?.razorpay_fund_account_id;
-
-        if (!contactId) {
-          const phone = (profile?.phone || '0000000000').replace(/\D/g, '').slice(0, 10) || '0000000000';
-          const contactRes = await razorpayXRequest('POST', '/contacts', {
-            name: (profile?.full_name || withdrawal.account_holder_name || 'Teacher').substring(0, 50),
-            email: profile?.email || `teacher-${withdrawal.teacher_id}@placeholder.local`,
-            contact: phone,
-            type: 'vendor',
-            reference_id: `teacher_${withdrawal.teacher_id}`,
-          });
-          contactId = contactRes.id;
-          await supabase.from('profiles').update({ razorpay_contact_id: contactId }).eq('id', withdrawal.teacher_id);
-        }
-
-        if (!fundAccountId) {
-          const faRes = await razorpayXRequest('POST', '/fund_accounts', {
-            contact_id: contactId,
-            account_type: 'bank_account',
-            bank_account: {
-              name: withdrawal.account_holder_name || profile?.full_name || 'Teacher',
-              ifsc: (withdrawal.bank_ifsc_code || '').trim(),
-              account_number: String(withdrawal.bank_account_number || '').replace(/\D/g, ''),
-            },
-          });
-          fundAccountId = faRes.id;
-          await supabase.from('profiles').update({ razorpay_fund_account_id: fundAccountId }).eq('id', withdrawal.teacher_id);
-        }
-
-        const amountPaise = Math.max(100, Math.round(Number(withdrawal.amount) * 100));
-        const payoutRes = await razorpayXRequest(
-          'POST',
-          '/payouts',
-          {
-            account_number: payoutAccount,
-            fund_account_id: fundAccountId,
-            amount: amountPaise,
-            currency: 'INR',
-            mode: 'IMPS',
-            purpose: 'payout',
-            reference_id: `wd_${withdrawalId}`,
-            narration: 'Teacher withdrawal',
-          },
-          withdrawalId
-        );
-        payoutId = payoutRes.id;
-        finalStatus = payoutRes.status === 'queued' || payoutRes.status === 'processing' || payoutRes.status === 'reversed' ? 'processing' : 'completed';
-        if (payoutRes.status === 'processed' || payoutRes.status === 'completed') finalStatus = 'completed';
-        console.log('✅ Razorpay payout created:', payoutId, payoutRes.status);
-      } catch (payoutErr) {
-        console.error('🔴 Razorpay payout error:', payoutErr.message);
-        await supabase
-          .from('withdrawal_requests')
-          .update({
-            status: 'processing',
-            rejected_reason: payoutErr.message,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', withdrawalId);
-        return res.status(500).json({
-          success: false,
-          error: 'Payout failed',
-          message: payoutErr.message,
-        });
-      }
-    } else {
-      console.log('⚠️ RAZORPAY_PAYOUT_ACCOUNT_NUMBER not set – skipping actual payout');
-    }
-
-    const updatePayload = {
-      status: finalStatus,
-      updated_at: new Date().toISOString(),
-    };
-    if (payoutId) updatePayload.razorpay_payout_id = payoutId;
-    if (finalStatus === 'completed') updatePayload.completed_at = new Date().toISOString();
-
-    await supabase.from('withdrawal_requests').update(updatePayload).eq('id', withdrawalId);
-
-    // Reset one-month condition after redeem/withdraw: set last_withdrawal_date so next withdrawal is allowed only after 1 month
-    const { data: w } = await supabase.from('teacher_wallet').select('withdrawn_amount').eq('teacher_id', withdrawal.teacher_id).single();
-    const currentWithdrawn = Number(w?.withdrawn_amount || 0);
+    // Send notification to teacher
     await supabase
-      .from('teacher_wallet')
-      .update({
-        last_withdrawal_date: new Date().toISOString(),
-        withdrawn_amount: currentWithdrawn + Number(withdrawal.amount),
-        updated_at: new Date().toISOString(),
-      })
-      .eq('teacher_id', withdrawal.teacher_id);
-
-    await supabase.from('notifications').insert([{
-      user_id: withdrawal.teacher_id,
-      notification_type: 'withdrawal_approved',
-      title: '✅ Withdrawal Approved',
-      message: `Your withdrawal of ₹${withdrawal.amount} has been approved. Your amount will be redeemed in your bank within 24hrs.`,
-      is_read: false,
-    }]);
+      .from('notifications')
+      .insert([{
+        user_id: withdrawal.teacher_id,
+        notification_type: 'withdrawal_approved',
+        title: '✅ Withdrawal Approved',
+        message: `Your withdrawal of ₹${withdrawal.amount} has been approved. Amount will be transferred to your bank account within 2-3 business days.`,
+        is_read: false,
+      }]);
 
     res.json({
       success: true,
-      message: payoutId ? 'Withdrawal approved and payout initiated' : 'Withdrawal approved and processing',
-      data: { ...updated[0], status: finalStatus, razorpay_payout_id: payoutId },
+      message: 'Withdrawal approved and processing',
+      data: updated[0],
     });
   } catch (error) {
     console.error('🔴 Error approving withdrawal:', error.message);
@@ -1930,18 +1483,12 @@ app.get('/api/admin/analytics', async (req, res) => {
     const total = totalRevenue?.reduce((sum, p) => sum + p.total_amount, 0) || 0;
 
     // Get top teachers by earnings
-    const { data: topTeachersData } = await supabase
+    const { data: topTeachers } = await supabase
       .from('teacher_earnings')
-      .select('teacher_id, total_collected, admin_deduction, platform_fee')
+      .select('teacher_id, teacher_earn')
       .eq('status', 'pending')
-      .order('total_collected', { ascending: false })
+      .order('teacher_earn', { ascending: false })
       .limit(10);
-
-    // Calculate teacher_earn for each and group by teacher_id
-    const topTeachersByEarnings = (topTeachersData || []).map(e => ({
-      teacher_id: e.teacher_id,
-      teacher_earn: parseFloat(e.total_collected || 0) - parseFloat(e.admin_deduction || 0) - parseFloat(e.platform_fee || 0),
-    }));
 
     // Get pending withdrawals
     const { data: pendingWithdrawals } = await supabase
@@ -1959,7 +1506,7 @@ app.get('/api/admin/analytics', async (req, res) => {
         totalRevenue: total,
         totalPayments: totalRevenue?.length || 0,
         pendingWithdrawals: totalPending,
-        topTeachers: topTeachersByEarnings,
+        topTeachers: topTeachers || [],
       },
     });
   } catch (error) {
@@ -1976,7 +1523,7 @@ app.listen(PORT, HOST, () => {
   console.log('🚀 VideoSDK Token Server Started');
   console.log('='.repeat(50));
   console.log(`📍 Server running at: http://localhost:${PORT}`);
-  console.log(`📍 Also reachable at: http://192.168.0.130:${PORT}`);
+  console.log(`📍 Also reachable at: http://192.168.0.183:${PORT}`);
   console.log('\n📌 Available Endpoints:');
   console.log(`   POST /send-otp        - Send OTP to email`);
   console.log(`   POST /verify-otp      - Verify OTP`);
@@ -1995,7 +1542,7 @@ app.listen(PORT, HOST, () => {
   console.log(`   POST /api/admin/withdrawals/:id/approve - Approve withdrawal`);
   console.log(`   GET  /api/admin/analytics          - Analytics`);
   console.log('\n💡 Use this in your .env:');
-  console.log(`   REACT_APP_AUTH_URL = "http://192.168.0.130:${PORT}"`);
+  console.log(`   REACT_APP_AUTH_URL = "http://192.168.0.183:${PORT}"`);
   console.log('='.repeat(50) + '\n');
 });
 

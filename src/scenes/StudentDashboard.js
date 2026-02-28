@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-simple-toast';
 import { SCREEN_NAMES } from '../navigators/screenNames';
 import { supabase } from '../../supabase';
-import { getAllTeachers, createBooking, getStudentBookings, getTeacherSlotsByDateRange, bookAvailabilitySlot, isProfileComplete } from '../database/database';
+import { getAllTeachers, createBooking, getStudentBookings, getTeacherSlotsByDateRange, bookAvailabilitySlot, isProfileComplete, getUnreadNotificationCount } from '../database/database';
 import Home from '../assets/icons/Home';
 import Calendar from '../assets/icons/Calendar';
 import BookOpen from '../assets/icons/BookOpen';
@@ -55,6 +55,7 @@ export default function StudentDashboard({ navigation }) {
   const [bookingSubject, setBookingSubject] = useState('');
   const [bookingInProgress, setBookingInProgress] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
 
   // Fetch user info and teachers on mount
   useEffect(() => {
@@ -199,6 +200,16 @@ export default function StudentDashboard({ navigation }) {
           )
           .subscribe((status) => console.log('📡 Bookings channel:', status));
 
+        // Debounce notification toasts to avoid flood and perceived delay (show latest after 400ms quiet)
+        let notificationDebounceTimer = null;
+        let pendingNotification = null;
+        const showNotificationToast = () => {
+          if (pendingNotification) {
+            const n = pendingNotification;
+            Toast.show(n.title ? `${n.title}\n${n.message || ''}` : n.message || 'New notification');
+            pendingNotification = null;
+          }
+        };
         notificationsChannel = supabase
           .channel(`notifications:student_${user.id}`)
           .on(
@@ -206,7 +217,11 @@ export default function StudentDashboard({ navigation }) {
             { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
             (payload) => {
               const n = payload?.new;
-              if (n?.title || n?.message) Toast.show(n.title ? `${n.title}\n${n.message || ''}` : n.message);
+              if (!n?.title && !n?.message) return;
+              setUnreadNotificationCount((c) => c + 1);
+              pendingNotification = n;
+              if (notificationDebounceTimer) clearTimeout(notificationDebounceTimer);
+              notificationDebounceTimer = setTimeout(showNotificationToast, 400);
             }
           )
           .subscribe((status) => console.log('📡 Notifications channel:', status));
@@ -248,6 +263,9 @@ export default function StudentDashboard({ navigation }) {
             setMyBookings(bookingsData || []);
             console.log('✅ Bookings loaded:', bookingsData?.length);
 
+            // Refresh notification count (e.g. after viewing Notifications screen)
+            const count = await getUnreadNotificationCount(user.id);
+            setUnreadNotificationCount(count);
           }
         } catch (error) {
           console.error('🔴 Error refreshing profile:', error);
@@ -257,6 +275,12 @@ export default function StudentDashboard({ navigation }) {
       refreshProfile();
     }, [])
   );
+
+  // Load unread notification count when user is set
+  useEffect(() => {
+    if (!studentId) return;
+    getUnreadNotificationCount(studentId).then(setUnreadNotificationCount);
+  }, [studentId]);
 
   // Load available slots for selected teacher
   const loadAvailableSlots = async (teacher) => {
@@ -288,6 +312,10 @@ export default function StudentDashboard({ navigation }) {
       // Prevent booking of already booked slots
       if (slot.slot_status === 'booked') {
         Alert.alert('Slot Unavailable', 'This time slot is already booked. Please select another slot.');
+        // Refresh slots to show updated status
+        if (selectedTeacher) {
+          loadAvailableSlots(selectedTeacher);
+        }
         return null;
       }
 
@@ -308,11 +336,39 @@ export default function StudentDashboard({ navigation }) {
       );
 
       console.log('✅ Booking created:', booking);
+      
+      // Refresh slots immediately to show updated availability
+      if (selectedTeacher) {
+        loadAvailableSlots(selectedTeacher);
+      }
+      
       return booking; // Return booking object for checkout
 
     } catch (error) {
       console.error('🔴 Error booking slot:', error);
-      Alert.alert('Error', error.message || 'Failed to create booking');
+      
+      // Refresh slots on error to get latest status
+      if (selectedTeacher) {
+        loadAvailableSlots(selectedTeacher);
+      }
+      
+      // Show specific error messages
+      if (error.message?.includes('just booked') || error.message?.includes('no longer available')) {
+        Alert.alert(
+          'Slot Unavailable',
+          error.message || 'This slot was just booked by another student. Please select a different time.',
+          [
+            { text: 'OK', onPress: () => {
+              // Refresh slots after alert
+              if (selectedTeacher) {
+                loadAvailableSlots(selectedTeacher);
+              }
+            }}
+          ]
+        );
+      } else {
+        Alert.alert('Error', error.message || 'Failed to create booking');
+      }
       return null;
     } finally {
       setBookingInProgress(false);
@@ -749,8 +805,26 @@ export default function StudentDashboard({ navigation }) {
         >
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.welcome}>Welcome 👋</Text>
-            <Text style={styles.studentName}>{studentName}</Text>
+            <View style={styles.headerLeft}>
+              <Text style={styles.welcome}>Welcome 👋</Text>
+              <Text style={styles.studentName}>{studentName}</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.notificationBellWrap}
+              onPress={() => navigation.navigate(SCREEN_NAMES.Notifications)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.notificationBell}>
+                <Text style={styles.notificationBellIcon}>🔔</Text>
+                {unreadNotificationCount > 0 && (
+                  <View style={styles.notificationBadge}>
+                    <Text style={styles.notificationBadgeText}>
+                      {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </TouchableOpacity>
           </View>
 
           {/* Search Bar */}
@@ -1155,11 +1229,42 @@ export default function StudentDashboard({ navigation }) {
               <Text style={styles.settingText}>Edit Profile</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.settingItem} onPress={() => Alert.alert('Notifications')}>
+            <TouchableOpacity style={styles.settingItem} onPress={() => navigation.navigate(SCREEN_NAMES.Notifications)}>
               <View style={styles.settingIconContainer}>
                 <Clock width={18} height={18} fill="#5568FE" />
               </View>
               <Text style={styles.settingText}>Notifications</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.settingItem}
+              onPress={async () => {
+                try {
+                  const { data: { user } } = await supabase.auth.getUser();
+                  const email = user?.email;
+                  if (!email) {
+                    Alert.alert('Error', 'Could not get your email.');
+                    return;
+                  }
+                  const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase());
+                  if (error) {
+                    if (error.message?.toLowerCase().includes('rate limit')) {
+                      Toast.show('Too many requests. Try again in a few minutes.');
+                    } else {
+                      Toast.show('Could not send reset email. Try again.');
+                    }
+                    return;
+                  }
+                  Alert.alert('Check your email', `A password reset link has been sent to ${email}. Open the link to set a new password.`);
+                } catch (e) {
+                  Toast.show('Something went wrong. Try again.');
+                }
+              }}
+            >
+              <View style={styles.settingIconContainer}>
+                <Text style={{ fontSize: 16 }}>🔒</Text>
+              </View>
+              <Text style={styles.settingText}>Reset Password</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.settingItem} onPress={() => Alert.alert('Payment History')}>
@@ -1248,9 +1353,47 @@ const styles = StyleSheet.create({
   },
 
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 20,
     marginBottom: 10,
+  },
+  headerLeft: {
+    flex: 1,
+  },
+  notificationBellWrap: {
+    alignSelf: 'flex-start',
+  },
+  notificationBell: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#1C1F4A',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  notificationBellIcon: {
+    fontSize: 22,
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#FF6B6B',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  notificationBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '700',
   },
 
   welcomeContainer: {

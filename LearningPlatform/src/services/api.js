@@ -2,32 +2,21 @@ import { supabase } from '../config/supabase';
 
 // Used by web app for any non-supabase backend calls.
 // Keep env override, but default to your LAN IP.
-const API_URL = import.meta.env.VITE_API_URL || 'http://192.168.0.130:3000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://192.168.1.18:3000';
 
 // ==========================================
-// TEACHER API FUNCTIONS
+// TEACHER API FUNCTIONS (via backend so service_role bypasses RLS)
 // ==========================================
 
 export const getAllTeachers = async () => {
   try {
-    const { data, error } = await supabase
-      .from('teacher_profiles')
-      .select(`
-        *,
-        profile:profiles(id, full_name, role, email_verified, created_at)
-      `);
-    
-    if (error) throw error;
-    // Sort by profile created_at in JavaScript since Supabase ordering on joined fields can be tricky
-    const sorted = (data || []).sort((a, b) => {
-      const dateA = a.profile?.created_at ? new Date(a.profile.created_at) : new Date(0);
-      const dateB = b.profile?.created_at ? new Date(b.profile.created_at) : new Date(0);
-      return dateB - dateA; // Descending order (newest first)
-    });
-    return sorted;
+    const res = await fetch(`${API_URL}/api/admin/teachers`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error || 'Failed to load teachers');
+    return Array.isArray(data) ? data : [];
   } catch (error) {
     console.error('Error fetching teachers:', error);
-    throw error;
+    return [];
   }
 };
 
@@ -37,7 +26,7 @@ export const getTeacherById = async (teacherId) => {
       .from('teacher_profiles')
       .select(`
         *,
-        profile:profiles(id, full_name, role, email_verified, created_at)
+        profile:profiles(id, full_name, email, role, email_verified, created_at)
       `)
       .eq('id', teacherId)
       .single();
@@ -139,7 +128,7 @@ export const getAllStudents = async () => {
       .from('student_profiles')
       .select(`
         *,
-        profile:profiles(id, full_name, role, email_verified, created_at)
+        profile:profiles(id, full_name, email, role, email_verified, created_at)
       `);
     
     if (error) throw error;
@@ -152,7 +141,7 @@ export const getAllStudents = async () => {
     return sorted;
   } catch (error) {
     console.error('Error fetching students:', error);
-    throw error;
+    return [];
   }
 };
 
@@ -162,7 +151,7 @@ export const getStudentById = async (studentId) => {
       .from('student_profiles')
       .select(`
         *,
-        profile:profiles(id, full_name, role, email_verified, created_at)
+        profile:profiles(id, full_name, email, role, email_verified, created_at)
       `)
       .eq('id', studentId)
       .single();
@@ -228,6 +217,7 @@ export const deleteStudent = async (studentId) => {
 // ==========================================
 
 export const getDashboardStats = async () => {
+  const defaults = { totalTeachers: 0, totalStudents: 0, totalBookings: 0 };
   try {
     const [teachersResult, studentsResult, bookingsResult] = await Promise.all([
       supabase.from('teacher_profiles').select('id', { count: 'exact', head: true }),
@@ -236,13 +226,13 @@ export const getDashboardStats = async () => {
     ]);
 
     return {
-      totalTeachers: teachersResult.count || 0,
-      totalStudents: studentsResult.count || 0,
-      totalBookings: bookingsResult.count || 0,
+      totalTeachers: teachersResult?.error ? 0 : (teachersResult?.count ?? 0),
+      totalStudents: studentsResult?.error ? 0 : (studentsResult?.count ?? 0),
+      totalBookings: bookingsResult?.error ? 0 : (bookingsResult?.count ?? 0),
     };
   } catch (error) {
     console.error('Error fetching dashboard stats:', error);
-    throw error;
+    return defaults;
   }
 };
 

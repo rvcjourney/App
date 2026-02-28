@@ -16,6 +16,7 @@ import { supabase } from '../../../supabase';
 import { API_URL } from '../../api/api';
 import RazorpayCheckout from 'react-native-razorpay';
 import ChevronRight from '../../assets/icons/ChevronRight';
+import { releaseAvailabilitySlot } from '../../database/database';
 
 const isNetworkError = (error) => {
   if (!error) return false;
@@ -53,6 +54,9 @@ export default function StudentCheckout({
   const [orderDetails, setOrderDetails] = useState(null);
   const [processing, setProcessing] = useState(false);
   const [networkError, setNetworkError] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showPaymentFailedModal, setShowPaymentFailedModal] = useState(false);
+  const [paymentFailedMessage, setPaymentFailedMessage] = useState('');
 
   useEffect(() => {
     loadCheckoutData();
@@ -135,13 +139,18 @@ export default function StudentCheckout({
     setNetworkError(false);
   };
 
-  const handlePayment = async () => {
-    try {
-      if (!studentInfo || !booking || !charges) {
-        Alert.alert('Error', 'Missing required information');
-        return;
-      }
+  const handlePayment = () => {
+    if (!studentInfo || !booking || !charges) {
+      Alert.alert('Error', 'Missing required information');
+      return;
+    }
+    // Show confirmation modal with total amount
+    setShowConfirmModal(true);
+  };
 
+  const confirmAndProceedPayment = async () => {
+    try {
+      setShowConfirmModal(false);
       setProcessing(true);
 
       // Step 1: Create Razorpay order
@@ -203,24 +212,63 @@ export default function StudentCheckout({
           await verifyPayment(data);
         })
         .catch((error) => {
-          console.error('❌ Payment failed:', error);
-          Alert.alert(
-            'Payment Failed',
-            error.message || 'Payment was cancelled'
-          );
+          console.error('❌ Payment error:', error);
           setProcessing(false);
+          
+          // Check if payment was cancelled by user or network error
+          const errorCode = error?.code || error?.error?.code || '';
+          const errorDescription = error?.description || error?.error?.description || error?.message || '';
+          const isNetworkErr = isNetworkError(error);
+          
+          // Show payment failed modal for all cases (cancellation, network error, or other errors)
+          let failureMessage = 'Payment failed. Please try again.';
+          
+          if (isNetworkErr) {
+            failureMessage = 'Network error occurred. Please check your internet connection and try again.';
+          } else if (errorCode === 'BAD_REQUEST_ERROR' || 
+              errorDescription.toLowerCase().includes('cancelled') ||
+              errorDescription.toLowerCase().includes('cancel') ||
+              errorCode === 'USER_CANCELLED' ||
+              errorCode === 'PAYMENT_CANCELLED') {
+            failureMessage = 'Payment was cancelled.';
+          } else if (errorDescription) {
+            failureMessage = errorDescription;
+          } else if (error.message) {
+            failureMessage = error.message;
+          }
+          
+          setPaymentFailedMessage(failureMessage);
+          setShowPaymentFailedModal(true);
         });
     } catch (error) {
       console.error('🔴 Error initiating payment:', error);
       console.error('Error details:', error.message);
-      Alert.alert('Error', error.message || 'Failed to process payment');
       setProcessing(false);
+      
+      // Show payment failed modal for network or other errors during order creation
+      let failureMessage = 'Failed to process payment. Please try again.';
+      
+      if (isNetworkError(error)) {
+        failureMessage = 'Network error occurred. Please check your internet connection and try again.';
+      } else if (error.message) {
+        failureMessage = error.message;
+      }
+      
+      // Release the slot if booking exists (rollback)
+      if (booking?.availability_slot_id) {
+        console.log('🔄 Releasing slot due to payment failure:', booking.availability_slot_id);
+        await releaseAvailabilitySlot(booking.availability_slot_id, booking.id);
+      }
+      
+      setPaymentFailedMessage(failureMessage);
+      setShowPaymentFailedModal(true);
     }
   };
 
-  const verifyPayment = async (paymentData) => {
+  const verifyPayment = async (paymentData, retryCount = 0) => {
+    const MAX_RETRIES = 3;
     try {
-      console.log('🔵 Verifying payment...');
+      console.log('🔵 Verifying payment... (attempt ' + (retryCount + 1) + ')');
       console.log('Payment data:', paymentData);
 
       // Step 3: Verify payment on backend
@@ -245,11 +293,54 @@ export default function StudentCheckout({
       console.log('Verify response data:', verifyData);
 
       if (!verifyData.success) {
+        // Check if payment already exists (duplicate verification)
+        if (verifyData.error?.toLowerCase().includes('duplicate') || 
+            verifyData.error?.toLowerCase().includes('already exists') ||
+            verifyData.error?.toLowerCase().includes('already verified')) {
+          console.log('ℹ️ Payment already verified, checking booking status...');
+          // Payment was already verified - check if booking is confirmed
+          const { data: bookingData } = await supabase
+            .from('bookings')
+            .select('status, payment_status')
+            .eq('id', booking.id)
+            .single();
+          
+          if (bookingData?.payment_status === 'completed' || bookingData?.status === 'confirmed') {
+            console.log('✅ Booking already confirmed');
+            Toast.show('Payment already verified! Booking confirmed.', Toast.SHORT);
+            setTimeout(() => {
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'StudentDashboard' }],
+              });
+            }, 800);
+            return;
+          }
+        }
+
+        // Retry on network errors or temporary failures
+        if (retryCount < MAX_RETRIES && (
+          verifyData.error?.toLowerCase().includes('network') ||
+          verifyData.error?.toLowerCase().includes('timeout') ||
+          verifyData.error?.toLowerCase().includes('temporary') ||
+          verifyResponse.status >= 500
+        )) {
+          console.log(`🔄 Retrying verification (${retryCount + 1}/${MAX_RETRIES})...`);
+          await new Promise(resolve => setTimeout(resolve, 2000 * (retryCount + 1))); // Exponential backoff
+          return verifyPayment(paymentData, retryCount + 1);
+        }
+
+        // If verification fails permanently, release the slot
+        if (retryCount >= MAX_RETRIES && booking?.availability_slot_id) {
+          console.log('🔄 Releasing slot due to verification failure:', booking.availability_slot_id);
+          await releaseAvailabilitySlot(booking.availability_slot_id, booking.id);
+        }
+        
         throw new Error(verifyData.error || 'Payment verification failed');
       }
 
       console.log('✅ Payment verified successfully!');
-      Toast.show('Payment successful! Booking confirmed.');
+      Toast.show('Payment successful! Booking confirmed.', Toast.SHORT);
 
       // Navigate back to StudentDashboard - booking is now confirmed
       setTimeout(() => {
@@ -260,7 +351,31 @@ export default function StudentCheckout({
       }, 800);
     } catch (error) {
       console.error('🔴 Error verifying payment:', error);
-      Alert.alert('Verification Failed', error.message || 'Failed to verify payment');
+      
+      // Check if it's a network error
+      if (isNetworkError(error) && retryCount < MAX_RETRIES) {
+        console.log(`🔄 Network error, retrying verification (${retryCount + 1}/${MAX_RETRIES})...`);
+        await new Promise(resolve => setTimeout(resolve, 2000 * (retryCount + 1)));
+        return verifyPayment(paymentData, retryCount + 1);
+      }
+
+      // Release slot if verification failed permanently (after all retries)
+      if (retryCount >= MAX_RETRIES && booking?.availability_slot_id) {
+        console.log('🔄 Releasing slot due to verification failure:', booking.availability_slot_id);
+        await releaseAvailabilitySlot(booking.availability_slot_id, booking.id);
+      }
+      
+      // Show payment failed modal for verification errors
+      let failureMessage = 'Failed to verify payment. Your payment may have been processed. Please check your bookings.';
+      
+      if (isNetworkError(error)) {
+        failureMessage = 'Network error occurred during verification. Please check your internet connection and try again.';
+      } else if (error.message) {
+        failureMessage = error.message;
+      }
+      
+      setPaymentFailedMessage(failureMessage);
+      setShowPaymentFailedModal(true);
     } finally {
       setProcessing(false);
     }
@@ -336,7 +451,11 @@ export default function StudentCheckout({
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Date & Time:</Text>
               <Text style={styles.infoValue}>
-                {slot ? new Date(slot.start_time).toLocaleDateString() : 'TBD'}
+                {slot 
+                  ? `${new Date(slot.start_time).toLocaleDateString('en-IN', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })} at ${new Date(slot.start_time).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}`
+                  : booking?.booked_date 
+                    ? `${new Date(booking.booked_date).toLocaleDateString('en-IN', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })} at ${new Date(booking.booked_date).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}`
+                    : 'TBD'}
               </Text>
             </View>
 
@@ -496,6 +615,60 @@ export default function StudentCheckout({
           )}
         </TouchableOpacity>
       </View>
+      {/* Payment Confirmation Modal */}
+      <Modal
+        visible={showConfirmModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowConfirmModal(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setShowConfirmModal(false)}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback>
+              <View style={styles.confirmModalCard}>
+                <Text style={styles.confirmModalTitle}>Confirm Payment</Text>
+                <Text style={styles.confirmModalSubtitle}>Please review the total amount before proceeding</Text>
+                
+                <View style={styles.confirmPriceBreakdown}>
+                  <View style={styles.confirmPriceRow}>
+                    <Text style={styles.confirmPriceLabel}>Teacher Rate:</Text>
+                    <Text style={styles.confirmPriceValue}>₹{teacherRate}</Text>
+                  </View>
+                  <View style={styles.confirmPriceRow}>
+                    <Text style={styles.confirmPriceLabel}>GST (18%):</Text>
+                    <Text style={styles.confirmPriceValue}>+₹{gstAmount}</Text>
+                  </View>
+                  <View style={styles.confirmPriceRow}>
+                    <Text style={styles.confirmPriceLabel}>Platform Fee (7.5%):</Text>
+                    <Text style={styles.confirmPriceValue}>+₹{platformFeeAmount}</Text>
+                  </View>
+                  <View style={styles.confirmTotalDivider} />
+                  <View style={[styles.confirmPriceRow, styles.confirmTotalRow]}>
+                    <Text style={styles.confirmTotalLabel}>Total Payable:</Text>
+                    <Text style={styles.confirmTotalValue}>₹{totalAmount}</Text>
+                  </View>
+                </View>
+
+                <View style={styles.confirmModalButtons}>
+                  <TouchableOpacity
+                    style={styles.confirmCancelBtn}
+                    onPress={() => setShowConfirmModal(false)}
+                  >
+                    <Text style={styles.confirmCancelBtnText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.confirmProceedBtn}
+                    onPress={confirmAndProceedPayment}
+                  >
+                    <Text style={styles.confirmProceedBtnText}>Proceed to Pay</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
       {/* Network Error Modal */}
       <Modal
         visible={networkError}
@@ -517,6 +690,34 @@ export default function StudentCheckout({
                   onPress={handleNetworkErrorDismiss}
                 >
                   <Text style={styles.networkErrorBtnText}>OK</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
+      {/* Payment Failed Modal */}
+      <Modal
+        visible={showPaymentFailedModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowPaymentFailedModal(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setShowPaymentFailedModal(false)}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback>
+              <View style={styles.paymentFailedCard}>
+                <Text style={styles.paymentFailedIcon}>❌</Text>
+                <Text style={styles.paymentFailedTitle}>Payment Failed</Text>
+                <Text style={styles.paymentFailedMessage}>
+                  {paymentFailedMessage}
+                </Text>
+                <TouchableOpacity
+                  style={styles.paymentFailedBtn}
+                  onPress={() => setShowPaymentFailedModal(false)}
+                >
+                  <Text style={styles.paymentFailedBtnText}>OK</Text>
                 </TouchableOpacity>
               </View>
             </TouchableWithoutFeedback>
@@ -978,6 +1179,168 @@ const styles = StyleSheet.create({
   },
 
   networkErrorBtnText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+
+  confirmModalCard: {
+    backgroundColor: '#1C1F4A',
+    borderRadius: 15,
+    padding: 25,
+    width: '100%',
+    maxWidth: 400,
+    borderLeftWidth: 4,
+    borderLeftColor: '#5568FE',
+  },
+
+  confirmModalTitle: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+
+  confirmModalSubtitle: {
+    color: '#999',
+    fontSize: 14,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+
+  confirmPriceBreakdown: {
+    backgroundColor: '#0B0D2A',
+    borderRadius: 10,
+    padding: 15,
+    marginBottom: 20,
+  },
+
+  confirmPriceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+
+  confirmPriceLabel: {
+    color: '#ccc',
+    fontSize: 14,
+  },
+
+  confirmPriceValue: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+
+  confirmTotalDivider: {
+    height: 1,
+    backgroundColor: '#2A2D5A',
+    marginVertical: 10,
+  },
+
+  confirmTotalRow: {
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#2A2D5A',
+  },
+
+  confirmTotalLabel: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+
+  confirmTotalValue: {
+    color: '#FFD700',
+    fontSize: 20,
+    fontWeight: '800',
+  },
+
+  confirmModalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+
+  confirmCancelBtn: {
+    flex: 1,
+    backgroundColor: '#2A2D5A',
+    paddingVertical: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+
+  confirmCancelBtnText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+
+  confirmProceedBtn: {
+    flex: 1,
+    backgroundColor: '#5568FE',
+    paddingVertical: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+
+  confirmProceedBtnText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+
+  paymentFailedCard: {
+    backgroundColor: '#1C1F4A',
+    borderRadius: 15,
+    padding: 25,
+    alignItems: 'center',
+    borderLeftWidth: 4,
+    borderLeftColor: '#FF6B6B',
+    width: '100%',
+    maxWidth: 400,
+  },
+
+  paymentFailedIcon: {
+    fontSize: 48,
+    marginBottom: 15,
+  },
+
+  paymentFailedTitle: {
+    color: '#FF6B6B',
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+
+  paymentFailedMessage: {
+    color: '#AAA',
+    fontSize: 14,
+    marginBottom: 20,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+
+  paymentFailedBtn: {
+    backgroundColor: '#5568FE',
+    paddingHorizontal: 30,
+    paddingVertical: 12,
+    borderRadius: 8,
+    minWidth: 100,
+  },
+
+  paymentFailedBtnText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',

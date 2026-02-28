@@ -341,9 +341,10 @@ const Students = () => {
     try {
       setLoading(true);
       const data = await getAllStudents();
-      setStudents(data || []);
+      setStudents(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error(error);
+      setStudents([]);
       alert('Failed to load students');
     } finally {
       setLoading(false);

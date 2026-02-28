@@ -10,6 +10,7 @@ import { SCREEN_NAMES } from "../navigators/screenNames";
 import TeacherEarnings from "./Teacher/TeacherEarnings";
 import WithdrawalRequest from "./Teacher/WithdrawalRequest";
 import BankAccountSettings from "./Teacher/BankAccountSettings";
+import NotificationsScreen from "./NotificationsScreen";
 
 const RootStack = createStackNavigator();
 
@@ -51,6 +52,10 @@ export default function TeacherStack() {
       <RootStack.Screen
         name={SCREEN_NAMES.BankAccountSettings}
         component={BankAccountSettings}
+      />
+      <RootStack.Screen
+        name={SCREEN_NAMES.Notifications}
+        component={NotificationsScreen}
       />
     </RootStack.Navigator>
   );

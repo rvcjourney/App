@@ -13,6 +13,8 @@ export const SCREEN_NAMES = {
   WithdrawalRequest: "WithdrawalRequest",
   BankAccountSettings: "BankAccountSettings",
   StudentCheckout: "StudentCheckout",
+  Notifications: "Notifications",
+  ResetPassword: "ResetPassword",
 
   // Super Admin
   SuperAdminDashboard: "SuperAdminDashboard",

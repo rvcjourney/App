@@ -537,9 +537,10 @@ const Teachers = () => {
     try {
       setLoading(true);
       const data = await getAllTeachers();
-      setTeachers(data);
+      setTeachers(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error loading teachers:', error);
+      setTeachers([]);
       alert('Failed to load teachers. Please try again.');
     } finally {
       setLoading(false);

@@ -156,6 +156,14 @@ export default function LoginScreen({ navigation, route }) {
       />
 
       <TouchableOpacity
+        onPress={() => navigation.navigate('ResetPassword', { role })}
+        disabled={loading}
+        style={styles.forgotWrap}
+      >
+        <Text style={styles.forgotText}>Forgot Password?</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
         style={styles.loginBtn}
         onPress={handleLogin}
         disabled={loading}
@@ -229,6 +237,14 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
 
+  forgotWrap: {
+    alignSelf: 'flex-end',
+    marginBottom: 4,
+  },
+  forgotText: {
+    color: '#6CA0FF',
+    fontSize: 14,
+  },
   loginBtn: {
     backgroundColor: '#1E2BFF',
     padding: 15,

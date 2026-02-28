@@ -6,6 +6,7 @@ import Join from "./join";
 import Meeting from "./meeting";
 import { SCREEN_NAMES } from "../navigators/screenNames";
 import StudentCheckout from "./Student/StudentCheckout";
+import NotificationsScreen from "./NotificationsScreen";
 
 const Stack = createStackNavigator();
 
@@ -31,6 +32,10 @@ export default function StudentStack() {
       <Stack.Screen
         name={SCREEN_NAMES.StudentCheckout}
         component={StudentCheckout}
+      />
+      <Stack.Screen
+        name={SCREEN_NAMES.Notifications}
+        component={NotificationsScreen}
       />
     </Stack.Navigator>
   );

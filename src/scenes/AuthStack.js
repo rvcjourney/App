@@ -8,6 +8,7 @@ import WelcomeScreen from  "./WelcomeScreen";
 import RoleSelectScreen from "./RoleSelectScreen";
 import LoginScreen from "./LoginScreen";
 import SignupScreen from "./SignupScreen";
+import ResetPasswordScreen from "./ResetPasswordScreen";
 import OTPVerificationScreen from "./OTPVerificationScreen";
 import Join from "./join";
 import Meeting from "./meeting";
@@ -46,6 +47,11 @@ export default function AuthStack() {
       <RootStack.Screen
         name="Signup"
         component={SignupScreen}
+        options={{ headerShown: false }}
+      />
+      <RootStack.Screen
+        name={SCREEN_NAMES.ResetPassword}
+        component={ResetPasswordScreen}
         options={{ headerShown: false }}
       />
       <RootStack.Screen

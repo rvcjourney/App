@@ -18,7 +18,7 @@ function App() {
         <Navbar />
 
         {/* Main Content */}
-        <main className="flex-grow-1 container-fluid py-4 bg-dark">
+        <main className="flex-grow-1 container-fluid py-4 bg-dark" style={{ minHeight: '60vh' }}>
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/teachers" element={<Teachers />} />
