@@ -552,6 +552,7 @@ const Teachers = () => {
     setFormData({
       full_name: teacher.profile?.full_name || '',
       email: teacher.profile?.email || '',
+      role: teacher.profile?.role || teacher.role || 'teacher',
       specializations: teacher.specializations || '',
       price_per_call: teacher.price_per_call || '',
       bio: teacher.bio || '',
@@ -637,8 +638,11 @@ const Teachers = () => {
       await updateTeacher(selectedTeacher.id, {
         profile: {
           full_name: formData.full_name,
+          role: formData.role,
         },
         teacherProfile: {
+          full_name: formData.full_name,
+          role: formData.role,
           specializations: formData.specializations,
           price_per_call: parseFloat(formData.price_per_call) || 0,
           bio: formData.bio,
@@ -657,6 +661,7 @@ const Teachers = () => {
   const columns = [
     { header: 'Name', accessor: (row) => row.profile?.full_name || 'N/A' },
     { header: 'Email', accessor: (row) => row.profile?.email || 'N/A' },
+    { header: 'Role', accessor: (row) => (row.profile?.role || row.role || 'teacher') },
     { header: 'Specializations', accessor: (row) => row.specializations || 'N/A' },
     { header: 'Price/Call', accessor: (row) => `₹${row.price_per_call || 0}` },
     { header: 'Experience', accessor: (row) => `${row.experience_years || 0} years` },
@@ -698,6 +703,14 @@ const Teachers = () => {
                 <input type="text" value={formData.full_name} onChange={(e) => setFormData({ ...formData, full_name: e.target.value })} className="form-control bg-dark text-white" placeholder="Enter full name" />
               </div>
               <div className="mb-3">
+                <label className="form-label">Role</label>
+                <select value={formData.role} onChange={(e) => setFormData({ ...formData, role: e.target.value })} className="form-select bg-dark text-white">
+                  <option value="teacher">Teacher</option>
+                  <option value="student">Student</option>
+                  <option value="super_admin">Super Admin</option>
+                </select>
+              </div>
+              <div className="mb-3">
                 <label className="form-label">Specializations</label>
                 <input type="text" value={formData.specializations} onChange={(e) => setFormData({ ...formData, specializations: e.target.value })} className="form-control bg-dark text-white" placeholder="Enter specializations" />
               </div>
@@ -727,6 +740,7 @@ const Teachers = () => {
             <div className="row g-3">
               <div className="col-8"><strong>Name:</strong> {selectedTeacher.profile?.full_name || 'N/A'}</div>
               <div className="col-8"><strong>Email:</strong> {selectedTeacher.profile?.email || 'N/A'}</div>
+              <div className="col-8"><strong>Role:</strong> {selectedTeacher.profile?.role || selectedTeacher.role || 'teacher'}</div>
               <div className="col-8"><strong>Specializations:</strong> {selectedTeacher.specializations || 'N/A'}</div>
               <div className="col-8"><strong>Price per Call:</strong> ₹{selectedTeacher.price_per_call || 0}</div>
               <div className="col-8"><strong>Experience:</strong> {selectedTeacher.experience_years || 0} years</div>

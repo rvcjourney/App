@@ -81,12 +81,14 @@
 
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FaHome, FaChalkboardTeacher, FaUserGraduate, FaMoneyBillWave, FaBars, FaUserCircle } from 'react-icons/fa';
+import { FaHome, FaChalkboardTeacher, FaUserGraduate, FaMoneyBillWave, FaBars, FaUserCircle, FaSignOutAlt } from 'react-icons/fa';
+import { useAuth } from '../context/AuthContext';
 import '../App.css';
 
 const Navbar = () => {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { user, profile, logout } = useAuth();
 
   const isActive = (path) => location.pathname === path;
 
@@ -131,17 +133,20 @@ const Navbar = () => {
               );
             })}
 
-            {/* Profile Dropdown */}
+            {/* Profile & Logout */}
             <div className="dropdown">
-              <button className="btn btn-outline-light dropdown-toggle d-inline-flex align-items-center
-" data-bs-toggle="dropdown">
+              <button className="btn btn-outline-light dropdown-toggle d-inline-flex align-items-center gap-2" data-bs-toggle="dropdown">
                 <FaUserCircle size={20} />
+                <span className="d-none d-lg-inline">{profile?.full_name || 'Admin'}</span>
               </button>
               <ul className="dropdown-menu dropdown-menu-end">
-                <li><a className="dropdown-item" href="#">Profile</a></li>
-                <li><a className="dropdown-item" href="#">Settings</a></li>
+                <li><span className="dropdown-item-text text-muted small">{profile?.email || user?.email}</span></li>
                 <li><hr className="dropdown-divider" /></li>
-                <li><a className="dropdown-item text-danger" href="#">Logout</a></li>
+                <li>
+                  <button type="button" className="dropdown-item text-danger d-flex align-items-center gap-2" onClick={() => logout()}>
+                    <FaSignOutAlt /> Logout
+                  </button>
+                </li>
               </ul>
             </div>
 
@@ -167,6 +172,13 @@ const Navbar = () => {
                 </Link>
               );
             })}
+            <button
+              type="button"
+              className="btn w-100 text-start text-danger btn-outline-danger d-flex align-items-center gap-2 mt-1"
+              onClick={() => { setMobileOpen(false); logout(); }}
+            >
+              <FaSignOutAlt /> Logout
+            </button>
           </div>
         )}
 

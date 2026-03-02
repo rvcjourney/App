@@ -107,12 +107,15 @@ export const updateTeacherProfile = async (teacherId, updates) => {
 };
 
 /** Create a minimal teacher_profiles row (call after signup so edits work). */
-export const createTeacherProfile = async (userId) => {
+export const createTeacherProfile = async (userId, { full_name, email, role } = {}) => {
   try {
     const { error } = await supabase
       .from('teacher_profiles')
       .upsert({
         id: userId,
+        full_name: full_name ?? null,
+        email: email ?? null,
+        role: role ?? 'teacher',
         price_per_call: 500,
         specializations: '',
         bio: '',
@@ -180,12 +183,14 @@ export const updateStudentProfile = async (studentId, updates) => {
 };
 
 /** Create a minimal student_profiles row (call after signup so edits work). */
-export const createStudentProfile = async (userId) => {
+export const createStudentProfile = async (userId, { full_name, email } = {}) => {
   try {
     const { error } = await supabase
       .from('student_profiles')
       .upsert({
         id: userId,
+        full_name: full_name ?? null,
+        email: email ?? null,
         preferred_language: 'English',
         grade_level: '',
         subjects_interested: '',
@@ -1246,7 +1251,7 @@ export const endMeeting = async (bookingId, meetingId, duration = 60) => {
     // 3. Change earnings status from 'pending' to 'completed'
     // 4. Update teacher's wallet with earned amount
     
-    const backendUrl = process.env.REACT_APP_AUTH_URL || 'http://192.168.1.18:3000';
+    const backendUrl = process.env.REACT_APP_AUTH_URL || 'http://192.168.1.7:3000';
     console.log('🌐 Backend URL:', backendUrl);
     
     const response = await fetch(`${backendUrl}/api/meetings/end`, {

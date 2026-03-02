@@ -205,11 +205,16 @@ const DataTable = ({
   const [searchTerm, setSearchTerm] = useState('');
   const itemsPerPage = 10;
 
-  // 🔎 Search Filter
+  // 🔎 Search Filter (safe when accessor returns undefined or React nodes)
   const filteredData = data.filter((item) =>
     columns.some((col) => {
-      const value = col.accessor(item);
-      return value?.toString().toLowerCase().includes(searchTerm.toLowerCase());
+      try {
+        const value = col.accessor(item);
+        const str = value == null ? '' : (typeof value === 'string' ? value : String(value));
+        return str.toLowerCase().includes(searchTerm.toLowerCase());
+      } catch {
+        return false;
+      }
     })
   );
 
@@ -269,7 +274,7 @@ const DataTable = ({
               </tr>
             ) : (
               paginatedData.map((row, rowIdx) => (
-                <tr key={rowIdx}>
+                <tr key={row?.id ?? rowIdx}>
                   {columns.map((col, colIdx) => (
                     <td key={colIdx}>{col.accessor(row)}</td>
                   ))}

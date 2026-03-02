@@ -82,12 +82,13 @@ export default function SignupScreen({ navigation, route }) {
 
       console.log('✅ Profile created successfully');
 
-      // Create role-specific profile row so edits save to teacher_profiles / student_profiles
+      // Create role-specific profile row (with name and email for admin list)
       try {
+        const nameAndEmail = { full_name: fullName, email: data.user?.email ?? email, role };
         if (role === 'teacher') {
-          await createTeacherProfile(data.user.id);
+          await createTeacherProfile(data.user.id, nameAndEmail);
         } else {
-          await createStudentProfile(data.user.id);
+          await createStudentProfile(data.user.id, nameAndEmail);
         }
       } catch (roleProfileErr) {
         console.error('❌ Role profile creation error:', roleProfileErr);

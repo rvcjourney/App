@@ -1,19 +1,41 @@
 import { supabase } from '../config/supabase';
 
-// Used by web app for any non-supabase backend calls.
-// Keep env override, but default to your LAN IP.
-const API_URL = import.meta.env.VITE_API_URL || 'http://192.168.1.18:3000';
+// Backend API base URL – use 192.168.1.7 so LearningPlatform can reach the server
+const API_URL = import.meta.env.VITE_API_URL?.trim() || 'http://192.168.1.7:3000';
+
+// Profile fields (minimal so it works even if profiles table has fewer columns)
+const PROFILE_SELECT = 'id, full_name, email, role, email_verified, created_at';
+const PROFILE_SELECT_MINIMAL = 'id, full_name, email';
 
 // ==========================================
-// TEACHER API FUNCTIONS (via backend so service_role bypasses RLS)
+// TEACHER API FUNCTIONS
 // ==========================================
 
+/** Fetch all teachers. Prefer backend (has name/email); fallback to Supabase list only. */
 export const getAllTeachers = async () => {
   try {
     const res = await fetch(`${API_URL}/api/admin/teachers`);
     const data = await res.json();
-    if (!res.ok) throw new Error(data?.error || 'Failed to load teachers');
-    return Array.isArray(data) ? data : [];
+    if (res.ok && Array.isArray(data)) return data;
+  } catch (_) {}
+  try {
+    const { data: teachers, error: teErr } = await supabase
+      .from('teacher_profiles')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (teErr) throw teErr;
+    const list = Array.isArray(teachers) ? teachers : [];
+    if (list.length === 0) return [];
+    const ids = [...new Set(list.map((t) => t.id).filter(Boolean))];
+    const profileMap = {};
+    const chunkSize = 50;
+    for (let i = 0; i < ids.length; i += chunkSize) {
+      const chunk = ids.slice(i, i + chunkSize);
+      let res = await supabase.from('profiles').select(PROFILE_SELECT).in('id', chunk);
+      if (res.error) res = await supabase.from('profiles').select(PROFILE_SELECT_MINIMAL).in('id', chunk);
+      if (!res.error && Array.isArray(res.data)) res.data.forEach((p) => { profileMap[p.id] = p; });
+    }
+    return list.map((t) => ({ ...t, profile: profileMap[t.id] || null }));
   } catch (error) {
     console.error('Error fetching teachers:', error);
     return [];
@@ -41,30 +63,17 @@ export const getTeacherById = async (teacherId) => {
 
 export const updateTeacher = async (teacherId, updates) => {
   try {
-    // Update teacher_profiles
-    const { data: teacherData, error: teacherError } = await supabase
-      .from('teacher_profiles')
-      .update({
-        ...updates.teacherProfile,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', teacherId)
-      .select()
-      .single();
-    
-    if (teacherError) throw teacherError;
-
-    // Update profiles if needed (profiles table has no updated_at column)
-    if (updates.profile) {
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update(updates.profile)
-        .eq('id', teacherId);
-      
-      if (profileError) throw profileError;
-    }
-
-    return teacherData;
+    const res = await fetch(`${API_URL}/api/admin/teachers/${teacherId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        teacherProfile: updates.teacherProfile || {},
+        profile: updates.profile || {},
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error || data?.message || 'Failed to update teacher');
+    return data;
   } catch (error) {
     console.error('Error updating teacher:', error);
     throw error;
@@ -122,23 +131,39 @@ export const updateTeacherWallet = async (teacherId, { total_balance, available_
 // STUDENT API FUNCTIONS
 // ==========================================
 
+const sortByCreated = (list) =>
+  list.sort((a, b) => {
+    const dateA = a.profile?.created_at ? new Date(a.profile.created_at) : new Date(0);
+    const dateB = b.profile?.created_at ? new Date(b.profile.created_at) : new Date(0);
+    return dateB - dateA;
+  });
+
+/** Fetch all students. Prefer backend (has name/email); fallback to Supabase list only. */
 export const getAllStudents = async () => {
   try {
-    const { data, error } = await supabase
+    const res = await fetch(`${API_URL}/api/admin/students`);
+    const data = await res.json();
+    if (res.ok && Array.isArray(data)) return sortByCreated(data);
+  } catch (_) {}
+  try {
+    const { data: students, error: stErr } = await supabase
       .from('student_profiles')
-      .select(`
-        *,
-        profile:profiles(id, full_name, email, role, email_verified, created_at)
-      `);
-    
-    if (error) throw error;
-    // Sort by profile created_at in JavaScript since Supabase ordering on joined fields can be tricky
-    const sorted = (data || []).sort((a, b) => {
-      const dateA = a.profile?.created_at ? new Date(a.profile.created_at) : new Date(0);
-      const dateB = b.profile?.created_at ? new Date(b.profile.created_at) : new Date(0);
-      return dateB - dateA; // Descending order (newest first)
-    });
-    return sorted;
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (stErr) throw stErr;
+    const list = Array.isArray(students) ? students : [];
+    if (list.length === 0) return [];
+    const ids = [...new Set(list.map((s) => s.id).filter(Boolean))];
+    const profileMap = {};
+    const chunkSize = 50;
+    for (let i = 0; i < ids.length; i += chunkSize) {
+      const chunk = ids.slice(i, i + chunkSize);
+      let res = await supabase.from('profiles').select(PROFILE_SELECT).in('id', chunk);
+      if (res.error) res = await supabase.from('profiles').select(PROFILE_SELECT_MINIMAL).in('id', chunk);
+      if (!res.error && Array.isArray(res.data)) res.data.forEach((p) => { profileMap[p.id] = p; });
+    }
+    const merged = list.map((s) => ({ ...s, profile: profileMap[s.id] || null }));
+    return sortByCreated(merged);
   } catch (error) {
     console.error('Error fetching students:', error);
     return [];

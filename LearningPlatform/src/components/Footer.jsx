@@ -47,11 +47,8 @@ const Footer = () => {
         </div>
       </div>
 
-      {/* Inline CSS for hover color similar to Tailwind */}
-      <style jsx>{`
-        .hover-primary:hover {
-          color: #5568FE !important;
-        }
+      <style>{`
+        footer .hover-primary:hover { color: #5568FE !important; }
       `}</style>
     </footer>
   );

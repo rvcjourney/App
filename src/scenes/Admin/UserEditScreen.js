@@ -107,7 +107,7 @@ export default function UserEditScreen({ route, navigation }) {
 
       if (role === 'teacher') {
         const existingTeacher = await getTeacherProfileForAdmin(user.id);
-        if (!existingTeacher) await createTeacherProfile(user.id);
+        if (!existingTeacher) await createTeacherProfile(user.id, { full_name: name, email: user.email });
         await updateTeacherProfileForAdmin(user.id, {
           bio: bio || '',
           specializations: specializations || '',
@@ -119,7 +119,7 @@ export default function UserEditScreen({ route, navigation }) {
         });
       } else if (role === 'student') {
         const existingStudent = await getStudentProfileForAdmin(user.id);
-        if (!existingStudent) await createStudentProfile(user.id);
+        if (!existingStudent) await createStudentProfile(user.id, { full_name: name, email: user.email });
         await updateStudentProfileForAdmin(user.id, {
           grade_level: gradeLevel || '',
           subjects_interested: subjectsInterested || '',

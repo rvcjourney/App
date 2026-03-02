@@ -20,6 +20,7 @@ const cors = require('cors');
 const nodemailer = require('nodemailer');
 const { createClient } = require('@supabase/supabase-js');
 const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const app = express();
@@ -33,8 +34,18 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 // Store OTPs in memory (in production, use Redis or database)
 const otpStore = new Map();
 
-// Middleware
-app.use(cors());
+// CORS: handle preflight first so PATCH is allowed from LearningPlatform (localhost:5173)
+app.options('*', (req, res) => {
+  res.set('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.set('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.sendStatus(204);
+});
+app.use(cors({
+  origin: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 app.use(express.json());
 
 // ==========================================
@@ -1115,6 +1126,116 @@ app.get('/api/admin/charges/:teacherId', async (req, res) => {
   }
 });
 
+// Build profile from teacher_profiles / student_profiles (full_name, email on the row)
+function profileFromRow(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    full_name: row.full_name ?? null,
+    email: row.email ?? null,
+    role: row.role ?? null,
+    email_verified: row.email_verified ?? null,
+    created_at: row.created_at ?? null,
+  };
+}
+
+/**
+ * GET /api/admin/teachers
+ * List all teachers; name and email come from teacher_profiles (full_name, email columns).
+ */
+app.get('/api/admin/teachers', async (req, res) => {
+  try {
+    console.log('🔵 Fetching all teachers');
+
+    const { data: teachers, error: teErr } = await supabase
+      .from('teacher_profiles')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (teErr) throw teErr;
+    const list = (Array.isArray(teachers) ? teachers : []).map((t) => ({
+      ...t,
+      profile: profileFromRow(t),
+    }));
+    console.log('✅ Teachers fetched:', list.length);
+    res.json(list);
+  } catch (error) {
+    console.error('🔴 Error fetching teachers:', error.message);
+    res.status(500).json({
+      error: 'Failed to load teachers',
+      message: error.message,
+    });
+  }
+});
+
+async function updateTeacherHandler(req, res) {
+  try {
+    const { teacherId } = req.params;
+    const { teacherProfile = {}, profile = {} } = req.body;
+
+    const teacherUpdates = { ...teacherProfile, updated_at: new Date().toISOString() };
+    const { data: teacherData, error: teErr } = await supabase
+      .from('teacher_profiles')
+      .update(teacherUpdates)
+      .eq('id', teacherId)
+      .select()
+      .single();
+
+    if (teErr) throw teErr;
+
+    if (Object.keys(profile).length > 0) {
+      const { error: prErr } = await supabase
+        .from('profiles')
+        .update(profile)
+        .eq('id', teacherId);
+      if (prErr) console.warn('⚠️ Profiles update:', prErr.message);
+    }
+
+    res.json(teacherData);
+  } catch (error) {
+    console.error('🔴 Error updating teacher:', error.message);
+    res.status(500).json({
+      error: 'Failed to update teacher',
+      message: error.message,
+    });
+  }
+}
+
+/** PATCH /api/admin/teachers/:teacherId - Update teacher */
+app.patch('/api/admin/teachers/:teacherId', updateTeacherHandler);
+
+/** POST /api/admin/teachers/:teacherId - Update teacher (use when PATCH is blocked by CORS) */
+app.post('/api/admin/teachers/:teacherId', updateTeacherHandler);
+
+/**
+ * GET /api/admin/students
+ * List all students; name and email come from student_profiles (full_name, email columns).
+ */
+app.get('/api/admin/students', async (req, res) => {
+  try {
+    console.log('🔵 Fetching all students');
+
+    const { data: students, error: stErr } = await supabase
+      .from('student_profiles')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (stErr) throw stErr;
+    const list = (Array.isArray(students) ? students : []).map((s) => ({
+      ...s,
+      profile: profileFromRow(s),
+    }));
+    console.log('✅ Students fetched:', list.length);
+    res.json(list);
+  } catch (error) {
+    console.error('🔴 Error fetching students:', error.message);
+    res.status(500).json({
+      error: 'Failed to load students',
+      message: error.message,
+    });
+  }
+});
+
 /**
  * GET /api/teacher/earnings/:teacherId
  * Get teacher earnings summary
@@ -1361,36 +1482,55 @@ app.patch('/api/admin/teacher/:teacherId/wallet', async (req, res) => {
 
 /**
  * GET /api/admin/withdrawals
- * Get all pending withdrawal requests (Admin only)
+ * Get all pending withdrawal requests (Admin only). Fetch rows then merge teacher names.
  */
 app.get('/api/admin/withdrawals', async (req, res) => {
+  const empty = () => res.json({ success: true, data: [], count: 0 });
   try {
     console.log('🔵 Fetching withdrawal requests');
 
-    const { data, error } = await supabase
+    const { data: withdrawals, error } = await supabase
       .from('withdrawal_requests')
-      .select(`
-        *,
-        teacher:teacher_id(profile:profiles(full_name, email))
-      `)
+      .select('*')
       .eq('status', 'pending')
       .order('requested_at', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.warn('⚠️ Withdrawals query error:', error.message);
+      return empty();
+    }
 
-    console.log('✅ Withdrawal requests fetched:', data?.length);
+    const list = Array.isArray(withdrawals) ? withdrawals : [];
+    if (list.length === 0) return empty();
 
-    res.json({
-      success: true,
-      data: data || [],
-      count: data?.length || 0,
-    });
+    const teacherIds = [...new Set(list.map((w) => w.teacher_id).filter(Boolean))];
+    const profileMap = {};
+    if (teacherIds.length > 0) {
+      try {
+        const chunkSize = 50;
+        for (let i = 0; i < teacherIds.length; i += chunkSize) {
+          const chunk = teacherIds.slice(i, i + chunkSize);
+          const { data: profiles } = await supabase
+            .from('profiles')
+            .select('id, full_name, email')
+            .in('id', chunk);
+          if (Array.isArray(profiles)) profiles.forEach((p) => { profileMap[p.id] = p; });
+        }
+      } catch (e) {
+        console.warn('⚠️ Profiles for withdrawals:', e.message);
+      }
+    }
+
+    const data = list.map((w) => ({
+      ...w,
+      sender: profileMap[w.teacher_id] || null,
+    }));
+
+    console.log('✅ Withdrawal requests fetched:', data.length);
+    return res.json({ success: true, data, count: data.length });
   } catch (error) {
     console.error('🔴 Error fetching withdrawals:', error.message);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch withdrawals',
-    });
+    return empty();
   }
 });
 
@@ -1523,13 +1663,17 @@ app.listen(PORT, HOST, () => {
   console.log('🚀 VideoSDK Token Server Started');
   console.log('='.repeat(50));
   console.log(`📍 Server running at: http://localhost:${PORT}`);
-  console.log(`📍 Also reachable at: http://192.168.0.183:${PORT}`);
+  console.log(`📍 Also reachable at: http://192.168.1.7:${PORT}`);
   console.log('\n📌 Available Endpoints:');
   console.log(`   POST /send-otp        - Send OTP to email`);
   console.log(`   POST /verify-otp      - Verify OTP`);
   console.log(`   GET  /get-token       - Get fresh token`);
   console.log(`   GET  /health          - Health check`);
   console.log(`   POST /validate-token  - Validate token`);
+  console.log(`\n📋 Admin (LearningPlatform):`);
+  console.log(`   GET  /api/admin/teachers     - List all teachers`);
+  console.log(`   POST /api/admin/teachers/:id - Update teacher (use POST if PATCH blocked by CORS)`);
+  console.log(`   GET  /api/admin/students     - List all students`);
   console.log(`\n💳 Payment Endpoints:`);
   console.log(`   POST /api/payments/create-order    - Create Razorpay order`);
   console.log(`   POST /api/payments/verify          - Verify payment`);
@@ -1541,8 +1685,9 @@ app.listen(PORT, HOST, () => {
   console.log(`   GET  /api/admin/withdrawals        - Get pending withdrawals`);
   console.log(`   POST /api/admin/withdrawals/:id/approve - Approve withdrawal`);
   console.log(`   GET  /api/admin/analytics          - Analytics`);
-  console.log('\n💡 Use this in your .env:');
-  console.log(`   REACT_APP_AUTH_URL = "http://192.168.0.183:${PORT}"`);
+  console.log('\n💡 Use in .env:');
+  console.log(`   REACT_APP_AUTH_URL = "http://192.168.1.7:${PORT}"`);
+  console.log(`   VITE_API_URL       = "http://192.168.1.7:${PORT}"`);
   console.log('='.repeat(50) + '\n');
 });
 

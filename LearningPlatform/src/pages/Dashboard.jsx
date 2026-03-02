@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { FaChalkboardTeacher, FaUserGraduate, FaCalendarCheck, FaMoneyBillWave } from 'react-icons/fa';
 import { getDashboardStats } from '../services/api';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://192.168.1.18:3000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://192.168.1.7:3000';
 
 const Dashboard = () => {
   const [stats, setStats] = useState({
