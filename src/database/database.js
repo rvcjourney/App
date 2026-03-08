@@ -106,6 +106,62 @@ export const updateTeacherProfile = async (teacherId, updates) => {
   }
 };
 
+export const getTeachersByProfession = async (profession) => {
+  try {
+    console.log('🔵 Fetching teachers by profession:', profession);
+
+    const { data, error } = await supabase
+      .from('teacher_profiles')
+      .select(`
+        *,
+        profile:profiles(id, full_name)
+      `)
+      .eq('profession', profession)
+      .order('rating', { ascending: false });
+
+    if (error) throw error;
+
+    console.log('✅ Teachers by profession fetched:', data?.length);
+    return data || [];
+  } catch (error) {
+    console.error('🔴 Error fetching teachers by profession:', error);
+    throw error;
+  }
+};
+
+export const getTeachersGroupedByProfession = async () => {
+  try {
+    console.log('🔵 Fetching all teachers grouped by profession...');
+
+    const { data, error } = await supabase
+      .from('teacher_profiles')
+      .select(`
+        *,
+        profile:profiles(id, full_name)
+      `)
+      .order('profession')
+      .order('rating', { ascending: false });
+
+    if (error) throw error;
+
+    // Group teachers by profession
+    const grouped = {};
+    data?.forEach(teacher => {
+      const profession = teacher.profession || 'Other';
+      if (!grouped[profession]) {
+        grouped[profession] = [];
+      }
+      grouped[profession].push(teacher);
+    });
+
+    console.log('✅ Teachers grouped by profession');
+    return grouped;
+  } catch (error) {
+    console.error('🔴 Error grouping teachers:', error);
+    throw error;
+  }
+};
+
 /** Create a minimal teacher_profiles row (call after signup so edits work). */
 export const createTeacherProfile = async (userId, { full_name, email, role } = {}) => {
   try {
@@ -122,6 +178,7 @@ export const createTeacherProfile = async (userId, { full_name, email, role } = 
         rating: 4.8,
         followers: 0,
         experience_years: 0,
+        profession: null,
         updated_at: new Date(),
       }, { onConflict: 'id' });
     if (error) throw error;

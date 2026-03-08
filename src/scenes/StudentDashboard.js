@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-simple-toast';
 import { SCREEN_NAMES } from '../navigators/screenNames';
 import { supabase } from '../../supabase';
-import { getAllTeachers, createBooking, getStudentBookings, getTeacherSlotsByDateRange, bookAvailabilitySlot, isProfileComplete, getUnreadNotificationCount } from '../database/database';
+import { getAllTeachers, createBooking, getStudentBookings, getTeacherSlotsByDateRange, bookAvailabilitySlot, isProfileComplete, getUnreadNotificationCount, getTeachersGroupedByProfession } from '../database/database';
 import Home from '../assets/icons/Home';
 import Calendar from '../assets/icons/Calendar';
 import BookOpen from '../assets/icons/BookOpen';
@@ -40,6 +40,7 @@ export default function StudentDashboard({ navigation }) {
   const [favoriteTeachers, setFavoriteTeachers] = useState([]);
   const [activeTab, setActiveTab] = useState('home');
   const [teachers, setTeachers] = useState([]);
+  const [groupedTeachers, setGroupedTeachers] = useState({});
   const [loading, setLoading] = useState(true);
   const [studentId, setStudentId] = useState(null);
   const [studentName, setStudentName] = useState('Student');
@@ -87,15 +88,20 @@ export default function StudentDashboard({ navigation }) {
           }
         }
 
-        // Fetch all teachers from database (don't block dashboard if this fails, e.g. RLS)
-        console.log('🔵 [StudentDashboard] Fetching teachers from database...');
+        // Fetch all teachers grouped by profession
+        console.log('🔵 [StudentDashboard] Fetching teachers grouped by profession...');
         try {
-          const teachersData = await getAllTeachers();
-          setTeachers(teachersData || []);
-          console.log('✅ [StudentDashboard] Teachers loaded:', teachersData?.length);
+          const grouped = await getTeachersGroupedByProfession();
+          setGroupedTeachers(grouped || {});
+
+          // Flatten for search/filter functionality
+          const allTeachers = Object.values(grouped).flat();
+          setTeachers(allTeachers || []);
+          console.log('✅ [StudentDashboard] Teachers loaded:', Object.keys(grouped).length, 'professions');
         } catch (teacherErr) {
           console.error('🔴 [StudentDashboard] Error fetching teachers:', teacherErr);
           setTeachers([]);
+          setGroupedTeachers({});
           Toast.show(teacherErr?.message || 'Could not load teachers. Try again.');
         }
 
@@ -142,10 +148,12 @@ export default function StudentDashboard({ navigation }) {
           setStudentName(profile.full_name);
         }
 
-        // Refresh teachers list
-        const teachersData = await getAllTeachers();
-        setTeachers(teachersData || []);
-        console.log('✅ Home tab refreshed:', teachersData?.length, 'teachers');
+        // Refresh teachers list grouped by profession
+        const grouped = await getTeachersGroupedByProfession();
+        setGroupedTeachers(grouped || {});
+        const allTeachers = Object.values(grouped).flat();
+        setTeachers(allTeachers || []);
+        console.log('✅ Home tab refreshed:', Object.keys(grouped).length, 'professions');
       }
     } catch (e) {
       console.error('🔴 Error refreshing home tab:', e);
@@ -507,37 +515,35 @@ export default function StudentDashboard({ navigation }) {
         }}
       >
         <View style={styles.teacherCardContent}>
+          {/* Profile Photo */}
           <View style={styles.teacherAvatarWrapper}>
             <User width={48} height={48} fill="#5568FE" style={{ marginBottom: 8 }} />
             <View style={[styles.teacherStatusDot, { backgroundColor: teacherStatusColor(status) }]} />
           </View>
+
+          {/* Name */}
           <Text style={styles.teacherName}>{item.profile?.full_name || 'Teacher'}</Text>
+
+          {/* Specialization */}
           <Text style={styles.teacherCategory}>{(item.specializations)}</Text>
-          <View style={styles.ratingContainer}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 12 }}>
+
+          {/* Rating, Followers, Favorite - Bottom Row */}
+          <View style={styles.cardBottomRow}>
+            {/* Rating */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 8 }}>
               <Star width={16} height={16} fill="#FFD700" />
               <Text style={styles.rating}>{(item.rating || 5.0).toFixed(1)}</Text>
             </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+
+            {/* Followers */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 8 }}>
               <Users width={16} height={16} fill="#666" style={{ marginRight: 4 }} />
               <Text style={styles.followers}>{item.followers || 0}</Text>
             </View>
-          </View>
-          <View style={styles.cardActions}>
+
+            {/* Favorite */}
             <TouchableOpacity
-              style={styles.bookBtn}
-              onPress={() => {
-                setSelectedTeacher(item);
-                setShowBookingModal(true);
-              }}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Calendar width={18} height={18} fill="#fff" style={{ marginRight: 6 }} />
-                <Text style={styles.bookBtnText}>Schedule</Text>
-              </View>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.favoriteBtn, isFavorite && styles.favoriteBtnActive]}
+              style={{ marginLeft: 'auto' }}
               onPress={() => toggleFavorite(item)}
             >
               {isFavorite ? (
@@ -799,6 +805,7 @@ export default function StudentDashboard({ navigation }) {
         )}
         <ScrollView
           showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 60 }}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefreshHome} colors={['#5568FE']} />
           }
@@ -866,26 +873,52 @@ export default function StudentDashboard({ navigation }) {
             ))}
           </ScrollView>
 
-          {/* Featured Section */}
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Featured Teachers</Text>
-          </View>
-
-          {/* Teacher Grid */}
-          {filteredTeachers.length === 0 ? (
+          {/* Teachers Grouped by Profession */}
+          {Object.keys(groupedTeachers).length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyIcon}>🔍</Text>
               <Text style={styles.emptyText}>No teachers found</Text>
               <Text style={styles.emptySubtext}>Try searching with different keywords</Text>
             </View>
           ) : (
-            <View style={styles.teacherGrid}>
-              {filteredTeachers.map(teacher => (
-                <View key={teacher.id} style={styles.gridItem}>
-                  {renderTeacherCard({ item: teacher })}
+            Object.entries(groupedTeachers).map(([profession, teacherList]) => {
+              // Filter teachers in this profession by search query
+              const filteredProfessionTeachers = teacherList.filter(teacher => {
+                const specializations = typeof teacher.specializations === 'string'
+                  ? teacher.specializations.split(',').map(s => s.trim())
+                  : [];
+                const teacherName = teacher.profile?.full_name || '';
+                return (
+                  teacherName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  specializations.some(s => s.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                  profession.toLowerCase().includes(searchQuery.toLowerCase())
+                );
+              });
+
+              if (filteredProfessionTeachers.length === 0) return null;
+
+              return (
+                <View key={profession} style={styles.professionSection}>
+                  <View style={styles.professionHeader}>
+                    <Text style={styles.professionTitle}>{profession}</Text>
+                    <Text style={styles.professionCount}>
+                      {filteredProfessionTeachers.length}
+                    </Text>
+                  </View>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.professionTeachersList}
+                  >
+                    {filteredProfessionTeachers.map(teacher => (
+                      <View key={teacher.id} style={styles.horizontalTeacherCard}>
+                        {renderTeacherCard({ item: teacher })}
+                      </View>
+                    ))}
+                  </ScrollView>
                 </View>
-              ))}
-            </View>
+              );
+            })
           )}
         </ScrollView>
 
@@ -939,6 +972,7 @@ export default function StudentDashboard({ navigation }) {
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <ScrollView
           showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 80 }}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefreshBookings} colors={['#5568FE']} />
           }
@@ -1111,8 +1145,6 @@ export default function StudentDashboard({ navigation }) {
               )}
             </>
           )}
-
-          <View style={{ marginBottom: 80 }} />
         </ScrollView>
 
         <View style={styles.bottomNav}>
@@ -1155,7 +1187,7 @@ export default function StudentDashboard({ navigation }) {
   if (activeTab === 'profile') {
     return (
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-        <ScrollView>
+        <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
           <View style={styles.header}>
             <View style={styles.welcomeContainer}>
               <View style={styles.headerContent}>
@@ -1491,6 +1523,43 @@ const styles = StyleSheet.create({
 
   gridItem: {
     marginBottom: 15,
+  },
+
+  professionSection: {
+    marginBottom: 28,
+  },
+
+  professionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    marginBottom: 12,
+  },
+
+  professionTitle: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+
+  professionCount: {
+    color: '#999',
+    fontSize: 14,
+    backgroundColor: '#1C1F4A',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+
+  professionTeachersList: {
+    paddingHorizontal: 20,
+    gap: 12,
+  },
+
+  horizontalTeacherCard: {
+    width: 280,
+    marginRight: 0,
   },
 
   // teacherCard: {
@@ -1829,50 +1898,26 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
 
-  ratingContainer: {
+  cardBottomRow: {
     flexDirection: 'row',
-    marginBottom: 10,
+    alignItems: 'center',
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#333',
   },
 
   rating: {
     color: '#FFD700',
     fontSize: 12,
     fontWeight: '600',
-    marginRight: 12,
+    marginLeft: 4,
   },
 
   followers: {
     color: '#999',
     fontSize: 12,
-  },
-
-  cardActions: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-
-  bookBtn: {
-    flex: 1,
-    backgroundColor: '#1E90FF',
-    paddingVertical: 8,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-
-  bookBtnText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 16,
-    paddingVertical: 4,
-  },
-
-  favoriteBtn: {
-    paddingHorizontal: 10,
-    justifyContent: 'center',
-  },
-
-  favoriteBtnActive: {
-    opacity: 1,
+    marginLeft: 2,
   },
 
   favoriteBtnText: {

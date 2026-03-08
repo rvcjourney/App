@@ -24,7 +24,7 @@ function ProtectedApp() {
     );
   }
 
-  if (!isSuperAdmin) {
+  if (isSuperAdmin) {
     return (
       <Routes>
         <Route path="/signup" element={<Signup />} />

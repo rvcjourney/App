@@ -738,8 +738,8 @@ const Teachers = () => {
         <Modal isOpen={modalType === 'preview'} onClose={() => setModalType(null)} title="Teacher Preview" size="md">
           {selectedTeacher && (
             <div className="row g-3">
-              <div className="col-8"><strong>Name:</strong> {selectedTeacher.profile?.full_name || 'N/A'}</div>
-              <div className="col-8"><strong>Email:</strong> {selectedTeacher.profile?.email || 'N/A'}</div>
+              <div className="col-8"><strong>Name:</strong> {selectedTeacher.profile?.full_name || selectedTeacher.full_name || 'N/A'}</div>
+              <div className="col-8"><strong>Email:</strong> {selectedTeacher.profile?.email || selectedTeacher.email || 'N/A'}</div>
               <div className="col-8"><strong>Role:</strong> {selectedTeacher.profile?.role || selectedTeacher.role || 'teacher'}</div>
               <div className="col-8"><strong>Specializations:</strong> {selectedTeacher.specializations || 'N/A'}</div>
               <div className="col-8"><strong>Price per Call:</strong> ₹{selectedTeacher.price_per_call || 0}</div>

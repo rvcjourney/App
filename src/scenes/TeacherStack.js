@@ -1,5 +1,7 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { createStackNavigator } from "@react-navigation/stack";
+import { ActivityIndicator, View } from "react-native";
+import { supabase } from "../../supabase";
 import TeacherDashboard from "./TeacherDashboard";
 import EditTeacherProfile from "./Teacher/EditTeacherProfile";
 import TeacherAvailability from "./Teacher/TeacherAvailability";
@@ -11,14 +13,66 @@ import TeacherEarnings from "./Teacher/TeacherEarnings";
 import WithdrawalRequest from "./Teacher/WithdrawalRequest";
 import BankAccountSettings from "./Teacher/BankAccountSettings";
 import NotificationsScreen from "./NotificationsScreen";
+import ProfessionSelectScreen from "./ProfessionSelectScreen";
 
 const RootStack = createStackNavigator();
 
 export default function TeacherStack() {
+  const [initialRoute, setInitialRoute] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // Check if teacher already has a profession
+  useEffect(() => {
+    const checkProfession = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: teacherRows } = await supabase
+            .from('teacher_profiles')
+            .select('profession')
+            .eq('id', user.id)
+            .limit(1);
+
+          const teacherData = Array.isArray(teacherRows) && teacherRows.length > 0 ? teacherRows[0] : teacherRows;
+
+          // If profession exists, go to dashboard. Otherwise, show profession select
+          if (teacherData?.profession) {
+            setInitialRoute('TeacherDashboard');
+          } else {
+            setInitialRoute('ProfessionSelect');
+          }
+        }
+      } catch (error) {
+        console.error('Error checking profession:', error);
+        // Default to dashboard if error
+        setInitialRoute('TeacherDashboard');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkProfession();
+  }, []);
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0B0D2A' }}>
+        <ActivityIndicator size="large" color="#5568FE" />
+      </View>
+    );
+  }
+
   return (
-    <RootStack.Navigator screenOptions={{ headerShown: false }}>
-      <RootStack.Screen 
-        name="TeacherDashboard" 
+    <RootStack.Navigator
+      screenOptions={{ headerShown: false }}
+      initialRouteName={initialRoute}
+    >
+      <RootStack.Screen
+        name="ProfessionSelect"
+        component={ProfessionSelectScreen}
+      />
+      <RootStack.Screen
+        name="TeacherDashboard"
         component={TeacherDashboard}
       />
       <RootStack.Screen 

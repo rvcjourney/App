@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import ChevronRight from '../../assets/icons/ChevronRight';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-simple-toast';
 import { supabase } from '../../../supabase';
@@ -132,8 +133,9 @@ export default function BankAccountSettings({ navigation }) {
         style={styles.container}
       >
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.backBtn}>← Back</Text>
+          <TouchableOpacity style={styles.backButtonContainer} onPress={() => navigation.goBack()}>
+            {/* <Text style={styles.backBtn}>← Back</Text> */}
+            <ChevronRight width={24} height={24} fill="#5568FE" style={{ transform: [{ rotate: '180deg' }] }} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Bank Account</Text>
         </View>
@@ -199,7 +201,7 @@ export default function BankAccountSettings({ navigation }) {
             />
           </View>
 
-          <View style={styles.section}>
+          <View style={[styles.section,{marginBottom: 100}]}>
             <View style={styles.termsBox}>
               <Text style={styles.termsTitle}>Note</Text>
               <Text style={styles.term}>• Name must match the bank account.</Text>
@@ -240,10 +242,19 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#1C1F4A',
   },
-  backBtn: {
-    color: '#5568FE',
-    fontSize: 16,
-    fontWeight: '600',
+  // backBtn: {
+  //   color: '#5568FE',
+  //   fontSize: 16,
+  //   fontWeight: '600',
+  //   marginRight: 12,
+  // },
+   backButtonContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: '#1C1F4A',
+    justifyContent: 'center',
+    alignItems: 'center',
     marginRight: 12,
   },
   headerTitle: {

@@ -124,13 +124,20 @@ export default function OTPVerificationScreen({ navigation, route }) {
       }
 
       Alert.alert('Success', 'Email verified successfully!');
-      
+
       // Add small delay to ensure database is updated before navigation
       await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Email is now verified, RootNavigator will automatically detect and route appropriately
-      // Just close this screen or navigate back - auth state change will trigger re-render
-      navigation.goBack();
+
+      // For new teacher signups, navigate to profession selection
+      if (isSignup && role === 'teacher') {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'ProfessionSelect', params: { userId } }],
+        });
+      } else {
+        // For students or existing logins, RootNavigator will automatically detect and route appropriately
+        navigation.goBack();
+      }
     } catch (error) {
       console.error('❌ OTP verification error:', error);
 

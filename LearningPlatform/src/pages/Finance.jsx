@@ -254,8 +254,8 @@ const Finance = () => {
                         onClick={() => openChargeModal(t)}
                       >
                         <div>
-                          <div className="fw-bold text-white">{t.profile?.full_name || 'Teacher'}</div>
-                          <div className="small text-secondary">{t.profile?.email}</div>
+                          <div className="fw-bold text-white">{t.profile?.full_name || t.full_name || 'Teacher'}</div>
+                          <div className="small text-secondary">{t.profile?.email || t.email || 'No email'}</div>
                           <div className="small text-warning mt-1">Current: ₹{t.price_per_call ?? 0}/hr</div>
                         </div>
                         <span className="text-secondary">Edit charges →</span>

@@ -700,6 +700,7 @@ export default function TeacherDashboard({ navigation }) {
     return (
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <ScrollView
+          contentContainerStyle={{ paddingBottom: 60 }}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#5568FE']} />
           }
@@ -718,16 +719,59 @@ export default function TeacherDashboard({ navigation }) {
                 <Text style={[styles.sectionTitle, { color: '#FF6B6B' }]}>🔴 LIVE NOW</Text>
               </View>
               {liveBookings.map(booking => (
-                <TouchableOpacity
-                  key={booking.id}
-                  style={[styles.callCard, { borderLeftColor: '#FF6B6B', borderLeftWidth: 4 }]}
-                  onPress={() => navigation.navigate(SCREEN_NAMES.Join, {
-                    booking: booking,
-                    isTeacher: true,
-                  })}
-                >
-                  <View style={[styles.callTime, { backgroundColor: '#FF6B6B' }]}>
-                    <Text style={styles.callTimeText}>🔴 LIVE</Text>
+                <View key={booking.id} style={[styles.callCard, { borderLeftColor: '#FF6B6B', borderLeftWidth: 4 }]}>
+                  <View style={styles.callCardLeft}>
+                    <View style={[styles.callTime, { backgroundColor: '#FF6B6B' }]}>
+                      <Text style={styles.callTimeText}>🔴 LIVE</Text>
+                    </View>
+                    <View style={styles.callContent}>
+                      <Text style={styles.callStudent}>{booking.student?.full_name || 'Student'}</Text>
+                      <Text style={styles.callSubject}>{booking.subject}</Text>
+                      <View style={styles.callMeta}>
+                        <Clock width={12} height={12} fill="#999" style={{ marginRight: 4 }} />
+                        <Text style={styles.callDuration}>{booking.duration_minutes} min</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 12 }}>
+                          <DollarSign width={12} height={12} fill="#2ECC71" style={{ marginRight: 4 }} />
+                          <Text style={styles.callPrice}>₹{pricePerCall}</Text>
+                        </View>
+                      </View>
+                      <Text style={{ fontSize: 11, color: '#666', marginTop: 5 }}>Meeting ID: {booking.meeting_id}</Text>
+                    </View>
+                  </View>
+                  <TouchableOpacity
+                    style={[styles.startCallBtn, { backgroundColor: '#FF6B6B' }]}
+                    onPress={() => navigation.navigate(SCREEN_NAMES.Join, {
+                      booking: booking,
+                      isTeacher: true,
+                    })}
+                  >
+                    <Phone width={18} height={18} fill="#fff" style={{ marginRight: 6 }} />
+                    <Text style={styles.startCallBtnText}>Join</Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </>
+          )}
+
+          {/* Upcoming Calls - Confirmed & Ready to Start */}
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Upcoming Calls</Text>
+          </View>
+
+          {readyToStart.length === 0 ? (
+            <View style={styles.emptyStateContainer}>
+              <View style={styles.emptyStateIcon}>
+                <Calendar width={48} height={48} fill="#5568FE" />
+              </View>
+              <Text style={styles.emptyText}>No upcoming calls</Text>
+              <Text style={styles.emptySubtext}>Booked sessions will appear here once students book your slots</Text>
+            </View>
+          ) : (
+            readyToStart.map(booking => (
+              <View key={booking.id} style={styles.callCard}>
+                <View style={styles.callCardLeft}>
+                  <View style={styles.callTime}>
+                    <Text style={styles.callTimeText}>{new Date(booking.booked_date).toLocaleTimeString()}</Text>
                   </View>
                   <View style={styles.callContent}>
                     <Text style={styles.callStudent}>{booking.student?.full_name || 'Student'}</Text>
@@ -740,52 +784,19 @@ export default function TeacherDashboard({ navigation }) {
                         <Text style={styles.callPrice}>₹{pricePerCall}</Text>
                       </View>
                     </View>
-                    <Text style={{ fontSize: 11, color: '#666', marginTop: 5 }}>Meeting ID: {booking.meeting_id}</Text>
                   </View>
-                  <Text style={styles.callArrow}>→</Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.startCallBtn}
+                  onPress={() => navigation.navigate(SCREEN_NAMES.Join, {
+                    booking: booking,
+                    isTeacher: true,
+                  })}
+                >
+                  <Phone width={18} height={18} fill="#fff" style={{ marginRight: 6 }} />
+                  <Text style={styles.startCallBtnText}>Start Call</Text>
                 </TouchableOpacity>
-              ))}
-            </>
-          )}
-
-          {/* Upcoming Calls - Confirmed & Ready to Start */}
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>📅 Upcoming Calls</Text>
-          </View>
-
-          {readyToStart.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyIcon}>📭</Text>
-              <Text style={styles.emptyText}>No upcoming calls</Text>
-              <Text style={styles.emptySubtext}>Booked sessions will appear here</Text>
-            </View>
-          ) : (
-            readyToStart.map(booking => (
-              <TouchableOpacity
-                key={booking.id}
-                style={styles.callCard}
-                onPress={() => navigation.navigate(SCREEN_NAMES.Join, {
-                  booking: booking,
-                  isTeacher: true,
-                })}
-              >
-                <View style={styles.callTime}>
-                  <Text style={styles.callTimeText}>{new Date(booking.booked_date).toLocaleTimeString()}</Text>
-                </View>
-                <View style={styles.callContent}>
-                  <Text style={styles.callStudent}>{booking.student?.full_name || 'Student'}</Text>
-                  <Text style={styles.callSubject}>{booking.subject}</Text>
-                  <View style={styles.callMeta}>
-                    <Clock width={12} height={12} fill="#999" style={{ marginRight: 4 }} />
-                    <Text style={styles.callDuration}>{booking.duration_minutes} min</Text>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 12 }}>
-                      <DollarSign width={12} height={12} fill="#2ECC71" style={{ marginRight: 4 }} />
-                      <Text style={styles.callPrice}>₹{pricePerCall}</Text>
-                    </View>
-                  </View>
-                </View>
-                <Text style={styles.callArrow}>→</Text>
-              </TouchableOpacity>
+              </View>
             ))
           )}
 
@@ -793,14 +804,16 @@ export default function TeacherDashboard({ navigation }) {
 
           {/* Call History - today only; after the day ends history is not visible */}
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>📋 Today&apos;s call history</Text>
+            <Text style={styles.sectionTitle}>Today&apos;s call history</Text>
           </View>
 
           {todayCallHistory.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Video width={48} height={48} fill="#999" />
+            <View style={styles.emptyStateContainer}>
+              <View style={styles.emptyStateIcon}>
+                <Video width={48} height={48} fill="#5568FE" />
+              </View>
               <Text style={styles.emptyText}>No calls today yet</Text>
-              <Text style={styles.emptySubtext}>Completed sessions for today will appear here. History is only visible for the current day.</Text>
+              <Text style={styles.emptySubtext}>Completed sessions will appear here as you finish your calls</Text>
             </View>
           ) : (
             todayCallHistory.map(booking => (
@@ -1493,10 +1506,18 @@ const styles = StyleSheet.create({
   // Call Card
   callCard: {
     marginHorizontal: 20,
-    marginVertical: 8,
+    marginVertical: 10,
     backgroundColor: '#1C1F4A',
-    padding: 15,
+    padding: 16,
     borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: '#2E3A5F',
+  },
+  callCardLeft: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -1542,6 +1563,22 @@ const styles = StyleSheet.create({
   callArrow: {
     color: '#5568FE',
     fontSize: 16,
+  },
+
+  startCallBtn: {
+    backgroundColor: '#5568FE',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  startCallBtnText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   },
 
   // History Card
@@ -1733,11 +1770,38 @@ const styles = StyleSheet.create({
     fontSize: 11,
     marginTop: 4,
   },
-  emptyText: {
-    color: '#fffdfd',
+
+  emptyStateContainer: {
+    marginHorizontal: 20,
+    marginVertical: 40,
+    paddingHorizontal: 24,
+    paddingVertical: 40,
+    backgroundColor: '#1C1F4A',
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#2E3A5F',
   },
+
+  emptyStateIcon: {
+    marginBottom: 16,
+    padding: 16,
+    backgroundColor: '#252A5A',
+    borderRadius: 12,
+  },
+
+  emptyText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+
   emptySubtext: {
-    color: '#ffffff',
+    color: '#999',
+    fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 18,
   },
   loadingContainer: {
     flex: 1,

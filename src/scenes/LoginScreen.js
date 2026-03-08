@@ -93,7 +93,7 @@ export default function LoginScreen({ navigation, route }) {
         const actualLabel = profileRole === 'teacher' ? 'Teacher' : 'Student';
         Alert.alert(
           'Wrong login section',
-          `You are registered as a ${actualLabel}. Please go back and use the "${actualLabel}" login option.`
+          // `You are registered as a ${actualLabel}. Please go back and use the "${actualLabel}" login option.`
         );
         setLoading(false);
         return;
@@ -132,9 +132,8 @@ export default function LoginScreen({ navigation, route }) {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>
-        Login as {role === 'teacher' ? 'Teacher' : 'Student'}
+        Logging as {role === 'teacher' ? 'Instructor' : 'Learner'}
       </Text>
-
       <TextInput
         placeholder="Email"
         placeholderTextColor="#999"

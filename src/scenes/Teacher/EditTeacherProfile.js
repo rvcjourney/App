@@ -15,6 +15,14 @@ import { supabase } from '../../../supabase';
 import ChevronRight from '../../assets/icons/ChevronRight';
 import User from '../../assets/icons/User';
 
+const PROFESSIONS = [
+  { id: 1, name: 'Yoga Profession', icon: '🧘' },
+  { id: 2, name: 'Gym Trainer', icon: '💪' },
+  { id: 3, name: 'Academic Teacher', icon: '📚' },
+  { id: 4, name: 'Business Consultant', icon: '💼' },
+  { id: 5, name: 'Astrologers', icon: '🔮' },
+];
+
 export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -22,6 +30,7 @@ export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
   const [specializations, setSpecializations] = useState('');
   const [pricePerCall, setPricePerCall] = useState('500');
   const [experienceYears, setExperienceYears] = useState('');
+  const [profession, setProfession] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [teacherId, setTeacherId] = useState(null);
@@ -61,6 +70,7 @@ export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
             setSpecializations(teacherData.specializations || '');
             setPricePerCall(String(teacherData.price_per_call || 500));
             setExperienceYears(String(teacherData.experience_years || ''));
+            setProfession(teacherData.profession || null);
           }
         }
         
@@ -103,6 +113,7 @@ export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
         specializations: specializations || '',
         price_per_call: parseInt(pricePerCall, 10) || 500,
         experience_years: parseInt(experienceYears, 10) || 0,
+        profession: profession || null,
         rating: 4.8,
         followers: 0,
       };
@@ -135,7 +146,9 @@ export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <ActivityIndicator size="large" color="#1E90FF" />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#1E90FF" />
+        </View>
       </SafeAreaView>
     );
   }
@@ -175,6 +188,29 @@ export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
             <Text style={styles.label}>Email</Text>
             <View style={[styles.input, styles.readonlyInput]}>
               <Text style={styles.readonlyText}>{email}</Text>
+            </View>
+          </View>
+
+          {/* Profession */}
+          <View style={styles.fieldSection}>
+            <Text style={styles.label}>Profession (Optional)</Text>
+            <View style={styles.professionGrid}>
+              {PROFESSIONS.map((prof) => (
+                <TouchableOpacity
+                  key={prof.id}
+                  style={[
+                    styles.professionCard,
+                    profession === prof.name && styles.professionCardSelected,
+                  ]}
+                  onPress={() => setProfession(prof.name)}
+                >
+                  <Text style={styles.professionIcon}>{prof.icon}</Text>
+                  <Text style={styles.professionName}>{prof.name}</Text>
+                  {profession === prof.name && (
+                    <Text style={styles.professionCheckmark}>✓</Text>
+                  )}
+                </TouchableOpacity>
+              ))}
             </View>
           </View>
 
@@ -268,6 +304,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0B0D2A',
+  },
+
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
   header: {
@@ -387,6 +429,50 @@ const styles = StyleSheet.create({
 
   priceInput: {
     flex: 1,
+  },
+
+  professionGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+
+  professionCard: {
+    width: '48%',
+    backgroundColor: '#1C1F4A',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#1C1F4A',
+  },
+
+  professionCardSelected: {
+    borderColor: '#1E90FF',
+    backgroundColor: '#252A5A',
+  },
+
+  professionIcon: {
+    fontSize: 32,
+    marginBottom: 8,
+  },
+
+  professionName: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
+    lineHeight: 16,
+  },
+
+  professionCheckmark: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    color: '#1E90FF',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 
   saveButton: {

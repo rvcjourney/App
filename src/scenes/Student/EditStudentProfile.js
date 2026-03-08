@@ -131,7 +131,9 @@ export default function EditStudentProfile({ navigation, onSaveSuccess }) {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <ActivityIndicator size="large" color="#1E90FF" />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#1E90FF" />
+        </View>
       </SafeAreaView>
     );
   }
@@ -283,6 +285,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0B0D2A',
+  },
+
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
   header: {
