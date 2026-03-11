@@ -1,7 +1,7 @@
 // import { useEffect, useState } from 'react';
 // import DataTable from '../components/DataTable';
 // import Modal from '../components/Modal';
-// import { getAllStudents, updateStudent, deleteStudent, getAuditLog } from '../services/api';
+// import { getAllStudents, getCachedStudents, updateStudent, deleteStudent, getAuditLog } from '../services/api';
 
 // const Students = () => {
 //   const [students, setStudents] = useState([]);
@@ -158,7 +158,7 @@
 //         <Modal
 //           isOpen={modalType === 'update'}
 //           onClose={() => setModalType(null)}
-//           title="Update Student"
+//           title="Update Learner"
 //           size="md"
 //         >
 //           {selectedStudent && (
@@ -223,7 +223,7 @@
 //         <Modal
 //           isOpen={modalType === 'preview'}
 //           onClose={() => setModalType(null)}
-//           title="Student Preview"
+//           title="Learner Preview"
 //           size="md"
 //         >
 //           {selectedStudent && (
@@ -323,11 +323,11 @@
 import { useEffect, useState } from 'react';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
-import { getAllStudents, updateStudent, deleteStudent, getAuditLog } from '../services/api';
+import { getAllStudents, getCachedStudents, updateStudent, deleteStudent, getAuditLog } from '../services/api';
 
 const Students = () => {
-  const [students, setStudents] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [students, setStudents] = useState(() => getCachedStudents() || []);
+  const [loading, setLoading] = useState(!getCachedStudents());
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [modalType, setModalType] = useState(null);
   const [auditData, setAuditData] = useState([]);
@@ -338,6 +338,13 @@ const Students = () => {
   }, []);
 
   const loadStudents = async () => {
+    const cached = getCachedStudents();
+    if (cached?.length) {
+      setStudents(cached);
+      setLoading(false);
+      getAllStudents().then((data) => setStudents(Array.isArray(data) ? data : []));
+      return;
+    }
     try {
       setLoading(true);
       const data = await getAllStudents();
@@ -345,7 +352,7 @@ const Students = () => {
     } catch (error) {
       console.error(error);
       setStudents([]);
-      alert('Failed to load students');
+      alert('Failed to load learners');
     } finally {
       setLoading(false);
     }
@@ -438,7 +445,7 @@ const Students = () => {
 
         {/* HEADER */}
         <div className="d-flex justify-content-between align-items-center mb-3">
-          <h2>Students</h2>
+          <h2>Learners</h2>
           <button className="btn btn-outline-light" onClick={loadStudents}>
             Refresh
           </button>
@@ -456,7 +463,7 @@ const Students = () => {
         />
 
         {/* UPDATE MODAL */}
-        <Modal isOpen={modalType === 'update'} onClose={() => setModalType(null)} title="Update Student">
+        <Modal isOpen={modalType === 'update'} onClose={() => setModalType(null)} title="Update Learner">
           {selectedStudent && (
             <div className="row g-3">
               <div className="col-12">
@@ -511,7 +518,7 @@ const Students = () => {
         </Modal>
 
         {/* PREVIEW MODAL */}
-        <Modal isOpen={modalType === 'preview'} onClose={() => setModalType(null)} title="Student Preview">
+        <Modal isOpen={modalType === 'preview'} onClose={() => setModalType(null)} title="Learner Preview">
           {selectedStudent && (
             <div className="row g-3">
               <div className="col-md-8"><b>Name:</b> {selectedStudent.profile?.full_name}</div>

@@ -1308,7 +1308,7 @@ export const endMeeting = async (bookingId, meetingId, duration = 60) => {
     // 3. Change earnings status from 'pending' to 'completed'
     // 4. Update teacher's wallet with earned amount
     
-    const backendUrl = process.env.REACT_APP_AUTH_URL || 'http://192.168.1.7:3000';
+    const backendUrl = process.env.REACT_APP_AUTH_URL || 'http://192.168.1.19:3000';
     console.log('🌐 Backend URL:', backendUrl);
     
     const response = await fetch(`${backendUrl}/api/meetings/end`, {

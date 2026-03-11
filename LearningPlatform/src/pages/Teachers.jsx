@@ -28,7 +28,7 @@
 //       setTeachers(data);
 //     } catch (error) {
 //       console.error('Error loading teachers:', error);
-//       alert('Failed to load teachers. Please try again.');
+//       alert('Failed to load instructors. Please try again.');
 //     } finally {
 //       setLoading(false);
 //     }
@@ -65,17 +65,17 @@
 //   };
 
 //   const handleDelete = async (teacher) => {
-//     if (!window.confirm(`Are you sure you want to delete ${teacher.profile?.full_name || 'this teacher'}?`)) {
+//     if (!window.confirm(`Are you sure you want to delete ${teacher.profile?.full_name || 'this instructor'}?`)) {
 //       return;
 //     }
 
 //     try {
 //       await deleteTeacher(teacher.id);
-//       alert('Teacher deleted successfully!');
+//       alert('Instructor deleted successfully!');
 //       loadTeachers();
 //     } catch (error) {
 //       console.error('Error deleting teacher:', error);
-//       alert('Failed to delete teacher. Please try again.');
+//       alert('Failed to delete instructor. Please try again.');
 //     }
 //   };
 
@@ -137,7 +137,7 @@
 //       loadTeachers();
 //     } catch (error) {
 //       console.error('Error updating teacher:', error);
-//       alert('Failed to update teacher. Please try again.');
+//       alert('Failed to update instructor. Please try again.');
 //     }
 //   };
 
@@ -326,7 +326,7 @@
 //         <Modal
 //           isOpen={modalType === 'wallet'}
 //           onClose={() => setModalType(null)}
-//           title={`Wallet - ${selectedTeacher?.profile?.full_name || 'Teacher'}`}
+//           title={`Wallet - ${selectedTeacher?.profile?.full_name || 'Instructor'}`}
 //           size="lg"
 //         >
 //           {selectedTeacher && (
@@ -464,7 +464,7 @@
 //         <Modal
 //           isOpen={modalType === 'audit'}
 //           onClose={() => setModalType(null)}
-//           title={`Audit Log - ${selectedTeacher?.profile?.full_name || 'Teacher'}`}
+//           title={`Audit Log - ${selectedTeacher?.profile?.full_name || 'Instructor'}`}
 //           size="lg"
 //         >
 //           <div className="max-h-96 overflow-y-auto -mx-4 sm:-mx-6 px-4 sm:px-6">
@@ -513,12 +513,12 @@
 import { useEffect, useState } from 'react';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
-import { getAllTeachers, updateTeacher, deleteTeacher, getAuditLog, getTeacherWalletHistory, updateTeacherWallet } from '../services/api';
+import { getAllTeachers, getCachedTeachers, updateTeacher, deleteTeacher, getAuditLog, getTeacherWalletHistory, updateTeacherWallet } from '../services/api';
 import { FaEdit, FaTrash, FaHistory, FaEye } from 'react-icons/fa';
 
 const Teachers = () => {
-  const [teachers, setTeachers] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [teachers, setTeachers] = useState(() => getCachedTeachers() || []);
+  const [loading, setLoading] = useState(!getCachedTeachers());
   const [selectedTeacher, setSelectedTeacher] = useState(null);
   const [modalType, setModalType] = useState(null); // 'update', 'preview', 'audit', 'wallet'
   const [auditData, setAuditData] = useState([]);
@@ -534,6 +534,13 @@ const Teachers = () => {
   }, []);
 
   const loadTeachers = async () => {
+    const cached = getCachedTeachers();
+    if (cached?.length) {
+      setTeachers(cached);
+      setLoading(false);
+      getAllTeachers().then((data) => setTeachers(Array.isArray(data) ? data : []));
+      return;
+    }
     try {
       setLoading(true);
       const data = await getAllTeachers();
@@ -541,7 +548,7 @@ const Teachers = () => {
     } catch (error) {
       console.error('Error loading teachers:', error);
       setTeachers([]);
-      alert('Failed to load teachers. Please try again.');
+      alert('Failed to load instructors. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -579,17 +586,17 @@ const Teachers = () => {
   };
 
   const handleDelete = async (teacher) => {
-    if (!window.confirm(`Are you sure you want to delete ${teacher.profile?.full_name || 'this teacher'}?`)) {
+    if (!window.confirm(`Are you sure you want to delete ${teacher.profile?.full_name || 'this instructor'}?`)) {
       return;
     }
 
     try {
       await deleteTeacher(teacher.id);
-      alert('Teacher deleted successfully!');
+      alert('Instructor deleted successfully!');
       loadTeachers();
     } catch (error) {
       console.error('Error deleting teacher:', error);
-      alert('Failed to delete teacher. Please try again.');
+      alert('Failed to delete instructor. Please try again.');
     }
   };
 
@@ -654,14 +661,14 @@ const Teachers = () => {
       loadTeachers();
     } catch (error) {
       console.error('Error updating teacher:', error);
-      alert('Failed to update teacher. Please try again.');
+      alert('Failed to update instructor. Please try again.');
     }
   };
 
   const columns = [
     { header: 'Name', accessor: (row) => row.profile?.full_name || 'N/A' },
     { header: 'Email', accessor: (row) => row.profile?.email || 'N/A' },
-    { header: 'Role', accessor: (row) => (row.profile?.role || row.role || 'teacher') },
+    { header: 'Role', accessor: (row) => { const r = row.profile?.role || row.role || 'teacher'; return r === 'teacher' ? 'Instructor' : r === 'student' ? 'Learner' : r === 'super_admin' ? 'Super Admin' : r; } },
     { header: 'Specializations', accessor: (row) => row.specializations || 'N/A' },
     { header: 'Price/Call', accessor: (row) => `₹${row.price_per_call || 0}` },
     { header: 'Experience', accessor: (row) => `${row.experience_years || 0} years` },
@@ -679,7 +686,7 @@ const Teachers = () => {
     <div className="min-vh-100 bg-dark text-white py-4">
       <div className="container">
         <div className="d-flex justify-content-between mb-3">
-          <h2>Teachers</h2>
+          <h2>Instructors</h2>
           <button type="button" onClick={loadTeachers} className="btn btn-outline-light">Refresh</button>
         </div>
 
@@ -695,7 +702,7 @@ const Teachers = () => {
         />
 
         {/* Update Modal */}
-        <Modal isOpen={modalType === 'update'} onClose={() => setModalType(null)} title="Update Teacher" size="md">
+        <Modal isOpen={modalType === 'update'} onClose={() => setModalType(null)} title="Update Instructor" size="md">
           {selectedTeacher && (
             <form className="needs-validation" noValidate>
               <div className="mb-3">
@@ -705,8 +712,8 @@ const Teachers = () => {
               <div className="mb-3">
                 <label className="form-label">Role</label>
                 <select value={formData.role} onChange={(e) => setFormData({ ...formData, role: e.target.value })} className="form-select bg-dark text-white">
-                  <option value="teacher">Teacher</option>
-                  <option value="student">Student</option>
+                  <option value="teacher">Instructor</option>
+                  <option value="student">Learner</option>
                   <option value="super_admin">Super Admin</option>
                 </select>
               </div>
@@ -735,12 +742,12 @@ const Teachers = () => {
         </Modal>
 
         {/* Preview Modal */}
-        <Modal isOpen={modalType === 'preview'} onClose={() => setModalType(null)} title="Teacher Preview" size="md">
+        <Modal isOpen={modalType === 'preview'} onClose={() => setModalType(null)} title="Instructor Preview" size="md">
           {selectedTeacher && (
             <div className="row g-3">
               <div className="col-8"><strong>Name:</strong> {selectedTeacher.profile?.full_name || selectedTeacher.full_name || 'N/A'}</div>
               <div className="col-8"><strong>Email:</strong> {selectedTeacher.profile?.email || selectedTeacher.email || 'N/A'}</div>
-              <div className="col-8"><strong>Role:</strong> {selectedTeacher.profile?.role || selectedTeacher.role || 'teacher'}</div>
+              <div className="col-8"><strong>Role:</strong> {(() => { const r = selectedTeacher.profile?.role || selectedTeacher.role || 'teacher'; return r === 'teacher' ? 'Instructor' : r === 'student' ? 'Learner' : r === 'super_admin' ? 'Super Admin' : r; })()}</div>
               <div className="col-8"><strong>Specializations:</strong> {selectedTeacher.specializations || 'N/A'}</div>
               <div className="col-8"><strong>Price per Call:</strong> ₹{selectedTeacher.price_per_call || 0}</div>
               <div className="col-8"><strong>Experience:</strong> {selectedTeacher.experience_years || 0} years</div>
@@ -751,7 +758,7 @@ const Teachers = () => {
         </Modal>
 
         {/* Wallet Modal */}
-        <Modal isOpen={modalType === 'wallet'} onClose={() => setModalType(null)} title={`Wallet - ${selectedTeacher?.profile?.full_name || 'Teacher'}`} size="lg">
+        <Modal isOpen={modalType === 'wallet'} onClose={() => setModalType(null)} title={`Wallet - ${selectedTeacher?.profile?.full_name || 'Instructor'}`} size="lg">
           {selectedTeacher && (
             <div>
               {walletLoading ? (
@@ -845,7 +852,7 @@ const Teachers = () => {
         </Modal>
 
         {/* Audit Modal */}
-        <Modal isOpen={modalType === 'audit'} onClose={() => setModalType(null)} title={`Audit Log - ${selectedTeacher?.profile?.full_name || 'Teacher'}`} size="lg">
+        <Modal isOpen={modalType === 'audit'} onClose={() => setModalType(null)} title={`Audit Log - ${selectedTeacher?.profile?.full_name || 'Instructor'}`} size="lg">
           <div className="table-responsive" style={{ maxHeight: '400px' }}>
             {auditData.length === 0 ? (
               <p className="text-center py-3">No audit data available</p>
