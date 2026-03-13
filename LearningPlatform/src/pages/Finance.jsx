@@ -39,13 +39,14 @@ const Finance = () => {
   const [revealedAccount, setRevealedAccount] = useState(null);
   const [approving, setApproving] = useState(false);
 
-  // Charges tab
+  // Charges tab (all editable: base ₹, admin %, GST %)
   const [teachers, setTeachers] = useState([]);
   const [chargesLoading, setChargesLoading] = useState(false);
   const [chargeModalOpen, setChargeModalOpen] = useState(false);
   const [selectedTeacher, setSelectedTeacher] = useState(null);
   const [baseCharge, setBaseCharge] = useState('600');
-  const [adminCharge, setAdminCharge] = useState('150');
+  const [adminChargePercent, setAdminChargePercent] = useState('10');
+  const [gstPercent, setGstPercent] = useState('18');
   const [savingCharge, setSavingCharge] = useState(false);
 
   const loadWithdrawals = async () => {
@@ -102,13 +103,15 @@ const Finance = () => {
   const openChargeModal = async (teacher) => {
     setSelectedTeacher(teacher);
     setBaseCharge(String(teacher.price_per_call ?? 600));
-    setAdminCharge('150');
+    setAdminChargePercent('10');
+    setGstPercent('18');
     setChargeModalOpen(true);
     try {
       const charges = await getAdminCharges(teacher.id);
       if (charges) {
         setBaseCharge(String(charges.base_charge_amount ?? teacher.price_per_call ?? 600));
-        setAdminCharge(String(charges.admin_charge_amount ?? 150));
+        if (charges.admin_charge_percent != null) setAdminChargePercent(String(charges.admin_charge_percent));
+        if (charges.gst_percent != null) setGstPercent(String(charges.gst_percent));
       }
     } catch (_) {}
   };
@@ -121,14 +124,23 @@ const Finance = () => {
   const handleSaveCharge = async () => {
     if (!selectedTeacher) return;
     const base = parseFloat(baseCharge);
-    const admin = parseFloat(adminCharge);
-    if (isNaN(base) || isNaN(admin) || base < 0 || admin < 0) {
-      alert('Enter valid numbers for base and admin charge.');
+    const adminPct = parseFloat(adminChargePercent);
+    const gstPct = parseFloat(gstPercent);
+    if (isNaN(base) || base < 0) {
+      alert('Enter a valid base amount (₹).');
+      return;
+    }
+    if (isNaN(adminPct) || adminPct < 0 || adminPct > 100) {
+      alert('Enter a valid admin charge percentage (0–100).');
+      return;
+    }
+    if (isNaN(gstPct) || gstPct < 0 || gstPct > 100) {
+      alert('Enter a valid GST percentage (0–100).');
       return;
     }
     setSavingCharge(true);
     try {
-      await setAdminCharges(selectedTeacher.id, base, admin);
+      await setAdminCharges(selectedTeacher.id, base, adminPct, gstPct);
       closeChargeModal();
       await loadTeachersForCharges();
     } catch (e) {
@@ -230,17 +242,17 @@ const Finance = () => {
           </li>
         </ul>
 
-        {/* Tab: Charges – manage teacher base + admin charge (same as mobile admin) */}
+        {/* Tab: Charges – base (₹), admin % and GST %; all editable */}
         {activeTab === TAB_CHARGES && (
           <section>
-            <p className="text-secondary small mb-3">Set base price and admin charge per teacher. Total (base + admin) is what students pay.</p>
+            <p className="text-secondary small mb-3">Set instructor base rate (₹/hr), admin charge (%), and GST (%). All fields are editable. Total learner pays = base + admin % + GST on subtotal.</p>
             {chargesLoading ? (
               <div className="d-flex justify-content-center py-5">
                 <div className="spinner-border text-warning" role="status" />
               </div>
             ) : teachers.length === 0 ? (
               <div className="card bg-secondary bg-opacity-10 border border-secondary">
-                <div className="card-body text-center py-5 text-secondary">No teachers found.</div>
+                <div className="card-body text-center py-5 text-secondary">No instructors found.</div>
               </div>
             ) : (
               <div className="card bg-secondary bg-opacity-10 border border-secondary shadow-lg">
@@ -254,9 +266,9 @@ const Finance = () => {
                         onClick={() => openChargeModal(t)}
                       >
                         <div>
-                          <div className="fw-bold text-white">{t.profile?.full_name || t.full_name || 'Teacher'}</div>
+                          <div className="fw-bold text-white">{t.profile?.full_name || t.full_name || 'Instructor'}</div>
                           <div className="small text-secondary">{t.profile?.email || t.email || 'No email'}</div>
-                          <div className="small text-warning mt-1">Current: ₹{t.price_per_call ?? 0}/hr</div>
+                          <div className="small text-warning mt-1">Base: ₹{t.price_per_call ?? 0}/hr · Edit charges</div>
                         </div>
                         <span className="text-secondary">Edit charges →</span>
                       </li>
@@ -278,7 +290,7 @@ const Finance = () => {
                     <div className="modal-body">
                       <p className="text-secondary small mb-3">{selectedTeacher.profile?.full_name}</p>
                       <div className="mb-3">
-                        <label className="form-label text-secondary">Teacher rate (base) ₹/hr</label>
+                        <label className="form-label text-secondary">Instructor rate (base) ₹/hr</label>
                         <input
                           type="number"
                           className="form-control bg-secondary bg-opacity-25 border-secondary text-white"
@@ -290,23 +302,49 @@ const Finance = () => {
                         />
                       </div>
                       <div className="mb-3">
-                        <label className="form-label text-secondary">Admin charge ₹</label>
+                        <label className="form-label text-secondary">Admin charge (%)</label>
                         <input
                           type="number"
                           className="form-control bg-secondary bg-opacity-25 border-secondary text-white"
-                          placeholder="150"
-                          value={adminCharge}
-                          onChange={(e) => setAdminCharge(e.target.value)}
+                          placeholder="10"
+                          value={adminChargePercent}
+                          onChange={(e) => setAdminChargePercent(e.target.value)}
                           min="0"
-                          step="1"
+                          max="100"
+                          step="0.5"
                         />
                       </div>
-                      <div className="p-2 rounded bg-secondary bg-opacity-25 border border-secondary mb-3">
-                        <div className="d-flex justify-content-between small">
-                          <span className="text-secondary">Total (student pays)</span>
-                          <span className="text-warning fw-bold">₹{(parseFloat(baseCharge) || 0) + (parseFloat(adminCharge) || 0)}</span>
-                        </div>
+                      <div className="mb-3">
+                        <label className="form-label text-secondary">GST (%)</label>
+                        <input
+                          type="number"
+                          className="form-control bg-secondary bg-opacity-25 border-secondary text-white"
+                          placeholder="18"
+                          value={gstPercent}
+                          onChange={(e) => setGstPercent(e.target.value)}
+                          min="0"
+                          max="100"
+                          step="0.5"
+                        />
                       </div>
+                      {(() => {
+                        const base = parseFloat(baseCharge) || 0;
+                        const adminPct = parseFloat(adminChargePercent) || 0;
+                        const gstPct = parseFloat(gstPercent) || 0;
+                        const adminAmt = (base * adminPct) / 100;
+                        const subtotal = base + adminAmt;
+                        const gstAmt = (subtotal * gstPct) / 100;
+                        const total = subtotal + gstAmt;
+                        return (
+                          <div className="p-3 rounded bg-secondary bg-opacity-25 border border-secondary mb-3 small">
+                            <div className="d-flex justify-content-between mb-1"><span className="text-secondary">Base</span><span>₹{base.toFixed(0)}</span></div>
+                            <div className="d-flex justify-content-between mb-1"><span className="text-secondary">Admin ({adminPct}%)</span><span>₹{adminAmt.toFixed(0)}</span></div>
+                            <div className="d-flex justify-content-between mb-1"><span className="text-secondary">Subtotal</span><span>₹{subtotal.toFixed(0)}</span></div>
+                            <div className="d-flex justify-content-between mb-1"><span className="text-secondary">GST ({gstPct}%)</span><span>₹{gstAmt.toFixed(0)}</span></div>
+                            <div className="d-flex justify-content-between mt-2 pt-2 border-top border-secondary"><span className="text-white fw-bold">Total (learner pays)</span><span className="text-warning fw-bold">₹{total.toFixed(0)}</span></div>
+                          </div>
+                        );
+                      })()}
                       <button
                         type="button"
                         className="btn btn-warning w-100 text-dark"
@@ -327,7 +365,7 @@ const Finance = () => {
         {/* Tab: Payment requests */}
         {activeTab === TAB_PAYMENTS && (
           <section>
-            <p className="text-secondary small mb-3">Review teacher redemption requests. Click a row to see full details and approve.</p>
+            <p className="text-secondary small mb-3">Review instructor redemption requests. Click a row to see full details and approve.</p>
             {withdrawalsLoading ? (
               <div className="d-flex justify-content-center py-5">
                 <div className="spinner-border text-warning" role="status" />
@@ -409,13 +447,13 @@ const Finance = () => {
                 </div>
                 {Array.isArray(analytics.topTeachers) && analytics.topTeachers.length > 0 && (
                   <div className="col-12">
-                    <h6 className="text-white mb-2">Top earning teachers</h6>
+                    <h6 className="text-white mb-2">Top earning instructors</h6>
                     <div className="card bg-secondary bg-opacity-10 border border-secondary">
                       <div className="card-body p-0">
                         <ul className="list-group list-group-flush list-group-dark">
                           {analytics.topTeachers.slice(0, 10).map((item, idx) => (
                             <li key={idx} className="list-group-item bg-transparent border-secondary d-flex justify-content-between">
-                              <span className="text-secondary">#{idx + 1} Teacher {item.teacher_id?.substring(0, 8)}…</span>
+                              <span className="text-secondary">#{idx + 1} Instructor {item.teacher_id?.substring(0, 8)}…</span>
                               <span className="text-success fw-bold">₹{(item.teacher_earn || 0).toLocaleString()}</span>
                             </li>
                           ))}

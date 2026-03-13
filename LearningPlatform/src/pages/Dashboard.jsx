@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FaChalkboardTeacher, FaUserGraduate, FaCalendarCheck, FaMoneyBillWave } from 'react-icons/fa';
-import { getDashboardStats } from '../services/api';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://192.168.1.7:3000';
+import { getDashboardStatsFast, getDashboardWithdrawals } from '../services/api';
 
 const Dashboard = () => {
   const [stats, setStats] = useState({
@@ -16,52 +14,35 @@ const Dashboard = () => {
   const [withdrawalsLoading, setWithdrawalsLoading] = useState(true);
 
   useEffect(() => {
-    loadStats();
+    let mounted = true;
+    setLoading(true);
+    setWithdrawalsLoading(true);
+    getDashboardStatsFast()
+      .then((s) => {
+        if (!mounted) return;
+        setStats(s || { totalTeachers: 0, totalStudents: 0, totalBookings: 0 });
+        setLoading(false);
+      })
+      .catch(() => { if (mounted) setLoading(false); });
+    getDashboardWithdrawals()
+      .then((w) => {
+        if (!mounted) return;
+        setWithdrawals(Array.isArray(w) ? w : []);
+      })
+      .catch(() => { if (mounted) setWithdrawals([]); })
+      .finally(() => { if (mounted) setWithdrawalsLoading(false); });
+    return () => { mounted = false; };
   }, []);
-
-  useEffect(() => {
-    loadWithdrawals();
-  }, []);
-
-  const loadStats = async () => {
-    try {
-      setLoading(true);
-      const data = await getDashboardStats();
-      setStats(data || { totalTeachers: 0, totalStudents: 0, totalBookings: 0 });
-    } catch (error) {
-      console.error('Error loading dashboard stats:', error);
-      setStats({ totalTeachers: 0, totalStudents: 0, totalBookings: 0 });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadWithdrawals = async () => {
-    try {
-      setWithdrawalsLoading(true);
-      const res = await fetch(`${API_URL}/api/admin/withdrawals`);
-      const json = await res.json();
-      if (json.success && Array.isArray(json.data)) {
-        setWithdrawals(json.data);
-      } else {
-        setWithdrawals([]);
-      }
-    } catch (_) {
-      setWithdrawals([]);
-    } finally {
-      setWithdrawalsLoading(false);
-    }
-  };
 
   const statCards = [
     {
-      title: 'Total Teachers',
+      title: 'Total Instructors',
       value: stats.totalTeachers,
       icon: FaChalkboardTeacher,
       color: 'primary',
     },
     {
-      title: 'Total Students',
+      title: 'Total Learners',
       value: stats.totalStudents,
       icon: FaUserGraduate,
       color: 'success',

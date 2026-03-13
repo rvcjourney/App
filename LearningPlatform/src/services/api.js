@@ -1,45 +1,62 @@
 import { supabase } from '../config/supabase';
 
-// Backend API base URL – use 192.168.1.7 so LearningPlatform can reach the server
-const API_URL = import.meta.env.VITE_API_URL?.trim() || 'http://192.168.1.7:3000';
+// Backend API base URL – use 192.168.1.19 so LearningPlatform can reach the server
+const API_URL = import.meta.env.VITE_API_URL?.trim() || 'http://192.168.1.19:3000';
 
 // Profile fields (minimal so it works even if profiles table has fewer columns)
 const PROFILE_SELECT = 'id, full_name, email, role, email_verified, created_at';
 const PROFILE_SELECT_MINIMAL = 'id, full_name, email';
 
+const BACKEND_TIMEOUT_MS = 6000;
+
+/** Fetch with timeout; rejects after ms if not resolved. */
+const fetchWithTimeout = (url, ms = BACKEND_TIMEOUT_MS) => {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), ms);
+  return fetch(url, { signal: controller.signal })
+    .then((r) => { clearTimeout(timeout); return r; })
+    .catch((e) => { clearTimeout(timeout); throw e; });
+};
+
+const profileFromRow = (row) => (!row ? null : { id: row.id, full_name: row.full_name ?? null, email: row.email ?? null, role: row.role ?? null, email_verified: row.email_verified ?? null, created_at: row.created_at ?? null });
+
+// In-memory cache for list data (avoid refetch on tab switch)
+const listCache = { teachers: null, students: null, teachersAt: 0, studentsAt: 0 };
+const CACHE_TTL_MS = 90 * 1000;
+export const getCachedTeachers = () => listCache.teachers && (Date.now() - listCache.teachersAt) < CACHE_TTL_MS ? listCache.teachers : null;
+export const getCachedStudents = () => listCache.students && (Date.now() - listCache.studentsAt) < CACHE_TTL_MS ? listCache.students : null;
+export const invalidateListCache = () => { listCache.teachers = null; listCache.students = null; };
+
 // ==========================================
 // TEACHER API FUNCTIONS
 // ==========================================
 
-/** Fetch all teachers. Prefer backend (has name/email); fallback to Supabase list only. */
+/** Fetch all teachers. Supabase first (one query, teacher_profiles has full_name/email); backend fallback. Uses cache when valid. */
 export const getAllTeachers = async () => {
-  try {
-    const res = await fetch(`${API_URL}/api/admin/teachers`);
-    const data = await res.json();
-    if (res.ok && Array.isArray(data)) return data;
-  } catch (_) {}
+  const cached = getCachedTeachers();
+  if (cached) return cached;
   try {
     const { data: teachers, error: teErr } = await supabase
       .from('teacher_profiles')
       .select('*')
       .order('created_at', { ascending: false });
-    if (teErr) throw teErr;
-    const list = Array.isArray(teachers) ? teachers : [];
-    if (list.length === 0) return [];
-    const ids = [...new Set(list.map((t) => t.id).filter(Boolean))];
-    const profileMap = {};
-    const chunkSize = 50;
-    for (let i = 0; i < ids.length; i += chunkSize) {
-      const chunk = ids.slice(i, i + chunkSize);
-      let res = await supabase.from('profiles').select(PROFILE_SELECT).in('id', chunk);
-      if (res.error) res = await supabase.from('profiles').select(PROFILE_SELECT_MINIMAL).in('id', chunk);
-      if (!res.error && Array.isArray(res.data)) res.data.forEach((p) => { profileMap[p.id] = p; });
+    if (!teErr && Array.isArray(teachers)) {
+      const list = teachers.map((t) => ({ ...t, profile: profileFromRow(t) }));
+      listCache.teachers = list;
+      listCache.teachersAt = Date.now();
+      return list;
     }
-    return list.map((t) => ({ ...t, profile: profileMap[t.id] || null }));
-  } catch (error) {
-    console.error('Error fetching teachers:', error);
-    return [];
-  }
+  } catch (_) {}
+  try {
+    const res = await fetchWithTimeout(`${API_URL}/api/admin/teachers`);
+    const data = await res.json();
+    if (res.ok && Array.isArray(data)) {
+      listCache.teachers = data;
+      listCache.teachersAt = Date.now();
+      return data;
+    }
+  } catch (_) {}
+  return [];
 };
 
 export const getTeacherById = async (teacherId) => {
@@ -73,6 +90,7 @@ export const updateTeacher = async (teacherId, updates) => {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data?.error || data?.message || 'Failed to update teacher');
+    listCache.teachers = null;
     return data;
   } catch (error) {
     console.error('Error updating teacher:', error);
@@ -89,6 +107,7 @@ export const deleteTeacher = async (teacherId) => {
       .eq('id', teacherId);
     
     if (error) throw error;
+    listCache.teachers = null;
     return true;
   } catch (error) {
     console.error('Error deleting teacher:', error);
@@ -138,36 +157,34 @@ const sortByCreated = (list) =>
     return dateB - dateA;
   });
 
-/** Fetch all students. Prefer backend (has name/email); fallback to Supabase list only. */
+/** Fetch all students. Supabase first (one query, student_profiles has full_name/email); backend fallback. Uses cache when valid. */
 export const getAllStudents = async () => {
-  try {
-    const res = await fetch(`${API_URL}/api/admin/students`);
-    const data = await res.json();
-    if (res.ok && Array.isArray(data)) return sortByCreated(data);
-  } catch (_) {}
+  const cached = getCachedStudents();
+  if (cached) return cached;
   try {
     const { data: students, error: stErr } = await supabase
       .from('student_profiles')
       .select('*')
       .order('created_at', { ascending: false });
-    if (stErr) throw stErr;
-    const list = Array.isArray(students) ? students : [];
-    if (list.length === 0) return [];
-    const ids = [...new Set(list.map((s) => s.id).filter(Boolean))];
-    const profileMap = {};
-    const chunkSize = 50;
-    for (let i = 0; i < ids.length; i += chunkSize) {
-      const chunk = ids.slice(i, i + chunkSize);
-      let res = await supabase.from('profiles').select(PROFILE_SELECT).in('id', chunk);
-      if (res.error) res = await supabase.from('profiles').select(PROFILE_SELECT_MINIMAL).in('id', chunk);
-      if (!res.error && Array.isArray(res.data)) res.data.forEach((p) => { profileMap[p.id] = p; });
+    if (!stErr && Array.isArray(students)) {
+      const merged = students.map((s) => ({ ...s, profile: profileFromRow(s) }));
+      const out = sortByCreated(merged);
+      listCache.students = out;
+      listCache.studentsAt = Date.now();
+      return out;
     }
-    const merged = list.map((s) => ({ ...s, profile: profileMap[s.id] || null }));
-    return sortByCreated(merged);
-  } catch (error) {
-    console.error('Error fetching students:', error);
-    return [];
-  }
+  } catch (_) {}
+  try {
+    const res = await fetchWithTimeout(`${API_URL}/api/admin/students`);
+    const data = await res.json();
+    if (res.ok && Array.isArray(data)) {
+      const sorted = sortByCreated(data);
+      listCache.students = sorted;
+      listCache.studentsAt = Date.now();
+      return sorted;
+    }
+  } catch (_) {}
+  return [];
 };
 
 export const getStudentById = async (studentId) => {
@@ -213,7 +230,7 @@ export const updateStudent = async (studentId, updates) => {
       
       if (profileError) throw profileError;
     }
-
+    listCache.students = null;
     return studentData;
   } catch (error) {
     console.error('Error updating student:', error);
@@ -230,6 +247,7 @@ export const deleteStudent = async (studentId) => {
       .eq('id', studentId);
     
     if (error) throw error;
+    listCache.students = null;
     return true;
   } catch (error) {
     console.error('Error deleting student:', error);
@@ -238,27 +256,64 @@ export const deleteStudent = async (studentId) => {
 };
 
 // ==========================================
-// DASHBOARD STATISTICS
+// DASHBOARD (Supabase-only, no backend. Stats first for fast paint, then withdrawals.)
 // ==========================================
 
-export const getDashboardStats = async () => {
-  const defaults = { totalTeachers: 0, totalStudents: 0, totalBookings: 0 };
+/** Returns stats only (3 parallel count queries). Use for immediate card display. */
+export const getDashboardStatsFast = async () => {
   try {
-    const [teachersResult, studentsResult, bookingsResult] = await Promise.all([
+    const [t, s, b] = await Promise.all([
       supabase.from('teacher_profiles').select('id', { count: 'exact', head: true }),
       supabase.from('student_profiles').select('id', { count: 'exact', head: true }),
       supabase.from('bookings').select('id', { count: 'exact', head: true }),
     ]);
-
     return {
-      totalTeachers: teachersResult?.error ? 0 : (teachersResult?.count ?? 0),
-      totalStudents: studentsResult?.error ? 0 : (studentsResult?.count ?? 0),
-      totalBookings: bookingsResult?.error ? 0 : (bookingsResult?.count ?? 0),
+      totalTeachers: t?.error ? 0 : (t?.count ?? 0),
+      totalStudents: s?.error ? 0 : (s?.count ?? 0),
+      totalBookings: b?.error ? 0 : (b?.count ?? 0),
     };
+  } catch (_) {
+    return { totalTeachers: 0, totalStudents: 0, totalBookings: 0 };
+  }
+};
+
+/** Returns withdrawals with sender names (teacher_profiles). */
+export const getDashboardWithdrawals = async () => {
+  try {
+    const { data: list, error } = await supabase
+      .from('withdrawal_requests')
+      .select('*')
+      .eq('status', 'pending')
+      .order('requested_at', { ascending: false });
+    if (error || !Array.isArray(list) || list.length === 0) return [];
+    const ids = [...new Set(list.map((w) => w.teacher_id).filter(Boolean))];
+    const senderMap = {};
+    const chunkSize = 50;
+    const chunks = [];
+    for (let i = 0; i < ids.length; i += chunkSize) chunks.push(ids.slice(i, i + chunkSize));
+    const results = await Promise.all(chunks.map((c) => supabase.from('teacher_profiles').select('id, full_name, email').in('id', c)));
+    results.forEach((r) => { if (Array.isArray(r?.data)) r.data.forEach((p) => { senderMap[p.id] = p; }); });
+    return list.map((w) => ({ ...w, sender: senderMap[w.teacher_id] || null }));
+  } catch (_) {
+    return [];
+  }
+};
+
+export const getDashboard = async () => {
+  const defaults = { stats: { totalTeachers: 0, totalStudents: 0, totalBookings: 0 }, withdrawals: [] };
+  try {
+    const [stats, withdrawals] = await Promise.all([getDashboardStatsFast(), getDashboardWithdrawals()]);
+    return { stats, withdrawals };
   } catch (error) {
-    console.error('Error fetching dashboard stats:', error);
+    console.error('Error fetching dashboard:', error);
     return defaults;
   }
+};
+
+/** @deprecated Use getDashboard() for one-call load. */
+export const getDashboardStats = async () => {
+  const d = await getDashboard();
+  return d.stats;
 };
 
 // ==========================================
@@ -283,14 +338,16 @@ export const getAuditLog = async (userId, userType) => {
 };
 
 // ==========================================
-// ADMIN PAYOUT / WITHDRAWAL API (same as mobile admin)
+// ADMIN PAYOUT / WITHDRAWAL API (backend first, Supabase fallback when backend unreachable)
 // ==========================================
 
 export const getAdminWithdrawals = async () => {
-  const res = await fetch(`${API_URL}/api/admin/withdrawals`);
-  const json = await res.json();
-  if (!json.success) throw new Error(json.error || 'Failed to load withdrawals');
-  return json.data || [];
+  try {
+    const res = await fetchWithTimeout(`${API_URL}/api/admin/withdrawals`);
+    const json = await res.json();
+    if (json?.success && Array.isArray(json.data)) return json.data;
+  } catch (_) {}
+  return getDashboardWithdrawals();
 };
 
 export const getAdminWithdrawalDetail = async (id) => {
@@ -326,27 +383,38 @@ export const getAdminAnalytics = async () => {
 };
 
 // ==========================================
-// ADMIN CHARGES (teacher base + admin charge)
+// ADMIN CHARGES (Supabase only – no backend call, avoids connection timeout)
 // ==========================================
 
 export const getAdminCharges = async (teacherId) => {
-  const res = await fetch(`${API_URL}/api/admin/charges/${teacherId}`);
-  const json = await res.json();
-  if (!json.success) throw new Error(json.error || 'Failed to load charges');
-  return json.data || null;
+  try {
+    const { data, error } = await supabase
+      .from('admin_charges')
+      .select('*')
+      .eq('teacher_id', teacherId)
+      .maybeSingle();
+    return error ? null : data;
+  } catch (_) {
+    return null;
+  }
 };
 
-export const setAdminCharges = async (teacherId, baseCharge, adminCharge) => {
-  const res = await fetch(`${API_URL}/api/admin/charges/set`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      teacherId,
-      baseCharge: Number(baseCharge),
-      adminCharge: Number(adminCharge),
-    }),
-  });
-  const json = await res.json();
-  if (!json.success) throw new Error(json.error || 'Failed to set charges');
-  return json;
+export const setAdminCharges = async (teacherId, baseCharge, adminChargePercent, gstPercent) => {
+  const base = Number(baseCharge);
+  const adminPct = Number(adminChargePercent);
+  const gstPct = Number(gstPercent);
+  const adminAmt = Math.round((base * adminPct) / 100);
+  const row = {
+    teacher_id: teacherId,
+    base_charge_amount: base,
+    admin_charge_percent: adminPct,
+    gst_percent: gstPct,
+    admin_charge_amount: adminAmt,
+    updated_at: new Date().toISOString(),
+  };
+  const { error } = await supabase
+    .from('admin_charges')
+    .upsert(row, { onConflict: 'teacher_id' });
+  if (error) throw new Error(error.message || 'Failed to save charges');
+  return { success: true, message: 'Charges saved' };
 };

@@ -1010,75 +1010,76 @@ app.post('/api/payments/verify', async (req, res) => {
 
 /**
  * POST /api/admin/charges/set
- * Admin sets additional charge for a teacher
- * 
- * Request Body:
- * {
- *   "teacherId": "uuid",
- *   "baseCharge": 600,
- *   "adminCharge": 150
- * }
+ * Admin sets charges for a teacher: base (₹), admin charge %, GST %.
+ * Request Body: { teacherId, baseCharge, adminChargePercent, gstPercent }
  */
 app.post('/api/admin/charges/set', async (req, res) => {
   try {
-    const { teacherId, baseCharge, adminCharge } = req.body;
+    const { teacherId, baseCharge, adminChargePercent, gstPercent } = req.body;
 
-    if (!teacherId || !baseCharge || adminCharge === undefined) {
+    if (!teacherId || baseCharge === undefined || baseCharge === null) {
       return res.status(400).json({
         success: false,
-        error: 'Missing required fields',
+        error: 'Missing required fields (teacherId, baseCharge)',
       });
     }
 
-    console.log('🔵 Setting admin charge for teacher:', teacherId);
+    const base = Number(baseCharge) || 0;
+    const adminPct = Number(adminChargePercent) ?? 0;
+    const gstPct = Number(gstPercent) ?? 0;
 
-    // Check if charge exists
+    console.log('🔵 Setting charges for teacher:', teacherId, { base, adminPct, gstPct });
+
     const { data: existing } = await supabase
       .from('admin_charges')
       .select('*')
       .eq('teacher_id', teacherId)
-      .single();
+      .maybeSingle();
+
+    const adminAmtComputed = Math.round((base * adminPct) / 100);
+    const row = {
+      base_charge_amount: base,
+      admin_charge_percent: adminPct,
+      gst_percent: gstPct,
+      admin_charge_amount: adminAmtComputed,
+      updated_at: new Date().toISOString(),
+    };
 
     let result;
     if (existing) {
-      // Update existing
-      const { data, error } = await supabase
-        .from('admin_charges')
-        .update({
-          base_charge_amount: baseCharge,
-          admin_charge_amount: adminCharge,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('teacher_id', teacherId)
-        .select();
-      result = { data, error };
-    } else {
-      // Create new
       result = await supabase
         .from('admin_charges')
-        .insert([{
-          teacher_id: teacherId,
-          base_charge_amount: baseCharge,
-          admin_charge_amount: adminCharge,
-        }])
+        .update(row)
+        .eq('teacher_id', teacherId)
+        .select();
+    } else {
+      result = await supabase
+        .from('admin_charges')
+        .insert([{ teacher_id: teacherId, ...row }])
         .select();
     }
 
     if (result.error) throw result.error;
 
-    console.log('✅ Admin charge set:', result.data[0]);
+    const data = result.data[0];
+    const adminAmt = (base * adminPct) / 100;
+    const subtotal = base + adminAmt;
+    const gstAmt = (subtotal * gstPct) / 100;
+    const total = subtotal + gstAmt;
+
+    console.log('✅ Charges set:', data);
 
     res.json({
       success: true,
-      message: 'Admin charge updated',
-      data: result.data[0],
-      totalAmount: baseCharge + adminCharge,
+      message: 'Charges updated',
+      data: { ...data, totalAmount: total },
+      totalAmount: total,
     });
   } catch (error) {
-    console.error('🔴 Error setting admin charge:', error.message);
+    console.error('🔴 Error setting charges:', error.message);
     res.status(500).json({
       success: false,
-      error: 'Failed to set admin charge',
+      error: 'Failed to set charges',
       message: error.message,
     });
   }
@@ -1481,6 +1482,56 @@ app.patch('/api/admin/teacher/:teacherId/wallet', async (req, res) => {
 });
 
 /**
+ * GET /api/admin/dashboard
+ * Single response: stats (counts) + withdrawals. One round-trip for the dashboard.
+ */
+app.get('/api/admin/dashboard', async (req, res) => {
+  try {
+    const [
+      teachersRes,
+      studentsRes,
+      bookingsRes,
+      withdrawalsRes,
+    ] = await Promise.all([
+      supabase.from('teacher_profiles').select('id', { count: 'exact', head: true }),
+      supabase.from('student_profiles').select('id', { count: 'exact', head: true }),
+      supabase.from('bookings').select('id', { count: 'exact', head: true }),
+      supabase.from('withdrawal_requests').select('*').eq('status', 'pending').order('requested_at', { ascending: false }),
+    ]);
+
+    const stats = {
+      totalTeachers: teachersRes?.error ? 0 : (teachersRes?.count ?? 0),
+      totalStudents: studentsRes?.error ? 0 : (studentsRes?.count ?? 0),
+      totalBookings: bookingsRes?.error ? 0 : (bookingsRes?.count ?? 0),
+    };
+
+    const list = Array.isArray(withdrawalsRes?.data) ? withdrawalsRes.data : [];
+    let withdrawals = list;
+    if (list.length > 0) {
+      const teacherIds = [...new Set(list.map((w) => w.teacher_id).filter(Boolean))];
+      const profileMap = {};
+      if (teacherIds.length > 0) {
+        const chunkSize = 50;
+        const chunks = [];
+        for (let i = 0; i < teacherIds.length; i += chunkSize) chunks.push(teacherIds.slice(i, i + chunkSize));
+        const results = await Promise.all(chunks.map((chunk) => supabase.from('profiles').select('id, full_name, email').in('id', chunk)));
+        results.forEach((r) => { if (Array.isArray(r.data)) r.data.forEach((p) => { profileMap[p.id] = p; }); });
+        withdrawals = list.map((w) => ({ ...w, sender: profileMap[w.teacher_id] || null }));
+      }
+    }
+
+    return res.json({ success: true, stats, withdrawals });
+  } catch (error) {
+    console.error('🔴 Dashboard error:', error.message);
+    return res.json({
+      success: true,
+      stats: { totalTeachers: 0, totalStudents: 0, totalBookings: 0 },
+      withdrawals: [],
+    });
+  }
+});
+
+/**
  * GET /api/admin/withdrawals
  * Get all pending withdrawal requests (Admin only). Fetch rows then merge teacher names.
  */
@@ -1508,14 +1559,10 @@ app.get('/api/admin/withdrawals', async (req, res) => {
     if (teacherIds.length > 0) {
       try {
         const chunkSize = 50;
-        for (let i = 0; i < teacherIds.length; i += chunkSize) {
-          const chunk = teacherIds.slice(i, i + chunkSize);
-          const { data: profiles } = await supabase
-            .from('profiles')
-            .select('id, full_name, email')
-            .in('id', chunk);
-          if (Array.isArray(profiles)) profiles.forEach((p) => { profileMap[p.id] = p; });
-        }
+        const chunks = [];
+        for (let i = 0; i < teacherIds.length; i += chunkSize) chunks.push(teacherIds.slice(i, i + chunkSize));
+        const results = await Promise.all(chunks.map((chunk) => supabase.from('profiles').select('id, full_name, email').in('id', chunk)));
+        results.forEach((res) => { if (Array.isArray(res.data)) res.data.forEach((p) => { profileMap[p.id] = p; }); });
       } catch (e) {
         console.warn('⚠️ Profiles for withdrawals:', e.message);
       }
@@ -1663,7 +1710,7 @@ app.listen(PORT, HOST, () => {
   console.log('🚀 VideoSDK Token Server Started');
   console.log('='.repeat(50));
   console.log(`📍 Server running at: http://localhost:${PORT}`);
-  console.log(`📍 Also reachable at: http://192.168.1.7:${PORT}`);
+  console.log(`📍 Also reachable at: http://192.168.1.19:${PORT}`);
   console.log('\n📌 Available Endpoints:');
   console.log(`   POST /send-otp        - Send OTP to email`);
   console.log(`   POST /verify-otp      - Verify OTP`);
@@ -1686,8 +1733,8 @@ app.listen(PORT, HOST, () => {
   console.log(`   POST /api/admin/withdrawals/:id/approve - Approve withdrawal`);
   console.log(`   GET  /api/admin/analytics          - Analytics`);
   console.log('\n💡 Use in .env:');
-  console.log(`   REACT_APP_AUTH_URL = "http://192.168.1.7:${PORT}"`);
-  console.log(`   VITE_API_URL       = "http://192.168.1.7:${PORT}"`);
+  console.log(`   REACT_APP_AUTH_URL = "http://192.168.1.19:${PORT}"`);
+  console.log(`   VITE_API_URL       = "http://192.168.1.19:${PORT}"`);
   console.log('='.repeat(50) + '\n');
 });
 

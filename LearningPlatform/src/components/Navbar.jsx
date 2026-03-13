@@ -94,8 +94,8 @@ const Navbar = () => {
 
   const navLinks = [
     { to: '/', label: 'Dashboard', icon: FaHome },
-    { to: '/teachers', label: 'Teachers', icon: FaChalkboardTeacher },
-    { to: '/students', label: 'Students', icon: FaUserGraduate },
+    { to: '/teachers', label: 'Instructors', icon: FaChalkboardTeacher },
+    { to: '/students', label: 'Learners', icon: FaUserGraduate },
     { to: '/finance', label: 'Finance', icon: FaMoneyBillWave },
   ];
 
