@@ -325,7 +325,7 @@ export default function TeacherDashboard({ navigation }) {
     return (
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#5568FE" />
+          <ActivityIndicator size="large" color="#ff006e" />
           <Text style={styles.loadingText}>Loading your profile...</Text>
         </View>
       </SafeAreaView>
@@ -355,7 +355,7 @@ export default function TeacherDashboard({ navigation }) {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#5568FE']} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#ff006e']} />
           }
         >
           {/* Header */}
@@ -390,7 +390,7 @@ export default function TeacherDashboard({ navigation }) {
             <View style={styles.profileSection}>
               <TouchableOpacity onPress={handleStatusPress} style={styles.profileImageWrapper} activeOpacity={0.8}>
                 <View style={styles.profileImageContainer}>
-                  <User width={48} height={48} fill="#5568FE" />
+                  <User width={48} height={48} fill="#ff006e" />
                 </View>
                 <View style={[styles.statusDot, { backgroundColor: statusColor[teacherStatus] }]} />
               </TouchableOpacity>
@@ -497,7 +497,7 @@ export default function TeacherDashboard({ navigation }) {
             style={[styles.navItem, activeTab === 'home']}
             onPress={() => setActiveTab('home')}
           >
-            <Home width={24} height={24} fill={activeTab === 'home' ? '#5568FE' : '#999'} />
+            <Home width={24} height={24} fill={activeTab === 'home' ? '#ff006e' : '#b0b0b0'} />
             <Text style={styles.navLabel}>Home</Text>
           </TouchableOpacity>
 
@@ -505,7 +505,7 @@ export default function TeacherDashboard({ navigation }) {
             style={[styles.navItem, activeTab === 'earnings']}
             onPress={() => setActiveTab('earnings')}
           >
-            <DollarSign width={24} height={24} fill={activeTab === 'earnings' ? '#5568FE' : '#999'} />
+            <DollarSign width={24} height={24} fill={activeTab === 'earnings' ? '#ff006e' : '#b0b0b0'} />
             <Text style={styles.navLabel}>Earnings</Text>
           </TouchableOpacity>
 
@@ -514,7 +514,7 @@ export default function TeacherDashboard({ navigation }) {
             onPress={() => setActiveTab('calls')}
           >
             <View style={{ position: 'relative' }}>
-              <Phone width={24} height={24} fill={activeTab === 'calls' ? '#5568FE' : '#999'} />
+              <Phone width={24} height={24} fill={activeTab === 'calls' ? '#ff006e' : '#b0b0b0'} />
               {upcomingBookings.filter(b => b.status === 'confirmed' && !b.meeting_id).length > 0 && (
                 <View style={{
                   position: 'absolute',
@@ -540,7 +540,7 @@ export default function TeacherDashboard({ navigation }) {
             style={[styles.navItem, activeTab === 'settings']}
             onPress={() => setActiveTab('settings')}
           >
-            <Settings width={24} height={24} fill={activeTab === 'settings' ? '#5568FE' : '#999'} />
+            <Settings width={24} height={24} fill={activeTab === 'settings' ? '#ff006e' : '#b0b0b0'} />
             <Text style={styles.navLabel}>Settings</Text>
           </TouchableOpacity>
         </View>
@@ -565,13 +565,13 @@ export default function TeacherDashboard({ navigation }) {
         <ScrollView
           showsVerticalScrollIndicator={false}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#5568FE']} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#ff006e']} />
           }
         >
           <View style={styles.header}>
             <View style={styles.welcomeContainer}>
               <Text style={styles.welcome}>Earnings Analytics</Text>
-              <DollarSign width={20} height={20} fill="#5568FE" style={{ marginLeft: 8 }} />
+              <DollarSign width={20} height={20} fill="#ff006e" style={{ marginLeft: 8 }} />
             </View>
           </View>
 
@@ -650,7 +650,7 @@ export default function TeacherDashboard({ navigation }) {
             style={styles.navItem}
             onPress={() => setActiveTab('home')}
           >
-            <Home width={22} height={22} fill={activeTab === 'home' ? '#5568FE' : '#999'} />
+            <Home width={22} height={22} fill={activeTab === 'home' ? '#ff006e' : '#b0b0b0'} />
             <Text style={styles.navLabel}>Home</Text>
           </TouchableOpacity>
 
@@ -658,7 +658,7 @@ export default function TeacherDashboard({ navigation }) {
             style={[styles.navItem]}
             onPress={() => setActiveTab('earnings')}
           >
-            <DollarSign width={22} height={22} fill={activeTab === 'earnings' ? '#5568FE' : '#999'} />
+            <DollarSign width={22} height={22} fill={activeTab === 'earnings' ? '#ff006e' : '#b0b0b0'} />
             <Text style={styles.navLabel}>Earnings</Text>
           </TouchableOpacity>
 
@@ -666,7 +666,7 @@ export default function TeacherDashboard({ navigation }) {
             style={styles.navItem}
             onPress={() => setActiveTab('calls')}
           >
-            <Phone width={22} height={22} fill={activeTab === 'calls' ? '#5568FE' : '#999'} />
+            <Phone width={22} height={22} fill={activeTab === 'calls' ? '#ff006e' : '#b0b0b0'} />
             <Text style={styles.navLabel}>Calls</Text>
           </TouchableOpacity>
 
@@ -674,7 +674,7 @@ export default function TeacherDashboard({ navigation }) {
             style={styles.navItem}
             onPress={() => setActiveTab('settings')}
           >
-            <Settings width={22} height={22} fill={activeTab === 'settings' ? '#5568FE' : '#999'} />
+            <Settings width={22} height={22} fill={activeTab === 'settings' ? '#ff006e' : '#b0b0b0'} />
             <Text style={styles.navLabel}>Settings</Text>
           </TouchableOpacity>
         </View>
@@ -702,13 +702,13 @@ export default function TeacherDashboard({ navigation }) {
         <ScrollView
           contentContainerStyle={{ paddingBottom: 60 }}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#5568FE']} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#ff006e']} />
           }
         >
           <View style={styles.header}>
             <View style={styles.welcomeContainer}>
               <Text style={styles.welcome}>My Calls</Text>
-              <Phone width={20} height={20} fill="#5568FE" style={{ marginLeft: 8 }} />
+              <Phone width={20} height={20} fill="#ff006e" style={{ marginLeft: 8 }} />
             </View>
           </View>
 
@@ -728,7 +728,7 @@ export default function TeacherDashboard({ navigation }) {
                       <Text style={styles.callStudent}>{booking.student?.full_name || 'Student'}</Text>
                       <Text style={styles.callSubject}>{booking.subject}</Text>
                       <View style={styles.callMeta}>
-                        <Clock width={12} height={12} fill="#999" style={{ marginRight: 4 }} />
+                        <Clock width={12} height={12} fill="#b0b0b0" style={{ marginRight: 4 }} />
                         <Text style={styles.callDuration}>{booking.duration_minutes} min</Text>
                         <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 12 }}>
                           <DollarSign width={12} height={12} fill="#2ECC71" style={{ marginRight: 4 }} />
@@ -761,7 +761,7 @@ export default function TeacherDashboard({ navigation }) {
           {readyToStart.length === 0 ? (
             <View style={styles.emptyStateContainer}>
               <View style={styles.emptyStateIcon}>
-                <Calendar width={48} height={48} fill="#5568FE" />
+                <Calendar width={48} height={48} fill="#ff006e" />
               </View>
               <Text style={styles.emptyText}>No upcoming calls</Text>
               <Text style={styles.emptySubtext}>Booked sessions will appear here once students book your slots</Text>
@@ -777,7 +777,7 @@ export default function TeacherDashboard({ navigation }) {
                     <Text style={styles.callStudent}>{booking.student?.full_name || 'Student'}</Text>
                     <Text style={styles.callSubject}>{booking.subject}</Text>
                     <View style={styles.callMeta}>
-                      <Clock width={12} height={12} fill="#999" style={{ marginRight: 4 }} />
+                      <Clock width={12} height={12} fill="#b0b0b0" style={{ marginRight: 4 }} />
                       <Text style={styles.callDuration}>{booking.duration_minutes} min</Text>
                       <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 12 }}>
                         <DollarSign width={12} height={12} fill="#2ECC71" style={{ marginRight: 4 }} />
@@ -810,7 +810,7 @@ export default function TeacherDashboard({ navigation }) {
           {todayCallHistory.length === 0 ? (
             <View style={styles.emptyStateContainer}>
               <View style={styles.emptyStateIcon}>
-                <Video width={48} height={48} fill="#5568FE" />
+                <Video width={48} height={48} fill="#ff006e" />
               </View>
               <Text style={styles.emptyText}>No calls today yet</Text>
               <Text style={styles.emptySubtext}>Completed sessions will appear here as you finish your calls</Text>
@@ -829,7 +829,7 @@ export default function TeacherDashboard({ navigation }) {
                   <Text style={styles.callStudent}>{booking.student?.full_name || 'Student'}</Text>
                   <Text style={styles.callSubject}>{booking.subject}</Text>
                   <View style={styles.callMeta}>
-                    <Clock width={12} height={12} fill="#999" style={{ marginRight: 4 }} />
+                    <Clock width={12} height={12} fill="#b0b0b0" style={{ marginRight: 4 }} />
                     <Text style={styles.callDuration}>{booking.duration_minutes || 60} min</Text>
                   </View>
                   <Text style={{ fontSize: 11, color: '#2ECC71', marginTop: 4 }}>✓ Completed</Text>
@@ -844,7 +844,7 @@ export default function TeacherDashboard({ navigation }) {
             style={styles.navItem}
             onPress={() => setActiveTab('home')}
           >
-            <Home width={22} height={22} fill={activeTab === 'home' ? '#5568FE' : '#999'} />
+            <Home width={22} height={22} fill={activeTab === 'home' ? '#ff006e' : '#b0b0b0'} />
             <Text style={styles.navLabel}>Home</Text>
           </TouchableOpacity>
 
@@ -852,7 +852,7 @@ export default function TeacherDashboard({ navigation }) {
             style={styles.navItem}
             onPress={() => setActiveTab('earnings')}
           >
-            <DollarSign width={22} height={22} fill={activeTab === 'earnings' ? '#5568FE' : '#999'} />
+            <DollarSign width={22} height={22} fill={activeTab === 'earnings' ? '#ff006e' : '#b0b0b0'} />
             <Text style={styles.navLabel}>Earnings</Text>
           </TouchableOpacity>
 
@@ -860,7 +860,7 @@ export default function TeacherDashboard({ navigation }) {
             style={[styles.navItem]}
             onPress={() => setActiveTab('calls')}
           >
-            <Phone width={22} height={22} fill={activeTab === 'calls' ? '#5568FE' : '#999'} />
+            <Phone width={22} height={22} fill={activeTab === 'calls' ? '#ff006e' : '#b0b0b0'} />
             <Text style={styles.navLabel}>Calls</Text>
           </TouchableOpacity>
 
@@ -868,7 +868,7 @@ export default function TeacherDashboard({ navigation }) {
             style={styles.navItem}
             onPress={() => setActiveTab('settings')}
           >
-            <Settings width={22} height={22} fill={activeTab === 'settings' ? '#5568FE' : '#999'} />
+            <Settings width={22} height={22} fill={activeTab === 'settings' ? '#ff006e' : '#b0b0b0'} />
             <Text style={styles.navLabel}>Settings</Text>
           </TouchableOpacity>
         </View>
@@ -884,7 +884,7 @@ export default function TeacherDashboard({ navigation }) {
           <View style={styles.header}>
             <View style={styles.settingsHeaderContainer}>
               <Text style={styles.welcome}>Settings</Text>
-              {/* <Settings width={24} height={24} fill="#5568FE" /> */}
+              {/* <Settings width={24} height={24} fill="#ff006e" /> */}
             </View>
           </View>
 
@@ -892,7 +892,7 @@ export default function TeacherDashboard({ navigation }) {
           <View style={styles.profileSettingsCard}>
             <TouchableOpacity onPress={handleStatusPress} style={styles.profileImageWrapperSettings} activeOpacity={0.8}>
               <View style={[styles.profileImageContainer, styles.profileImageContainerSettings]}>
-                <User width={64} height={64} fill="#5568FE" />
+                <User width={64} height={64} fill="#ff006e" />
               </View>
               <View style={[styles.statusDot, styles.statusDotSettings, { backgroundColor: statusColor[teacherStatus] }]} />
             </TouchableOpacity>
@@ -908,15 +908,15 @@ export default function TeacherDashboard({ navigation }) {
               onPress={() => navigation.navigate(SCREEN_NAMES.EditTeacherProfile)}
             >
               <View style={styles.settingIconContainer}>
-                <User width={20} height={20} fill="#5568FE" />
+                <User width={20} height={20} fill="#ff006e" />
               </View>
               <Text style={styles.settingText}>Edit Profile</Text>
-              <ChevronRight width={16} height={16} fill="#999999" />
+              <ChevronRight width={16} height={16} fill="#b0b0b0" />
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.settingItem} onPress={() => Alert.alert('Set Price', `Current: ₹${pricePerCall}/call`)}>
               <View style={styles.settingIconContainer}>
-                <DollarSign width={20} height={20} fill="#5568FE" />
+                <DollarSign width={20} height={20} fill="#ff006e" />
               </View>
               <Text style={styles.settingText}>Set Hourly Rate</Text>
               <Text style={styles.settingValue}>₹{pricePerCall}</Text>
@@ -927,18 +927,18 @@ export default function TeacherDashboard({ navigation }) {
               onPress={() => navigation.navigate(SCREEN_NAMES.BankAccountSettings)}
             >
               <View style={styles.settingIconContainer}>
-                <User width={20} height={20} fill="#5568FE" />
+                <User width={20} height={20} fill="#ff006e" />
               </View>
               <Text style={styles.settingText}>Bank Account</Text>
-              <ChevronRight width={16} height={16} fill="#999999" />
+              <ChevronRight width={16} height={16} fill="#b0b0b0" />
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.settingItem} onPress={() => navigation.navigate(SCREEN_NAMES.Notifications)}>
               <View style={styles.settingIconContainer}>
-                <Clock width={20} height={20} fill="#5568FE" />
+                <Clock width={20} height={20} fill="#ff006e" />
               </View>
               <Text style={styles.settingText}>Notifications</Text>
-              <ChevronRight width={16} height={16} fill="#999999" />
+              <ChevronRight width={16} height={16} fill="#b0b0b0" />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -970,7 +970,7 @@ export default function TeacherDashboard({ navigation }) {
                 <Text style={{ fontSize: 18 }}>🔒</Text>
               </View>
               <Text style={styles.settingText}>Reset Password</Text>
-              <ChevronRight width={16} height={16} fill="#999999" />
+              <ChevronRight width={16} height={16} fill="#b0b0b0" />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -978,18 +978,18 @@ export default function TeacherDashboard({ navigation }) {
               onPress={() => navigation.navigate(SCREEN_NAMES.TeacherAvailability)}
             >
               <View style={styles.settingIconContainer}>
-                <Calendar width={20} height={20} fill="#5568FE" />
+                <Calendar width={20} height={20} fill="#ff006e" />
               </View>
               <Text style={styles.settingText}>Set Availability</Text>
-              <ChevronRight width={16} height={16} fill="#999999" />
+              <ChevronRight width={16} height={16} fill="#b0b0b0" />
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.settingItem} onPress={() => Alert.alert('Privacy')}>
               <View style={styles.settingIconContainer}>
-                <User width={20} height={20} fill="#5568FE" />
+                <User width={20} height={20} fill="#ff006e" />
               </View>
               <Text style={styles.settingText}>Privacy & Security</Text>
-              <ChevronRight width={16} height={16} fill="#999999" />
+              <ChevronRight width={16} height={16} fill="#b0b0b0" />
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.settingItem} onPress={() => Alert.alert('Help')}>
@@ -1003,10 +1003,10 @@ export default function TeacherDashboard({ navigation }) {
               onPress={() => navigation.navigate(SCREEN_NAMES.TeacherEarnings)}
             >
               <View style={styles.settingIconContainer}>
-                <MoneyBag width={20} height={20} fill="#5568FE" />
+                <MoneyBag width={20} height={20} fill="#ff006e" />
               </View>
               <Text style={styles.settingText}>My Earnings & Withdrawals</Text>
-              <ChevronRight width={16} height={16} fill="#999999" />
+              <ChevronRight width={16} height={16} fill="#b0b0b0" />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -1036,7 +1036,7 @@ export default function TeacherDashboard({ navigation }) {
             style={styles.navItem}
             onPress={() => setActiveTab('home')}
           >
-            <Home width={22} height={22} fill={activeTab === 'home' ? '#5568FE' : '#999'} />
+            <Home width={22} height={22} fill={activeTab === 'home' ? '#ff006e' : '#b0b0b0'} />
             <Text style={styles.navLabel}>Home</Text>
           </TouchableOpacity>
 
@@ -1044,7 +1044,7 @@ export default function TeacherDashboard({ navigation }) {
             style={styles.navItem}
             onPress={() => setActiveTab('earnings')}
           >
-            <DollarSign width={22} height={22} fill={activeTab === 'earnings' ? '#5568FE' : '#999'} />
+            <DollarSign width={22} height={22} fill={activeTab === 'earnings' ? '#ff006e' : '#b0b0b0'} />
             <Text style={styles.navLabel}>Earnings</Text>
           </TouchableOpacity>
 
@@ -1052,7 +1052,7 @@ export default function TeacherDashboard({ navigation }) {
             style={styles.navItem}
             onPress={() => setActiveTab('calls')}
           >
-            <Phone width={22} height={22} fill={activeTab === 'calls' ? '#5568FE' : '#999'} />
+            <Phone width={22} height={22} fill={activeTab === 'calls' ? '#ff006e' : '#b0b0b0'} />
             <Text style={styles.navLabel}>Calls</Text>
           </TouchableOpacity>
 
@@ -1060,7 +1060,7 @@ export default function TeacherDashboard({ navigation }) {
             style={[styles.navItem]}
             onPress={() => setActiveTab('settings')}
           >
-            <Settings width={22} height={22} fill={activeTab === 'settings' ? '#5568FE' : '#999'} />
+            <Settings width={22} height={22} fill={activeTab === 'settings' ? '#ff006e' : '#b0b0b0'} />
             <Text style={styles.navLabel}>Settings</Text>
           </TouchableOpacity>
         </View>
@@ -1072,7 +1072,7 @@ export default function TeacherDashboard({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0B0D2A',
+    backgroundColor: '#0f1b3f',
   },
   scrollView: {
     flex: 1,
@@ -1101,7 +1101,9 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
+    borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
@@ -1149,7 +1151,9 @@ const styles = StyleSheet.create({
   overviewCard: {
     marginHorizontal: 20,
     marginVertical: 15,
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
+    borderWidth: 1,
     borderRadius: 15,
     padding: 20,
   },
@@ -1165,7 +1169,7 @@ const styles = StyleSheet.create({
   profileImageContainer: {
     width: 60,
     height: 60,
-    backgroundColor: '#2E2E5E',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
@@ -1178,10 +1182,10 @@ const styles = StyleSheet.create({
     height: 16,
     borderRadius: 8,
     borderWidth: 3,
-    borderColor: '#1C1F4A',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
   },
   statusLabel: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 12,
     marginTop: 2,
   },
@@ -1199,10 +1203,10 @@ const styles = StyleSheet.create({
     height: 18,
     borderRadius: 9,
     borderWidth: 3,
-    borderColor: '#1C1F4A',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
   },
   settingStatusLabel: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 13,
     marginTop: 4,
     textAlign: 'center',
@@ -1231,7 +1235,7 @@ const styles = StyleSheet.create({
   },
   statBox: {
     flex: 1,
-    backgroundColor: '#2E2E5E',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     paddingVertical: 12,
     paddingHorizontal: 10,
     borderRadius: 10,
@@ -1245,7 +1249,7 @@ const styles = StyleSheet.create({
     marginBottom: 3,
   },
   statLabel: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 11,
   },
 
@@ -1294,7 +1298,9 @@ const styles = StyleSheet.create({
   earningsCard: {
     marginHorizontal: 20,
     marginVertical: 15,
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
+    borderWidth: 1,
     padding: 20,
     borderRadius: 15,
   },
@@ -1316,7 +1322,7 @@ const styles = StyleSheet.create({
   },
   earningsBar: {
     height: 8,
-    backgroundColor: '#2E2E5E',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderRadius: 4,
     overflow: 'hidden',
     marginBottom: 10,
@@ -1326,7 +1332,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#2ECC71',
   },
   earningsTarget: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 12,
   },
 
@@ -1334,7 +1340,9 @@ const styles = StyleSheet.create({
   activityCard: {
     marginHorizontal: 20,
     marginVertical: 8,
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
+    borderWidth: 1,
     padding: 15,
     borderRadius: 12,
     flexDirection: 'row',
@@ -1353,12 +1361,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   activityTime: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 12,
     marginTop: 2,
   },
   activitySubtitle: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 12,
     marginTop: 2,
   },
@@ -1410,14 +1418,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 8,
     marginHorizontal: 5,
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#2E2E5E',
   },
   filterBtnActive: {
-    backgroundColor: '#5568FE',
-    borderColor: '#5568FE',
+    backgroundColor: 'linear-gradient(135deg, #ff006e, #00d4ff)',
+    borderColor: '#ff006e',
   },
   filterText: {
     color: '#ccc',
@@ -1432,7 +1440,9 @@ const styles = StyleSheet.create({
   chartContainer: {
     marginHorizontal: 20,
     marginVertical: 20,
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
+    borderWidth: 1,
     padding: 15,
     borderRadius: 12,
   },
@@ -1448,12 +1458,12 @@ const styles = StyleSheet.create({
   },
   bar: {
     width: 30,
-    backgroundColor: '#5568FE',
+    backgroundColor: '#ff006e',
     borderRadius: 8,
     marginBottom: 8,
   },
   barLabel: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 11,
   },
 
@@ -1461,7 +1471,9 @@ const styles = StyleSheet.create({
   breakdownContainer: {
     marginHorizontal: 20,
     marginVertical: 15,
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
+    borderWidth: 1,
     borderRadius: 12,
     padding: 15,
   },
@@ -1476,12 +1488,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#2E2E5E',
+    borderBottomColor: 'rgba(255, 0, 110, 0.2)',
   },
   breakdownItemLast: {
     borderBottomWidth: 0,
     paddingVertical: 12,
-    backgroundColor: '#2E2E5E',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     marginHorizontal: -15,
     marginBottom: -15,
     paddingHorizontal: 15,
@@ -1507,7 +1519,9 @@ const styles = StyleSheet.create({
   callCard: {
     marginHorizontal: 20,
     marginVertical: 10,
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
+    borderWidth: 1,
     padding: 16,
     borderRadius: 12,
     flexDirection: 'row',
@@ -1522,14 +1536,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   callTime: {
-    backgroundColor: '#2E2E5E',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
     marginRight: 12,
   },
   callTimeText: {
-    color: '#5568FE',
+    color: '#ff006e',
     fontSize: 12,
     fontWeight: 'bold',
   },
@@ -1542,7 +1556,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   callSubject: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 12,
     marginTop: 2,
   },
@@ -1561,12 +1575,12 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   callArrow: {
-    color: '#5568FE',
+    color: '#ff006e',
     fontSize: 16,
   },
 
   startCallBtn: {
-    backgroundColor: '#5568FE',
+    backgroundColor: 'transparent',   // Use LinearGradient wrapper for gradient
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 8,
@@ -1585,7 +1599,9 @@ const styles = StyleSheet.create({
   historyCard: {
     marginHorizontal: 20,
     marginVertical: 8,
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
+    borderWidth: 1,
     padding: 15,
     borderRadius: 12,
     flexDirection: 'row',
@@ -1595,7 +1611,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   historyDate: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 11,
   },
   historyStudent: {
@@ -1622,7 +1638,9 @@ const styles = StyleSheet.create({
   profileSettingsCard: {
     marginHorizontal: 20,
     marginVertical: 20,
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
+    borderWidth: 1,
     padding: 20,
     borderRadius: 15,
     alignItems: 'center',
@@ -1647,7 +1665,7 @@ const styles = StyleSheet.create({
   settingItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     paddingVertical: 14,
     paddingHorizontal: 15,
     marginBottom: 10,
@@ -1660,7 +1678,7 @@ const styles = StyleSheet.create({
   settingIconContainer: {
     width: 32,
     height: 32,
-    backgroundColor: '#2E2E5E',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
@@ -1680,7 +1698,7 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   settingArrow: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 16,
   },
   settingsHeaderContainer: {
@@ -1695,7 +1713,9 @@ const styles = StyleSheet.create({
     marginVertical: 20,
   },
   priceCard: {
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
+    borderWidth: 1,
     padding: 20,
     borderRadius: 12,
     marginTop: 15,
@@ -1716,21 +1736,21 @@ const styles = StyleSheet.create({
   },
   priceBtn: {
     flex: 1,
-    backgroundColor: '#2E2E5E',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     paddingVertical: 10,
     borderRadius: 8,
     marginHorizontal: 5,
     alignItems: 'center',
   },
   priceBtnAdd: {
-    backgroundColor: '#5568FE',
+    backgroundColor: 'transparent',   // Use LinearGradient wrapper for gradient
   },
   priceBtnText: {
     color: '#fff',
     fontWeight: 'bold',
   },
   priceSuggestion: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 12,
     marginTop: 12,
   },
@@ -1746,11 +1766,13 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderTopColor: 'rgba(255, 0, 110, 0.3)',
+    borderTopWidth: 1,
     flexDirection: 'row',
     justifyContent: 'space-around',
     borderTopWidth: 1,
-    borderTopColor: '#2E2E5E',
+    borderTopColor: 'rgba(255, 0, 110, 0.2)',
     paddingVertical: 10,
   },
   navItem: {
@@ -1763,7 +1785,7 @@ const styles = StyleSheet.create({
   },
   navItemActive: {
     borderTopWidth: 3,
-    borderTopColor: '#5568FE',
+    borderTopColor: '#ff006e',
   },
   navLabel: {
     color: '#ccc',
@@ -1776,17 +1798,17 @@ const styles = StyleSheet.create({
     marginVertical: 40,
     paddingHorizontal: 24,
     paddingVertical: 40,
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderRadius: 12,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#2E3A5F',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
   },
 
   emptyStateIcon: {
     marginBottom: 16,
     padding: 16,
-    backgroundColor: '#252A5A',
+    backgroundColor: 'rgba(255, 0, 110, 0.1)',
     borderRadius: 12,
   },
 
@@ -1798,7 +1820,7 @@ const styles = StyleSheet.create({
   },
 
   emptySubtext: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 13,
     textAlign: 'center',
     lineHeight: 18,
@@ -1869,7 +1891,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   bookingDuration: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 11,
   },
   actionButtons: {

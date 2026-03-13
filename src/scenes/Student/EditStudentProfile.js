@@ -132,7 +132,7 @@ export default function EditStudentProfile({ navigation, onSaveSuccess }) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#1E90FF" />
+          <ActivityIndicator size="large" color="#ff006e" />
         </View>
       </SafeAreaView>
     );
@@ -143,11 +143,11 @@ export default function EditStudentProfile({ navigation, onSaveSuccess }) {
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.backButtonContainer}
             onPress={() => navigation.goBack()}
           >
-            <ChevronRight width={24} height={24} fill="#5568FE" style={{ transform: [{ rotate: '180deg' }] }} />
+            <ChevronRight width={24} height={24} fill="#ff006e" style={{ transform: [{ rotate: '180deg' }] }} />
           </TouchableOpacity>
           <Text style={styles.title}>Edit Profile</Text>
           <View style={{ width: 0 }} />
@@ -157,7 +157,7 @@ export default function EditStudentProfile({ navigation, onSaveSuccess }) {
           {/* Profile Avatar */}
           <View style={styles.avatarSection}>
             <View style={styles.avatarContainer}>
-              <User width={56} height={56} fill="#5568FE" />
+              <User width={56} height={56} fill="#ff006e" />
             </View>
             <Text style={styles.profileHint}>Profile Information</Text>
           </View>
@@ -169,7 +169,7 @@ export default function EditStudentProfile({ navigation, onSaveSuccess }) {
               <Text style={styles.required}>*</Text>
             </View>
             <View style={styles.inputContainer}>
-              <User width={18} height={18} fill="#5568FE" style={{ marginRight: 10 }} />
+              <User width={18} height={18} fill="#ff006e" style={{ marginRight: 10 }} />
               <TextInput
                 style={styles.input}
                 placeholder="Enter your full name"
@@ -284,7 +284,7 @@ export default function EditStudentProfile({ navigation, onSaveSuccess }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0B0D2A',
+    backgroundColor: '#0f1b3f',
   },
 
   loadingContainer: {
@@ -298,7 +298,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 18,
-    borderBottomColor: '#1C1F4A',
+    borderBottomColor: 'rgba(255, 0, 110, 0.2)',
     borderBottomWidth: 1,
   },
 
@@ -306,7 +306,9 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 10,
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 0, 110, 0.3)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: '10',
@@ -331,15 +333,21 @@ const styles = StyleSheet.create({
   avatarContainer: {
     width: 80,
     height: 80,
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 0, 110, 0.15)',
     borderRadius: 20,
+    borderWidth: 2,
+    borderColor: '#ff006e',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
+    shadowColor: 'rgba(255, 0, 110, 0.6)',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 15,
   },
 
   profileHint: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 13,
     fontWeight: '500',
   },
@@ -361,7 +369,7 @@ const styles = StyleSheet.create({
   },
 
   required: {
-    color: '#FF6B6B',
+    color: '#ff006e',
     marginLeft: 4,
     fontWeight: 'bold',
   },
@@ -369,8 +377,8 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1F4A',
-    borderColor: '#2A2D5A',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
     borderWidth: 1,
     borderRadius: 12,
     paddingHorizontal: 14,
@@ -389,13 +397,13 @@ const styles = StyleSheet.create({
   },
 
   readonlyText: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 14,
     flex: 1,
   },
 
   emailHint: {
-    color: '#666',
+    color: '#808080',
     fontSize: 11,
     marginLeft: 8,
   },
@@ -422,8 +430,8 @@ const styles = StyleSheet.create({
 
   langBtn: {
     flex: 1,
-    backgroundColor: '#1C1F4A',
-    borderColor: '#2A2D5A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
     borderWidth: 1.5,
     borderRadius: 12,
     paddingVertical: 12,
@@ -432,12 +440,16 @@ const styles = StyleSheet.create({
   },
 
   langBtnActive: {
-    backgroundColor: '#5568FE',
-    borderColor: '#5568FE',
+    background: 'linear-gradient(135deg, #ff006e, #00d4ff)',
+    borderColor: '#ff006e',
+    shadowColor: 'rgba(255, 0, 110, 0.6)',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 10,
   },
 
   langBtnText: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 13,
     fontWeight: '500',
   },
@@ -456,31 +468,32 @@ const styles = StyleSheet.create({
 
   cancelButton: {
     flex: 1,
-    borderColor: '#2A2D5A',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
     borderWidth: 1.5,
-    borderRadius: 12,
+    borderRadius: 20,
     paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
   },
 
   cancelButtonText: {
-    color: '#5568FE',
+    color: '#ff006e',
     fontSize: 15,
     fontWeight: '600',
   },
 
   saveButton: {
     flex: 1,
-    backgroundColor: '#5568FE',
-    borderRadius: 12,
+    background: 'linear-gradient(135deg, #ff006e, #00d4ff)',
+    borderRadius: 20,
     paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#5568FE',
+    shadowColor: '#ff006e',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowOpacity: 0.6,
+    shadowRadius: 15,
     elevation: 6,
   },
 

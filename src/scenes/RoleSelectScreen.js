@@ -24,7 +24,7 @@ export default function RoleSelectScreen({ navigation }) {
           onPress={() => navigation.navigate('Login', { role: 'teacher' })}
         >
           <View style={styles.cardContent}>
-            <Briefcase width={40} height={40} fill="#6CA0FF" />
+            <Briefcase width={40} height={40} fill="#ff006e" />
             <Text style={styles.cardText}>Instructor</Text>
           </View>
         </TouchableOpacity>
@@ -34,7 +34,7 @@ export default function RoleSelectScreen({ navigation }) {
           onPress={() => navigation.navigate('Login', { role: 'student' })}
         >
           <View style={styles.cardContent}>
-            <GraduationCap width={40} height={40} fill="#6CA0FF" />
+            <GraduationCap width={40} height={40} fill="#ff006e" />
             <Text style={styles.cardText}>Learner</Text>
           </View>
         </TouchableOpacity>
@@ -62,11 +62,17 @@ const styles = StyleSheet.create({
 
   card: {
     width: '80%',
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
+    borderWidth: 1,
     padding: 20,
-    borderRadius: 12,
+    borderRadius: 16,
     marginBottom: 20,
     alignItems: 'center',
+    shadowColor: 'rgba(255, 0, 110, 0.2)',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 20,
   },
 
   cardContent: {
@@ -75,7 +81,7 @@ const styles = StyleSheet.create({
   },
 
   cardText: {
-    color: '#6CA0FF',
+    color: '#ff006e',
     fontSize: 20,
     fontWeight: '600',
     marginTop: 12,

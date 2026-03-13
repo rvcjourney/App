@@ -248,7 +248,7 @@ export default function ResetPasswordScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0B0D2A',
+    backgroundColor: '#0f1b3f',
     justifyContent: 'center',
     padding: 24,
   },
@@ -257,9 +257,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   card: {
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderRadius: 16,
     padding: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 0, 110, 0.3)',
   },
   title: {
     color: '#fff',
@@ -269,28 +271,37 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   subtitle: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 14,
     textAlign: 'center',
     marginBottom: 24,
     lineHeight: 20,
   },
   input: {
-    backgroundColor: '#0B0D2A',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     color: '#fff',
     padding: 16,
     borderRadius: 10,
     marginBottom: 20,
     fontSize: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 0, 110, 0.3)',
   },
   submitBtn: {
-    backgroundColor: '#5568FE',
+    backgroundColor: '#ff006e',
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
+    shadowColor: 'rgba(255, 0, 110, 0.6)',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.8,
+    shadowRadius: 16,
+    elevation: 8,
   },
   submitBtnDisabled: {
     opacity: 0.6,
+    shadowOpacity: 0,
+    elevation: 0,
   },
   submitBtnText: {
     color: '#fff',
@@ -302,7 +313,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   linkText: {
-    color: '#6CA0FF',
+    color: '#ff006e',
     fontSize: 15,
   },
   successIcon: {
@@ -318,17 +329,22 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   successMessage: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 14,
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: 24,
   },
   backBtn: {
-    backgroundColor: '#5568FE',
+    backgroundColor: '#ff006e',
     padding: 14,
     borderRadius: 12,
     alignItems: 'center',
+    shadowColor: 'rgba(255, 0, 110, 0.6)',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.8,
+    shadowRadius: 16,
+    elevation: 8,
   },
   backBtnText: {
     color: '#fff',

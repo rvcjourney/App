@@ -207,7 +207,7 @@ export default function EmailVerificationScreen({ route, onVerificationComplete 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0B0D2A',
+    backgroundColor: '#0f1b3f',
     justifyContent: 'center',
     padding: 20,
   },
@@ -221,14 +221,14 @@ const styles = StyleSheet.create({
   },
 
   subtitle: {
-    color: '#AAA',
+    color: '#b0b0b0',
     fontSize: 14,
     textAlign: 'center',
     marginBottom: 10,
   },
 
   emailText: {
-    color: '#1E2BFF',
+    color: '#ff006e',
     fontSize: 16,
     fontWeight: '600',
     textAlign: 'center',
@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
   },
 
   otpInput: {
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     color: '#fff',
     padding: 20,
     borderRadius: 10,
@@ -245,18 +245,27 @@ const styles = StyleSheet.create({
     letterSpacing: 10,
     textAlign: 'center',
     fontWeight: '600',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 0, 110, 0.3)',
   },
 
   verifyBtn: {
-    backgroundColor: '#1E2BFF',
+    backgroundColor: '#ff006e',
     padding: 15,
     borderRadius: 30,
     alignItems: 'center',
     marginTop: 10,
+    shadowColor: 'rgba(255, 0, 110, 0.6)',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.8,
+    shadowRadius: 16,
+    elevation: 8,
   },
 
   disabledBtn: {
-    backgroundColor: '#888',
+    backgroundColor: 'rgba(176, 176, 176, 0.3)',
+    shadowOpacity: 0,
+    elevation: 0,
   },
 
   verifyText: {
@@ -273,13 +282,13 @@ const styles = StyleSheet.create({
   },
 
   resendText: {
-    color: '#AAA',
+    color: '#b0b0b0',
     fontSize: 14,
     marginRight: 5,
   },
 
   resendLink: {
-    color: '#1E2BFF',
+    color: '#ff006e',
     fontSize: 14,
     fontWeight: '600',
   },

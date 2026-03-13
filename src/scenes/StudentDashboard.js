@@ -517,7 +517,7 @@ export default function StudentDashboard({ navigation }) {
         <View style={styles.teacherCardContent}>
           {/* Profile Photo */}
           <View style={styles.teacherAvatarWrapper}>
-            <User width={48} height={48} fill="#5568FE" style={{ marginBottom: 8 }} />
+            <User width={48} height={48} fill="#ff006e" style={{ marginBottom: 8 }} />
             <View style={[styles.teacherStatusDot, { backgroundColor: teacherStatusColor(status) }]} />
           </View>
 
@@ -563,7 +563,7 @@ export default function StudentDashboard({ navigation }) {
     return (
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#5568FE" />
+          <ActivityIndicator size="large" color="#ff006e" />
           <Text style={styles.loadingText}>Loading your info...</Text>
         </View>
       </SafeAreaView>
@@ -590,7 +590,7 @@ export default function StudentDashboard({ navigation }) {
               {/* <Text style={styles.backButton}>← Back</Text> */}
               
               <View style={styles.backButton}>
-                <ChevronRight width={24} height={24} color="#5568FE" style={{ transform: [{ rotate: '180deg' }] }} />
+                <ChevronRight width={24} height={24} color="#ff006e" style={{ transform: [{ rotate: '180deg' }] }} />
               </View>
             </TouchableOpacity>
             <Text style={styles.modalTitle}>Select Available Slot</Text>
@@ -599,7 +599,7 @@ export default function StudentDashboard({ navigation }) {
           {/* Teacher Info */}
           <View style={styles.teacherInfoCard}>
             <View style={styles.teacherModalAvatarWrapper}>
-              <User width={56} height={56} fill="#5568FE" style={{ marginBottom: 12 }} />
+              <User width={56} height={56} fill="#ff006e" style={{ marginBottom: 12 }} />
               <View style={[styles.teacherStatusDotModal, { backgroundColor: teacherStatusColor(selectedTeacher.availability_status) }]} />
             </View>
             <Text style={styles.teacherName}>{selectedTeacher.profile?.full_name}</Text>
@@ -624,7 +624,7 @@ export default function StudentDashboard({ navigation }) {
               <TextInput
                 style={styles.subjectInput}
                 placeholder="e.g., Algebra, Physics Problem Solving"
-                placeholderTextColor="#999"
+                placeholderTextColor="#b0b0b0"
                 value={bookingSubject}
                 onChangeText={setBookingSubject}
               />
@@ -637,7 +637,7 @@ export default function StudentDashboard({ navigation }) {
 
             {slotsLoading ? (
               <View style={{ paddingVertical: 20, alignItems: 'center' }}>
-                <ActivityIndicator size="large" color="#5568FE" />
+                <ActivityIndicator size="large" color="#ff006e" />
                 <Text style={styles.loadingText}>Loading available slots...</Text>
               </View>
             ) : availableSlots.length === 0 ? (
@@ -807,7 +807,7 @@ export default function StudentDashboard({ navigation }) {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 60 }}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefreshHome} colors={['#5568FE']} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefreshHome} colors={['#ff006e']} />
           }
         >
           {/* Header */}
@@ -839,7 +839,7 @@ export default function StudentDashboard({ navigation }) {
             <TextInput
               style={styles.searchInput}
               placeholder="Search teachers..."
-              placeholderTextColor="#999"
+              placeholderTextColor="#b0b0b0"
               value={searchQuery}
               onChangeText={setSearchQuery}
             />
@@ -928,7 +928,7 @@ export default function StudentDashboard({ navigation }) {
             style={[styles.navItem, activeTab === 'home' && styles.navItemActive]}
             onPress={() => setActiveTab('home')}
           >
-            <Home width={24} height={24} fill={activeTab === 'home' ? '#5568FE' : '#999'} />
+            <Home width={24} height={24} fill={activeTab === 'home' ? '#ff006e' : '#b0b0b0'} />
             <Text style={styles.navLabel}>Home</Text>
           </TouchableOpacity>
 
@@ -936,7 +936,7 @@ export default function StudentDashboard({ navigation }) {
             style={[styles.navItem, activeTab === 'bookings' && styles.navItemActive]}
             onPress={() => setActiveTab('bookings')}
           >
-            <Calendar width={24} height={24} fill={activeTab === 'bookings' ? '#5568FE' : '#999'} />
+            <Calendar width={24} height={24} fill={activeTab === 'bookings' ? '#ff006e' : '#b0b0b0'} />
             <Text style={styles.navLabel}>Bookings</Text>
           </TouchableOpacity>
 
@@ -945,7 +945,7 @@ export default function StudentDashboard({ navigation }) {
             style={[styles.navItem, activeTab === 'lectures' && styles.navItemActive]}
             onPress={() => setActiveTab('lectures')}
           >
-            <BookOpen width={24} height={24} fill={activeTab === 'lectures' ? '#5568FE' : '#999'} />
+            <BookOpen width={24} height={24} fill={activeTab === 'lectures' ? '#ff006e' : '#b0b0b0'} />
             <Text style={styles.navLabel}>Lectures</Text>
           </TouchableOpacity>
           */}
@@ -954,7 +954,7 @@ export default function StudentDashboard({ navigation }) {
             style={[styles.navItem, activeTab === 'profile' && styles.navItemActive]}
             onPress={() => setActiveTab('profile')}
           >
-            <User width={24} height={24} fill={activeTab === 'profile' ? '#5568FE' : '#999'} />
+            <User width={24} height={24} fill={activeTab === 'profile' ? '#ff006e' : '#b0b0b0'} />
             <Text style={styles.navLabel}>Profile</Text>
           </TouchableOpacity>
         </View>
@@ -974,7 +974,7 @@ export default function StudentDashboard({ navigation }) {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 80 }}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefreshBookings} colors={['#5568FE']} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefreshBookings} colors={['#ff006e']} />
           }
         >
           <View style={styles.bookingsHeader}>
@@ -992,7 +992,7 @@ export default function StudentDashboard({ navigation }) {
           {myBookings.length === 0 ? (
             <View style={styles.emptyState}>
               <View style={styles.emptyIconContainer}>
-                <Calendar width={56} height={56} fill="#5568FE" />
+                <Calendar width={56} height={56} fill="#ff006e" />
               </View>
               <Text style={styles.emptyText}>No bookings yet</Text>
               <Text style={styles.emptySubtext}>Browse teachers and book your first session</Text>
@@ -1040,9 +1040,9 @@ export default function StudentDashboard({ navigation }) {
                           <Text style={styles.bookingTeacher}>{booking.teacher_profile?.full_name || 'Teacher'}</Text>
                           <Text style={styles.bookingSubject}>{booking.subject}</Text>
                           <View style={styles.bookingMeta}>
-                            <Calendar width={12} height={12} fill="#999" style={{ marginRight: 4 }} />
+                            <Calendar width={12} height={12} fill="#b0b0b0" style={{ marginRight: 4 }} />
                             <Text style={styles.bookingDate}>{new Date(booking.booked_date).toLocaleDateString()}</Text>
-                            <Clock width={12} height={12} fill="#999" style={{ marginLeft: 12, marginRight: 4 }} />
+                            <Clock width={12} height={12} fill="#b0b0b0" style={{ marginLeft: 12, marginRight: 4 }} />
                             <Text style={styles.bookingDate}>{new Date(booking.booked_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
                           </View>
                           <View style={[styles.statusBadge, { backgroundColor: '#FFE5E5', borderColor: '#FF6B6B' }]}>
@@ -1078,9 +1078,9 @@ export default function StudentDashboard({ navigation }) {
                             <Text style={styles.bookingTeacher}>{booking.teacher_profile?.full_name || 'Teacher'}</Text>
                             <Text style={styles.bookingSubject}>{booking.subject}</Text>
                             <View style={styles.bookingMeta}>
-                              <Calendar width={12} height={12} fill="#999" style={{ marginRight: 4 }} />
+                              <Calendar width={12} height={12} fill="#b0b0b0" style={{ marginRight: 4 }} />
                               <Text style={styles.bookingDate}>{new Date(booking.booked_date).toLocaleDateString()}</Text>
-                              <Clock width={12} height={12} fill="#999" style={{ marginLeft: 12, marginRight: 4 }} />
+                              <Clock width={12} height={12} fill="#b0b0b0" style={{ marginLeft: 12, marginRight: 4 }} />
                               <Text style={styles.bookingDate}>{new Date(booking.booked_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
                             </View>
                             {booking.meeting_id && (
@@ -1116,7 +1116,7 @@ export default function StudentDashboard({ navigation }) {
                 <>
                   <View style={styles.bookingSectionHeader}>
                     <View style={styles.sectionBadge}>
-                      <CheckCircle width={16} height={16} fill="#999" />
+                      <CheckCircle width={16} height={16} fill="#b0b0b0" />
                       <Text style={styles.sectionBadgeText}>Completed</Text>
                     </View>
                     <Text style={styles.sectionCount}>{completedBookings.length}</Text>
@@ -1125,19 +1125,19 @@ export default function StudentDashboard({ navigation }) {
                     <View key={booking.id} style={[styles.bookingCard, styles.completedCard]}>
                       <View style={styles.bookingCardLeft}>
                         <View style={styles.bookingTeacherIcon}>
-                          <CheckCircle width={24} height={24} fill="#999" />
+                          <CheckCircle width={24} height={24} fill="#b0b0b0" />
                         </View>
                         <View style={styles.bookingInfo}>
                           <Text style={styles.bookingTeacher}>{booking.teacher_profile?.full_name || 'Teacher'}</Text>
                           <Text style={styles.bookingSubject}>Topics:{booking.subject}</Text>
                           <View style={styles.bookingMeta}>
-                            <Calendar width={12} height={12} fill="#999" style={{ marginRight: 4 }} />
+                            <Calendar width={12} height={12} fill="#b0b0b0" style={{ marginRight: 4 }} />
                             <Text style={styles.bookingDate}>{new Date(booking.booked_date).toLocaleDateString()}</Text>
                           </View>
                         </View>
                       </View>
                       <View style={styles.completedBadge}>
-                        <CheckCircle width={20} height={20} fill="#999" />
+                        <CheckCircle width={20} height={20} fill="#b0b0b0" />
                       </View>
                     </View>
                   ))}
@@ -1152,14 +1152,14 @@ export default function StudentDashboard({ navigation }) {
             style={styles.navItem}
             onPress={() => setActiveTab('home')}
           >
-            <Home width={22} height={22} fill={activeTab === 'home' ? '#5568FE' : '#999'} />
+            <Home width={22} height={22} fill={activeTab === 'home' ? '#ff006e' : '#b0b0b0'} />
             <Text style={styles.navLabel}>Home</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.navItem, styles.navItemActive]}
             onPress={() => setActiveTab('bookings')}
           >
-            <Calendar width={22} height={22} fill={activeTab === 'bookings' ? '#5568FE' : '#999'} />
+            <Calendar width={22} height={22} fill={activeTab === 'bookings' ? '#ff006e' : '#b0b0b0'} />
             <Text style={styles.navLabel}>Bookings</Text>
           </TouchableOpacity>
           {/* Lectures tab hidden for students
@@ -1167,7 +1167,7 @@ export default function StudentDashboard({ navigation }) {
             style={styles.navItem}
             onPress={() => setActiveTab('lectures')}
           >
-            <BookOpen width={22} height={22} fill={activeTab === 'lectures' ? '#5568FE' : '#999'} />
+            <BookOpen width={22} height={22} fill={activeTab === 'lectures' ? '#ff006e' : '#b0b0b0'} />
             <Text style={styles.navLabel}>Lectures</Text>
           </TouchableOpacity>
           */}
@@ -1175,7 +1175,7 @@ export default function StudentDashboard({ navigation }) {
             style={styles.navItem}
             onPress={() => setActiveTab('profile')}
           >
-            <User width={22} height={22} fill={activeTab === 'profile' ? '#5568FE' : '#999'} />
+            <User width={22} height={22} fill={activeTab === 'profile' ? '#ff006e' : '#b0b0b0'} />
             <Text style={styles.navLabel}>Profile</Text>
           </TouchableOpacity>
         </View>
@@ -1201,7 +1201,7 @@ export default function StudentDashboard({ navigation }) {
 
           <View style={styles.profileCard}>
             <View style={styles.profileImageContainer}>
-              <User width={56} height={56} fill="#5568FE" />
+              <User width={56} height={56} fill="#ff006e" />
             </View>
             <Text style={styles.profileName}>{studentName}</Text>
             <Text style={styles.profileEmail}>Student ID: {studentId?.substring(0, 8)}...</Text>
@@ -1218,7 +1218,7 @@ export default function StudentDashboard({ navigation }) {
                 <View key={teacher.id} style={styles.favTeacherCard}>
                   <View style={styles.favTeacherImageContainer}>
                     <View style={styles.favTeacherAvatarWrapper}>
-                      <User width={40} height={40} fill="#5568FE" />
+                      <User width={40} height={40} fill="#ff006e" />
                       <View style={[styles.favTeacherStatusDot, { backgroundColor: teacherStatusColor(teacher.availability_status) }]} />
                     </View>
                   </View>
@@ -1238,7 +1238,7 @@ export default function StudentDashboard({ navigation }) {
                         setShowBookingModal(true);
                       }}
                     >
-                      <Calendar width={20} height={20} fill="#5568FE" />
+                      <Calendar width={20} height={20} fill="#ff006e" />
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => toggleFavorite(teacher)} style={{ marginLeft: 12 }}>
                       <HeartFilled width={20} height={20} fill="#FF6B6B" />
@@ -1256,14 +1256,14 @@ export default function StudentDashboard({ navigation }) {
               onPress={() => navigation.navigate(SCREEN_NAMES.EditStudentProfile)}
             >
               <View style={styles.settingIconContainer}>
-                <User width={18} height={18} fill="#5568FE" />
+                <User width={18} height={18} fill="#ff006e" />
               </View>
               <Text style={styles.settingText}>Edit Profile</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.settingItem} onPress={() => navigation.navigate(SCREEN_NAMES.Notifications)}>
               <View style={styles.settingIconContainer}>
-                <Clock width={18} height={18} fill="#5568FE" />
+                <Clock width={18} height={18} fill="#ff006e" />
               </View>
               <Text style={styles.settingText}>Notifications</Text>
             </TouchableOpacity>
@@ -1301,21 +1301,21 @@ export default function StudentDashboard({ navigation }) {
 
             <TouchableOpacity style={styles.settingItem} onPress={() => Alert.alert('Payment History')}>
               <View style={styles.settingIconContainer}>
-                <User width={18} height={18} fill="#5568FE" />
+                <User width={18} height={18} fill="#ff006e" />
               </View>
               <Text style={styles.settingText}>Payment History</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.settingItem} onPress={() => Alert.alert('Privacy & Security')}>
               <View style={styles.settingIconContainer}>
-                <User width={18} height={18} fill="#5568FE" />
+                <User width={18} height={18} fill="#ff006e" />
               </View>
               <Text style={styles.settingText}>Privacy & Security</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.settingItem} onPress={() => Alert.alert('Help & Support')}>
               <View style={styles.settingIconContainer}>
-                <Phone width={18} height={18} fill="#5568FE" />
+                <Phone width={18} height={18} fill="#ff006e" />
               </View>
               <Text style={styles.settingText}>Help & Support</Text>
             </TouchableOpacity>
@@ -1346,14 +1346,14 @@ export default function StudentDashboard({ navigation }) {
             style={styles.navItem}
             onPress={() => setActiveTab('home')}
           >
-            <Home width={22} height={22} fill={activeTab === 'home' ? '#5568FE' : '#999'} />
+            <Home width={22} height={22} fill={activeTab === 'home' ? '#ff006e' : '#b0b0b0'} />
             <Text style={styles.navLabel}>Home</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.navItem}
             onPress={() => setActiveTab('bookings')}
           >
-            <Calendar width={22} height={22} fill={activeTab === 'bookings' ? '#5568FE' : '#999'} />
+            <Calendar width={22} height={22} fill={activeTab === 'bookings' ? '#ff006e' : '#b0b0b0'} />
             <Text style={styles.navLabel}>Bookings</Text>
           </TouchableOpacity>
           {/* Lectures tab hidden for students
@@ -1361,7 +1361,7 @@ export default function StudentDashboard({ navigation }) {
             style={styles.navItem}
             onPress={() => setActiveTab('lectures')}
           >
-            <BookOpen width={22} height={22} fill={activeTab === 'lectures' ? '#5568FE' : '#999'} />
+            <BookOpen width={22} height={22} fill={activeTab === 'lectures' ? '#ff006e' : '#b0b0b0'} />
             <Text style={styles.navLabel}>Lectures</Text>
           </TouchableOpacity>
           */}
@@ -1369,7 +1369,7 @@ export default function StudentDashboard({ navigation }) {
             style={[styles.navItem, styles.navItemActive]}
             onPress={() => setActiveTab('profile')}
           >
-            <User width={22} height={22} fill={activeTab === 'profile' ? '#5568FE' : '#999'} />
+            <User width={22} height={22} fill={activeTab === 'profile' ? '#ff006e' : '#b0b0b0'} />
             <Text style={styles.navLabel}>Profile</Text>
           </TouchableOpacity>
         </View>
@@ -1381,7 +1381,7 @@ export default function StudentDashboard({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0B0D2A',
+    backgroundColor: '#0f1b3f',
   },
 
   header: {
@@ -1402,7 +1402,9 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
+    borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
@@ -1459,7 +1461,9 @@ const styles = StyleSheet.create({
   },
 
   searchInput: {
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
+    borderWidth: 1,
     color: '#fff',
     fontSize: 14,
     paddingVertical: 12,
@@ -1482,7 +1486,9 @@ const styles = StyleSheet.create({
   },
 
   categoryBtn: {
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
+    borderWidth: 1,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 20,
@@ -1496,7 +1502,7 @@ const styles = StyleSheet.create({
   },
 
   categoryText: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 13,
     fontWeight: '500',
   },
@@ -1544,9 +1550,11 @@ const styles = StyleSheet.create({
   },
 
   professionCount: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 14,
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
+    borderWidth: 1,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
@@ -1571,7 +1579,9 @@ const styles = StyleSheet.create({
   // },
 
   teacherCard: {
-  backgroundColor: '#1C1F4A',
+  backgroundColor: 'rgba(255, 255, 255, 0.08)',
+  borderColor: 'rgba(255, 0, 110, 0.3)',
+  borderWidth: 1,
   borderRadius: 16,  // softer corners
   padding: 16,
   flexDirection: 'row',
@@ -1602,7 +1612,7 @@ const styles = StyleSheet.create({
     height: 14,
     borderRadius: 7,
     borderWidth: 2,
-    borderColor: '#1C1F4A',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
   },
 
   teacherModalAvatarWrapper: {
@@ -1619,11 +1629,11 @@ const styles = StyleSheet.create({
     height: 16,
     borderRadius: 8,
     borderWidth: 2,
-    borderColor: '#0B0D2A',
+    borderColor: '#0f1b3f',
   },
 
   teacherStatusLabel: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 12,
     marginBottom: 8,
     textAlign: 'center',
@@ -1641,7 +1651,7 @@ const styles = StyleSheet.create({
     height: 12,
     borderRadius: 6,
     borderWidth: 2,
-    borderColor: '#1C1F4A',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
   },
 
   favTeacherActions: {
@@ -1657,7 +1667,7 @@ const styles = StyleSheet.create({
   },
 
   teacherCategory: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 12,
     marginBottom: 4,
   },
@@ -1675,7 +1685,7 @@ const styles = StyleSheet.create({
   },
 
   statSeparator: {
-    color: '#999',
+    color: '#b0b0b0',
     marginRight: 12,
   },
 
@@ -1703,7 +1713,7 @@ const styles = StyleSheet.create({
   },
 
   emptySubtext: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 13,
   },
 
@@ -1713,8 +1723,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     flexDirection: 'row',
-    backgroundColor: '#0B0D2A',
-    borderTopColor: '#1C1F4A',
+    backgroundColor: '#0f1b3f',
+    borderTopColor: 'rgba(255, 0, 110, 0.2)',
     borderTopWidth: 1,
     justifyContent: 'space-around',
     paddingVertical: 5,
@@ -1733,14 +1743,16 @@ const styles = StyleSheet.create({
   },
 
   navLabel: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 11,
     fontWeight: '500',
     marginTop: 4,
   },
 
   card: {
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
+    borderWidth: 1,
     padding: 18,
     borderRadius: 14,
     marginBottom: 15,
@@ -1763,7 +1775,9 @@ const styles = StyleSheet.create({
   },
 
   profileCard: {
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
+    borderWidth: 1,
     borderRadius: 14,
     padding: 20,
     alignItems: 'center',
@@ -1774,7 +1788,7 @@ const styles = StyleSheet.create({
   profileImageContainer: {
     width: 70,
     height: 70,
-    backgroundColor: '#2E2E5E',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderRadius: 35,
     justifyContent: 'center',
     alignItems: 'center',
@@ -1794,12 +1808,14 @@ const styles = StyleSheet.create({
   },
 
   profileEmail: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 13,
   },
 
   favTeacherCard: {
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
+    borderWidth: 1,
     borderRadius: 10,
     padding: 12,
     flexDirection: 'row',
@@ -1811,7 +1827,7 @@ const styles = StyleSheet.create({
   favTeacherImageContainer: {
     width: 48,
     height: 48,
-    backgroundColor: '#2E2E5E',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
@@ -1835,7 +1851,7 @@ const styles = StyleSheet.create({
   },
 
   favTeacherCategory: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 11,
     marginBottom: 4,
   },
@@ -1858,7 +1874,9 @@ const styles = StyleSheet.create({
   },
 
   settingItem: {
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
+    borderWidth: 1,
     borderRadius: 10,
     padding: 15,
     flexDirection: 'row',
@@ -1869,7 +1887,7 @@ const styles = StyleSheet.create({
   settingIconContainer: {
     width: 36,
     height: 36,
-    backgroundColor: '#2E2E5E',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
@@ -1915,7 +1933,7 @@ const styles = StyleSheet.create({
   },
 
   followers: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 12,
     marginLeft: 2,
   },
@@ -1938,7 +1956,9 @@ const styles = StyleSheet.create({
   // },
 
   teacherInfoCard: {
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
+    borderWidth: 1,
     marginHorizontal: 20,
     marginVertical: 15,
     padding: 15,
@@ -1952,7 +1972,7 @@ const styles = StyleSheet.create({
   },
 
   teacherSpec: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 13,
     marginBottom: 10,
   },
@@ -1963,7 +1983,7 @@ const styles = StyleSheet.create({
   },
 
   priceLabel: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 12,
   },
 
@@ -1986,7 +2006,9 @@ const styles = StyleSheet.create({
   },
 
   dateInput: {
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
+    borderWidth: 1,
     paddingVertical: 12,
     paddingHorizontal: 15,
     borderRadius: 10,
@@ -2004,7 +2026,9 @@ const styles = StyleSheet.create({
   },
 
   timeBtn: {
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
+    borderWidth: 1,
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderRadius: 8,
@@ -2016,7 +2040,7 @@ const styles = StyleSheet.create({
   },
 
   timeBtnText: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 12,
     fontWeight: '600',
     textAlign: 'center',
@@ -2027,7 +2051,9 @@ const styles = StyleSheet.create({
   },
 
   subjectInput: {
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
+    borderWidth: 1,
     color: '#fff',
     paddingVertical: 12,
     paddingHorizontal: 15,
@@ -2041,7 +2067,9 @@ const styles = StyleSheet.create({
   },
 
   slotCard: {
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
+    borderWidth: 1,
     borderRadius: 10,
     padding: 15,
     marginBottom: 10,
@@ -2058,8 +2086,8 @@ const styles = StyleSheet.create({
   // },
 
   slotCardSelected: {
-  borderColor: '#5568FE',
-  backgroundColor: '#2A2F6B',
+  borderColor: '#ff006e',
+  backgroundColor: 'rgba(255, 0, 110, 0.15)',
   transform: [{ scale: 1.02 }],
 },
 
@@ -2082,11 +2110,11 @@ const styles = StyleSheet.create({
   },
 
   slotDateTimeBooked: {
-    color: '#999',
+    color: '#b0b0b0',
   },
 
   slotDuration: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 12,
   },
 
@@ -2107,7 +2135,9 @@ const styles = StyleSheet.create({
   },
 
   noSlotsContainer: {
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
+    borderWidth: 1,
     borderRadius: 10,
     padding: 30,
     alignItems: 'center',
@@ -2122,18 +2152,20 @@ const styles = StyleSheet.create({
   },
 
   noSlotsSubtext: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 13,
   },
 
   loadingText: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 12,
     marginTop: 10,
   },
 
   summaryCard: {
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
+    borderWidth: 1,
     marginHorizontal: 20,
     marginVertical: 15,
     padding: 15,
@@ -2151,7 +2183,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingVertical: 8,
-    borderBottomColor: '#0B0D2A',
+    borderBottomColor: '#0f1b3f',
     borderBottomWidth: 1,
   },
 
@@ -2162,7 +2194,7 @@ const styles = StyleSheet.create({
   },
 
   summaryLabel: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 12,
   },
 
@@ -2183,12 +2215,14 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingHorizontal: 20,
     paddingVertical: 15,
-    backgroundColor: '#0B0D2A',
+    backgroundColor: '#0f1b3f',
   },
 
   cancelBtn: {
     flex: 1,
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
+    borderWidth: 1,
     paddingVertical: 12,
     borderRadius: 10,
   },
@@ -2209,15 +2243,15 @@ const styles = StyleSheet.create({
 
 confirmBtn: {
   flex: 1,
-  backgroundColor: '#5568FE',   // softer premium blue
+  backgroundColor: 'transparent',   // Use LinearGradient wrapper for gradient
   paddingVertical: 14,
   borderRadius: 12,
   alignItems: 'center',
   elevation: 5,                 // Android shadow
-  shadowColor: '#5568FE',        // iOS shadow
+  shadowColor: 'rgba(255, 0, 110, 0.6)',        // iOS shadow
   shadowOffset: { width: 0, height: 4 },
   shadowOpacity: 0.3,
-  shadowRadius: 6,
+  shadowRadius: 15,
 },
 
 
@@ -2234,7 +2268,9 @@ confirmBtn: {
 
   // BOOKINGS PAGE STYLES
   bookingsHeader: {
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
+    borderWidth: 1,
     paddingHorizontal: 20,
     paddingVertical: 20,
     marginBottom: 20,
@@ -2250,7 +2286,9 @@ confirmBtn: {
   headerIconContainer: {
     width: 30,
     height: 30,
-    backgroundColor: '#5568FE',
+    backgroundColor: 'rgba(255, 0, 110, 0.2)',
+    borderColor: 'rgba(255, 0, 110, 0.5)',
+    borderWidth: 1,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
@@ -2264,7 +2302,7 @@ confirmBtn: {
   },
 
   headerSubtitle: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 12,
     marginTop: 2,
   },
@@ -2281,24 +2319,26 @@ confirmBtn: {
   sectionBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
+    borderWidth: 1,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
   },
 
   sectionBadgeText: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 12,
     fontWeight: '600',
     marginLeft: 6,
   },
 
   sectionCount: {
-    color: '#5568FE',
+    color: '#ff006e',
     fontSize: 14,
     fontWeight: 'bold',
-    backgroundColor: '#2E2E5E',
+    backgroundColor: 'rgba(255, 0, 110, 0.1)',
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 12,
@@ -2306,7 +2346,9 @@ confirmBtn: {
 
   // BOOKING CARD STYLES
   bookingCard: {
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
+    borderWidth: 1,
     marginHorizontal: 20,
     marginVertical: 10,
     padding: 14,
@@ -2315,7 +2357,7 @@ confirmBtn: {
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     borderLeftWidth: 4,
-    borderLeftColor: '#5568FE',
+    borderLeftColor: '#ff006e',
   },
 
   pendingCard: {
@@ -2342,7 +2384,7 @@ confirmBtn: {
   bookingTeacherIcon: {
     width: 44,
     height: 44,
-    backgroundColor: '#2E2E5E',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
@@ -2366,7 +2408,7 @@ confirmBtn: {
   },
 
   bookingSubject: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 13,
     marginBottom: 6,
   },
@@ -2378,14 +2420,14 @@ confirmBtn: {
   },
 
   bookingDate: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 11,
   },
 
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2E2E5E',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
@@ -2442,7 +2484,7 @@ confirmBtn: {
   waitingBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2E2E5E',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
@@ -2463,7 +2505,7 @@ confirmBtn: {
   emptyIconContainer: {
     width: 80,
     height: 80,
-    backgroundColor: '#2E2E5E',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
@@ -2472,7 +2514,7 @@ confirmBtn: {
   },
 
   browseBtn: {
-    backgroundColor: '#5568FE',
+    backgroundColor: 'transparent',   // Use LinearGradient wrapper for gradient
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
@@ -2561,7 +2603,9 @@ confirmBtn: {
   },
 
   lectureCard: {
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
+    borderWidth: 1,
     borderRadius: 12,
     padding: 15,
     marginBottom: 12,
@@ -2581,7 +2625,7 @@ confirmBtn: {
   },
 
   lectureTeacher: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 12,
   },
 
@@ -2619,7 +2663,9 @@ confirmBtn: {
   },
 
   enrolledLectureCard: {
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
+    borderWidth: 1,
     borderRadius: 12,
     padding: 15,
     marginHorizontal: 20,
@@ -2695,10 +2741,12 @@ confirmBtn: {
   snackbarBtnText: { color: '#fff', fontSize: 13, fontWeight: '600', },
 
   backButton: {
-    width: 40, 
+    width: 40,
     height: 40,
     borderRadius: 10,
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
+    borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,

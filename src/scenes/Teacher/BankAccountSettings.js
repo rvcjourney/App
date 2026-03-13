@@ -119,7 +119,7 @@ export default function BankAccountSettings({ navigation }) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingBox}>
-          <ActivityIndicator size="large" color="#5568FE" />
+          <ActivityIndicator size="large" color="#ff006e" />
           <Text style={styles.loadingText}>Loading bank details...</Text>
         </View>
       </SafeAreaView>
@@ -135,7 +135,7 @@ export default function BankAccountSettings({ navigation }) {
         <View style={styles.header}>
           <TouchableOpacity style={styles.backButtonContainer} onPress={() => navigation.goBack()}>
             {/* <Text style={styles.backBtn}>← Back</Text> */}
-            <ChevronRight width={24} height={24} fill="#5568FE" style={{ transform: [{ rotate: '180deg' }] }} />
+            <ChevronRight width={24} height={24} fill="#ff006e" style={{ transform: [{ rotate: '180deg' }] }} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Bank Account</Text>
         </View>
@@ -232,7 +232,7 @@ export default function BankAccountSettings({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0B0D2A',
+    backgroundColor: '#0f1b3f',
   },
   header: {
     flexDirection: 'row',
@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1F4A',
+    borderBottomColor: 'rgba(255, 0, 110, 0.2)',
   },
   // backBtn: {
   //   color: '#5568FE',
@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 10,
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 14,
     marginTop: 12,
   },
@@ -278,22 +278,22 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   infoCard: {
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     marginHorizontal: 20,
     marginTop: 20,
     padding: 16,
     borderRadius: 12,
     borderLeftWidth: 4,
-    borderLeftColor: '#5568FE',
+    borderLeftColor: '#ff006e',
   },
   infoTitle: {
-    color: '#5568FE',
+    color: '#ff006e',
     fontSize: 14,
     fontWeight: '700',
     marginBottom: 8,
   },
   infoText: {
-    color: '#ccc',
+    color: '#e0e0e0',
     fontSize: 13,
     lineHeight: 20,
   },
@@ -302,15 +302,15 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   sectionTitle: {
-    color: '#ccc',
+    color: '#e0e0e0',
     fontSize: 13,
     fontWeight: '600',
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderWidth: 1,
-    borderColor: '#2A2D5A',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
     borderRadius: 10,
     color: '#fff',
     paddingHorizontal: 14,
@@ -318,18 +318,18 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   termsBox: {
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     padding: 14,
     borderRadius: 10,
   },
   termsTitle: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 13,
     fontWeight: '600',
     marginBottom: 8,
   },
   term: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 12,
     lineHeight: 20,
     marginBottom: 4,
@@ -339,14 +339,15 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#0B0D2A',
+    backgroundColor: '#0f1b3f',
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderTopWidth: 1,
-    borderTopColor: '#1C1F4A',
+    borderTopColor: 'rgba(255, 0, 110, 0.2)',
   },
   saveBtn: {
-    backgroundColor: '#5568FE',
+    background: 'linear-gradient(135deg, #ff006e, #00d4ff)',
+    backgroundColor: 'transparent',   // Use LinearGradient wrapper for gradient
     paddingVertical: 14,
     borderRadius: 10,
     alignItems: 'center',

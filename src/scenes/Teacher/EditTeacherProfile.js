@@ -147,7 +147,7 @@ export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#1E90FF" />
+          <ActivityIndicator size="large" color="#ff006e" />
         </View>
       </SafeAreaView>
     );
@@ -159,7 +159,7 @@ export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
         <View style={styles.header}>
           <TouchableOpacity style={styles.backButtonContainer} onPress={() => navigation.goBack()}>
             {/* <Text style={styles.backButton}>← Back</Text> */}
-            <ChevronRight width={24} height={24} fill="#5568FE" style={{ transform: [{ rotate: '180deg' }] }} />
+            <ChevronRight width={24} height={24} fill="#ff006e" style={{ transform: [{ rotate: '180deg' }] }} />
           </TouchableOpacity>
           <Text style={styles.title}>Edit Profile</Text>
         </View>
@@ -168,7 +168,7 @@ export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
           {/* Profile Avatar */}
           <View style={styles.avatarSection}>
             {/* <Text style={styles.avatar}>👨‍🏫</Text> */}
-            <User width={60} height={60} fill="#5568FE" />
+            <User width={60} height={60} fill="#ff006e" />
           </View>
 
           {/* Full Name */}
@@ -177,7 +177,7 @@ export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
             <TextInput
               style={styles.input}
               placeholder="Enter your full name"
-              placeholderTextColor="#999"
+              placeholderTextColor="#b0b0b0"
               value={fullName}
               onChangeText={setFullName}
             />
@@ -220,7 +220,7 @@ export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
             <TextInput
               style={[styles.input, styles.multilineInput]}
               placeholder="Write a brief bio about yourself..."
-              placeholderTextColor="#999"
+              placeholderTextColor="#b0b0b0"
               value={bio}
               onChangeText={setBio}
               multiline
@@ -234,7 +234,7 @@ export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
             <TextInput
               style={[styles.input, styles.multilineInput]}
               placeholder="e.g., Math, Physics, Chemistry (comma separated)"
-              placeholderTextColor="#999"
+              placeholderTextColor="#b0b0b0"
               value={specializations}
               onChangeText={setSpecializations}
               multiline
@@ -255,7 +255,7 @@ export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
               <TextInput
                 style={[styles.input, styles.priceInput]}
                 placeholder="500"
-                placeholderTextColor="#999"
+                placeholderTextColor="#b0b0b0"
                 value={pricePerCall}
                 onChangeText={setPricePerCall}
                 keyboardType="numeric"
@@ -275,7 +275,7 @@ export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
             <TextInput
               style={styles.input}
               placeholder="e.g., 5"
-              placeholderTextColor="#999"
+              placeholderTextColor="#b0b0b0"
               value={experienceYears}
               onChangeText={setExperienceYears}
               keyboardType="numeric"
@@ -303,7 +303,7 @@ export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0B0D2A',
+    backgroundColor: '#0f1b3f',
   },
 
   loadingContainer: {
@@ -318,7 +318,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 18,
-    borderBottomColor: '#1C1F4A',
+    borderBottomColor: 'rgba(255, 0, 110, 0.2)',
     borderBottomWidth: 1,
   },
 
@@ -332,7 +332,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 10,
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -353,7 +353,7 @@ const styles = StyleSheet.create({
     marginBottom: 30,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderRadius: 100,
     width: 80,
     height: 80,
@@ -377,8 +377,8 @@ const styles = StyleSheet.create({
   },
 
   input: {
-    backgroundColor: '#1C1F4A',
-    borderColor: '#2A2D5A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
     borderWidth: 1,
     borderRadius: 10,
     color: '#fff',
@@ -393,7 +393,7 @@ const styles = StyleSheet.create({
   },
 
   readonlyText: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 14,
   },
 
@@ -413,8 +413,8 @@ const styles = StyleSheet.create({
   priceAdjustBtn: {
     width: 45,
     height: 45,
-    backgroundColor: '#1C1F4A',
-    borderColor: '#2A2D5A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
     borderWidth: 1,
     borderRadius: 10,
     justifyContent: 'center',
@@ -422,7 +422,7 @@ const styles = StyleSheet.create({
   },
 
   priceAdjustText: {
-    color: '#1E90FF',
+    color: '#ff006e',
     fontSize: 18,
     fontWeight: '600',
   },
@@ -440,17 +440,17 @@ const styles = StyleSheet.create({
 
   professionCard: {
     width: '48%',
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#1C1F4A',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
   },
 
   professionCardSelected: {
-    borderColor: '#1E90FF',
-    backgroundColor: '#252A5A',
+    borderColor: '#ff006e',
+    backgroundColor: 'rgba(255, 0, 110, 0.15)',
   },
 
   professionIcon: {
@@ -470,7 +470,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 8,
     right: 8,
-    color: '#1E90FF',
+    color: '#ff006e',
     fontSize: 16,
     fontWeight: 'bold',
   },
@@ -478,7 +478,7 @@ const styles = StyleSheet.create({
   saveButton: {
     marginHorizontal: 20,
     marginVertical: 20,
-    backgroundColor: '#1E90FF',
+    backgroundColor: 'transparent',   // Use LinearGradient wrapper for gradient
     borderRadius: 10,
     paddingVertical: 15,
     alignItems: 'center',

@@ -239,7 +239,7 @@ export default function ScheduleLecture({ navigation, route }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0B0D2A',
+    backgroundColor: '#0f1b3f',
   },
 
   header: {
@@ -250,7 +250,7 @@ const styles = StyleSheet.create({
   },
 
   backButton: {
-    color: '#1E90FF',
+    color: '#ff006e',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -269,20 +269,20 @@ const styles = StyleSheet.create({
   },
 
   label: {
-    color: '#ccc',
+    color: '#e0e0e0',
     fontSize: 13,
     fontWeight: '600',
     marginBottom: 10,
   },
 
   input: {
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     color: '#fff',
     paddingVertical: 12,
     paddingHorizontal: 15,
     borderRadius: 10,
     fontSize: 14,
-    borderColor: '#2C3F7F',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
     borderWidth: 1,
   },
 
@@ -293,11 +293,11 @@ const styles = StyleSheet.create({
   },
 
   dateInput: {
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     paddingVertical: 12,
     paddingHorizontal: 15,
     borderRadius: 10,
-    borderColor: '#2C3F7F',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
     borderWidth: 1,
   },
 
@@ -313,7 +313,7 @@ const styles = StyleSheet.create({
   },
 
   timeBtn: {
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderRadius: 8,
@@ -322,11 +322,11 @@ const styles = StyleSheet.create({
   },
 
   timeBtnActive: {
-    backgroundColor: '#1E90FF',
+    backgroundColor: '#ff006e',
   },
 
   timeBtnText: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 12,
     fontWeight: '600',
   },
@@ -336,7 +336,7 @@ const styles = StyleSheet.create({
   },
 
   summaryCard: {
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     marginHorizontal: 20,
     marginVertical: 15,
     padding: 15,
@@ -354,12 +354,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingVertical: 8,
-    borderBottomColor: '#0B0D2A',
+    borderBottomColor: '#0f1b3f',
     borderBottomWidth: 1,
   },
 
   summaryLabel: {
-    color: '#999',
+    color: '#e0e0e0',
     fontSize: 12,
   },
 
@@ -374,12 +374,12 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingHorizontal: 20,
     paddingVertical: 15,
-    backgroundColor: '#0B0D2A',
+    backgroundColor: '#0f1b3f',
   },
 
   cancelBtn: {
     flex: 1,
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     paddingVertical: 12,
     borderRadius: 10,
   },
@@ -393,7 +393,8 @@ const styles = StyleSheet.create({
 
   scheduleBtn: {
     flex: 1,
-    backgroundColor: '#1E90FF',
+    background: 'linear-gradient(135deg, #ff006e, #00d4ff)',
+    backgroundColor: 'transparent',   // Use LinearGradient wrapper for gradient
     paddingVertical: 12,
     borderRadius: 10,
   },

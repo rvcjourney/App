@@ -97,7 +97,7 @@ export default function TeacherEarnings({ navigation, route }) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color="#5568FE" />
+          <ActivityIndicator size="large" color="#ff006e" />
         </View>
       </SafeAreaView>
     );
@@ -108,7 +108,7 @@ export default function TeacherEarnings({ navigation, route }) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <ChevronRight width={24} height={24} fill="#5568FE" style={{ transform: [{ rotate: '180deg' }] }} />
+          <ChevronRight width={24} height={24} fill="#ff006e" style={{ transform: [{ rotate: '180deg' }] }} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>My Earnings</Text>
       </View>
@@ -225,7 +225,7 @@ export default function TeacherEarnings({ navigation, route }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0B0D2A',
+    backgroundColor: '#0f1b3f',
   },
 
   centerContainer: {
@@ -240,14 +240,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1F4A',
+    borderBottomColor: 'rgba(255, 0, 110, 0.2)',
   },
 
   backBtn: {
     width: 40,
     height: 40,
     borderRadius: 10,
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
   mainBalanceCard: {
     marginHorizontal: 20,
     marginVertical: 20,
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderRadius: 16,
     padding: 20,
     flexDirection: 'row',
@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
   },
 
   balanceLabel: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 11,
     fontWeight: '600',
     marginBottom: 8,
@@ -298,7 +298,7 @@ const styles = StyleSheet.create({
   divider: {
     width: 1,
     height: 50,
-    backgroundColor: '#2A2D5A',
+    backgroundColor: 'rgba(255, 0, 110, 0.1)',
   },
 
   section: {
@@ -321,10 +321,10 @@ const styles = StyleSheet.create({
   },
 
   countBadge: {
-    color: '#5568FE',
+    color: '#ff006e',
     fontSize: 12,
     fontWeight: '600',
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
   quickInfoBox: {
     marginHorizontal: 20,
     marginBottom: 20,
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderRadius: 12,
     padding: 15,
   },
@@ -342,7 +342,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#2A2D5A',
+    borderBottomColor: 'rgba(255, 0, 110, 0.2)',
   },
 
   infoLabel: {
@@ -353,7 +353,7 @@ const styles = StyleSheet.create({
   },
 
   infoValue: {
-    color: '#999',
+    color: '#e0e0e0',
     fontSize: 11,
   },
 
@@ -381,7 +381,7 @@ const styles = StyleSheet.create({
   },
 
   statusBox: {
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderRadius: 12,
     padding: 15,
     borderLeftWidth: 4,
@@ -427,12 +427,12 @@ const styles = StyleSheet.create({
   },
 
   emptySubtext: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 12,
   },
 
   earningCard: {
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderRadius: 12,
     padding: 15,
     marginBottom: 10,
@@ -458,7 +458,7 @@ const styles = StyleSheet.create({
   },
 
   earningStatus: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 11,
   },
 

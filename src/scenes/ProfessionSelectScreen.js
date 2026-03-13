@@ -114,7 +114,7 @@ export default function ProfessionSelectScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0B0D2A',
+    backgroundColor: '#0f1b3f',
   },
   content: {
     padding: 20,
@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   subtitle: {
-    color: '#AAA',
+    color: '#b0b0b0',
     fontSize: 14,
     textAlign: 'center',
     marginBottom: 40,
@@ -143,17 +143,17 @@ const styles = StyleSheet.create({
   },
   professionCard: {
     width: '48%',
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderRadius: 15,
     padding: 20,
     alignItems: 'center',
     marginBottom: 15,
     borderWidth: 2,
-    borderColor: '#1C1F4A',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
   },
   professionCardSelected: {
-    borderColor: '#1E2BFF',
-    backgroundColor: '#252A5A',
+    borderColor: '#ff006e',
+    backgroundColor: 'rgba(255, 0, 110, 0.15)',
   },
   professionIcon: {
     fontSize: 40,
@@ -170,19 +170,26 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 8,
     right: 8,
-    color: '#1E2BFF',
+    color: '#ff006e',
     fontSize: 20,
     fontWeight: 'bold',
   },
   continueBtn: {
-    backgroundColor: '#1E2BFF',
+    backgroundColor: '#ff006e',
     padding: 16,
     borderRadius: 30,
     alignItems: 'center',
     marginTop: 20,
+    shadowColor: 'rgba(255, 0, 110, 0.6)',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.8,
+    shadowRadius: 16,
+    elevation: 8,
   },
   continueDisabled: {
     opacity: 0.5,
+    shadowOpacity: 0,
+    elevation: 0,
   },
   continueBtnText: {
     color: '#fff',

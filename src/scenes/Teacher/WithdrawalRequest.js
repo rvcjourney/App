@@ -346,7 +346,7 @@ export default function WithdrawalRequest({ navigation, route }) {
         {/* Processing status */}
         {loading && (
           <View style={styles.processingOverlay}>
-            <ActivityIndicator size="large" color="#5568FE" />
+            <ActivityIndicator size="large" color="#ff006e" />
             <Text style={styles.processingText}>Processing your redemption request...</Text>
             <Text style={styles.processingSubtext}>Please wait</Text>
           </View>
@@ -374,7 +374,7 @@ export default function WithdrawalRequest({ navigation, route }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0B0D2A',
+    backgroundColor: '#0f1b3f',
   },
 
   header: {
@@ -385,7 +385,7 @@ const styles = StyleSheet.create({
   },
 
   backBtn: {
-    color: '#5568FE',
+    color: '#ff006e',
     fontSize: 16,
     fontWeight: '600',
     marginRight: 12,
@@ -416,13 +416,13 @@ const styles = StyleSheet.create({
   },
 
   balanceCard: {
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderRadius: 12,
     padding: 15,
   },
 
   balanceLabel: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 12,
     marginBottom: 6,
   },
@@ -435,12 +435,12 @@ const styles = StyleSheet.create({
   },
 
   balanceSubtext: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 11,
   },
 
   inputBox: {
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderRadius: 12,
     padding: 15,
   },
@@ -448,7 +448,7 @@ const styles = StyleSheet.create({
   amountInputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#0B0D2A',
+    backgroundColor: '#0f1b3f',
     borderRadius: 8,
     paddingLeft: 12,
     marginBottom: 12,
@@ -477,37 +477,37 @@ const styles = StyleSheet.create({
 
   quickBtn: {
     flex: 1,
-    backgroundColor: '#2E2E5E',
+    backgroundColor: 'rgba(255, 0, 110, 0.1)',
     paddingVertical: 8,
     borderRadius: 6,
     alignItems: 'center',
   },
 
   quickBtnText: {
-    color: '#5568FE',
+    color: '#ff006e',
     fontSize: 12,
     fontWeight: '600',
   },
 
   savedDetailsBox: {
     flexDirection: 'row',
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderRadius: 12,
     padding: 12,
     marginBottom: 12,
     alignItems: 'center',
-    borderColor: '#2A2D5A',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
     borderWidth: 1,
   },
 
   savedDetailsBoxActive: {
-    borderColor: '#5568FE',
-    backgroundColor: '#2E2E5E',
+    borderColor: '#ff006e',
+    backgroundColor: 'rgba(255, 0, 110, 0.1)',
   },
 
   checkmark: {
     fontSize: 20,
-    color: '#5568FE',
+    color: '#ff006e',
     marginRight: 12,
   },
 
@@ -523,12 +523,12 @@ const styles = StyleSheet.create({
   },
 
   savedDetailsInfo: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 11,
   },
 
   formBox: {
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderRadius: 12,
     padding: 15,
   },
@@ -538,15 +538,15 @@ const styles = StyleSheet.create({
   },
 
   label: {
-    color: '#ccc',
+    color: '#e0e0e0',
     fontSize: 12,
     fontWeight: '600',
     marginBottom: 6,
   },
 
   input: {
-    backgroundColor: '#0B0D2A',
-    borderColor: '#2A2D5A',
+    backgroundColor: '#0f1b3f',
+    borderColor: 'rgba(255, 0, 110, 0.3)',
     borderWidth: 1,
     borderRadius: 8,
     color: '#fff',
@@ -556,7 +556,7 @@ const styles = StyleSheet.create({
   },
 
   detailsBox: {
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderRadius: 12,
     padding: 15,
   },
@@ -566,12 +566,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 10,
-    borderBottomColor: '#2A2D5A',
+    borderBottomColor: 'rgba(255, 0, 110, 0.2)',
     borderBottomWidth: 1,
   },
 
   detailLabel: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 13,
   },
 
@@ -584,7 +584,7 @@ const styles = StyleSheet.create({
   totalDetail: {
     borderBottomWidth: 0,
     paddingVertical: 12,
-    backgroundColor: '#0B0D2A',
+    backgroundColor: '#0f1b3f',
     paddingHorizontal: 10,
     borderRadius: 6,
     marginTop: 8,
@@ -603,7 +603,7 @@ const styles = StyleSheet.create({
   },
 
   termsBox: {
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderRadius: 12,
     padding: 15,
     borderLeftColor: '#2E7D32',
@@ -618,14 +618,14 @@ const styles = StyleSheet.create({
   },
 
   term: {
-    color: '#ccc',
+    color: '#e0e0e0',
     fontSize: 12,
     lineHeight: 18,
     marginBottom: 6,
   },
 
   tipsBox: {
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderRadius: 12,
     padding: 15,
     borderLeftColor: '#FF9800',
@@ -640,7 +640,7 @@ const styles = StyleSheet.create({
   },
 
   tip: {
-    color: '#ccc',
+    color: '#e0e0e0',
     fontSize: 12,
     lineHeight: 18,
     marginBottom: 6,
@@ -664,7 +664,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   processingSubtext: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 13,
     marginTop: 6,
   },
@@ -674,15 +674,16 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#0B0D2A',
+    backgroundColor: '#0f1b3f',
     paddingHorizontal: 20,
     paddingVertical: 15,
-    borderTopColor: '#2A2D5A',
+    borderTopColor: 'rgba(255, 0, 110, 0.2)',
     borderTopWidth: 1,
   },
 
   submitBtn: {
-    backgroundColor: '#5568FE',
+    background: 'linear-gradient(135deg, #ff006e, #00d4ff)',
+    backgroundColor: 'transparent',   // Use LinearGradient wrapper for gradient
     paddingVertical: 14,
     borderRadius: 10,
     alignItems: 'center',

@@ -385,7 +385,7 @@ export default function StudentCheckout({
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color="#5568FE" />
+          <ActivityIndicator size="large" color="#ff006e" />
           <Text style={styles.loadingText}>Loading checkout...</Text>
         </View>
       </SafeAreaView>
@@ -420,7 +420,7 @@ export default function StudentCheckout({
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
           {/* <Text style={styles.backBtn}>← Back</Text> */}
-           <ChevronRight width={24} height={24} color="#5568FE" style={{ transform: [{ rotate: '180deg' }] }} /> 
+           <ChevronRight width={24} height={24} color="#ff006e" style={{ transform: [{ rotate: '180deg' }] }} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Checkout</Text>
       </View>
@@ -731,7 +731,7 @@ export default function StudentCheckout({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0B0D2A',
+    backgroundColor: '#0f1b3f',
   },
 
   centerContainer: {
@@ -753,7 +753,9 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 10,
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 0, 110, 0.3)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -784,9 +786,15 @@ const styles = StyleSheet.create({
   },
 
   detailCard: {
-    backgroundColor: '#1C1F4A',
-    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: 16,
     padding: 15,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 0, 110, 0.3)',
+    shadowColor: 'rgba(255, 0, 110, 0.2)',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 10,
   },
 
   teacherHeader: {
@@ -798,8 +806,10 @@ const styles = StyleSheet.create({
   teacherAvatar: {
     width: 50,
     height: 50,
-    backgroundColor: '#2E2E5E',
+    backgroundColor: 'rgba(255, 0, 110, 0.15)',
     borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#ff006e',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -821,14 +831,14 @@ const styles = StyleSheet.create({
   },
 
   teacherSpec: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 12,
     marginTop: 2,
   },
 
   divider: {
     height: 1,
-    backgroundColor: '#2A2D5A',
+    backgroundColor: 'rgba(255, 0, 110, 0.2)',
     marginVertical: 12,
   },
 
@@ -837,12 +847,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 10,
-    borderBottomColor: '#2A2D5A',
+    borderBottomColor: 'rgba(255, 0, 110, 0.2)',
     borderBottomWidth: 1,
   },
 
   infoLabel: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 13,
   },
 
@@ -853,9 +863,15 @@ const styles = StyleSheet.create({
   },
 
   priceCard: {
-    backgroundColor: '#1C1F4A',
-    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: 16,
     padding: 15,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 0, 110, 0.3)',
+    shadowColor: 'rgba(255, 0, 110, 0.2)',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 10,
   },
 
   priceRow: {
@@ -912,10 +928,10 @@ const styles = StyleSheet.create({
   },
 
   pricePercentage: {
-    color: '#5568FE',
+    color: '#00d4ff',
     fontSize: 12,
     fontWeight: '500',
-    backgroundColor: '#5568FE20',
+    backgroundColor: 'rgba(0, 212, 255, 0.15)',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 10,
@@ -928,15 +944,21 @@ const styles = StyleSheet.create({
 
   totalDivider: {
     height: 2,
-    backgroundColor: '#5568FE',
+    backgroundColor: '#ff006e',
     marginVertical: 8,
     borderRadius: 1,
   },
 
   stepsContainer: {
-    backgroundColor: '#1C1F4A',
-    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: 16,
     padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 0, 110, 0.3)',
+    shadowColor: 'rgba(255, 0, 110, 0.2)',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 10,
   },
 
   infoStep: {
@@ -949,10 +971,14 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#5568FE',
+    backgroundColor: '#00d4ff',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
+    shadowColor: 'rgba(0, 212, 255, 0.6)',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 10,
   },
 
   stepNumber: {
@@ -1019,22 +1045,28 @@ const styles = StyleSheet.create({
   },
 
   securityBox: {
-    backgroundColor: '#1C1F4A',
-    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: 16,
     padding: 16,
     borderLeftWidth: 4,
-    borderLeftColor: '#4CAF50',
+    borderLeftColor: '#00d4ff',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 212, 255, 0.3)',
+    shadowColor: 'rgba(0, 212, 255, 0.2)',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 10,
   },
 
   securityTitle: {
-    color: '#4CAF50',
+    color: '#00d4ff',
     fontSize: 14,
     fontWeight: '700',
     marginBottom: 10,
   },
 
   termsText: {
-    color: '#ccc',
+    color: '#e0e0e0',
     fontSize: 12,
     lineHeight: 20,
     marginBottom: 6,
@@ -1045,10 +1077,10 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#0B0D2A',
+    backgroundColor: '#0f1b3f',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    borderTopColor: '#2A2D5A',
+    borderTopColor: 'rgba(255, 0, 110, 0.2)',
     borderTopWidth: 1,
     elevation: 10,
     shadowColor: '#000',
@@ -1078,17 +1110,17 @@ const styles = StyleSheet.create({
   },
 
   payBtn: {
-    backgroundColor: '#5568FE',
+    background: 'linear-gradient(135deg, #ff006e, #00d4ff)',
     paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: 30,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
     elevation: 4,
-    shadowColor: '#5568FE',
+    shadowColor: '#ff006e',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowOpacity: 0.6,
+    shadowRadius: 15,
   },
 
   payBtnDisabled: {
@@ -1103,28 +1135,32 @@ const styles = StyleSheet.create({
   },
 
   payBtnSubtext: {
-    color: '#E3F2FD',
+    color: '#e0e0e0',
     fontSize: 14,
     fontWeight: '600',
   },
 
   loadingText: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 14,
     marginTop: 12,
   },
 
   errorText: {
-    color: '#FF6B6B',
+    color: '#ff006e',
     fontSize: 14,
   },
 
   retryBtn: {
-    backgroundColor: '#5568FE',
+    background: 'linear-gradient(135deg, #ff006e, #00d4ff)',
     paddingHorizontal: 20,
     paddingVertical: 10,
-    borderRadius: 8,
+    borderRadius: 20,
     marginTop: 15,
+    shadowColor: '#ff006e',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 10,
   },
 
   retryBtnText: {
@@ -1141,12 +1177,14 @@ const styles = StyleSheet.create({
   },
 
   networkErrorCard: {
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderRadius: 15,
     padding: 25,
     alignItems: 'center',
     borderLeftWidth: 4,
-    borderLeftColor: '#FF6B6B',
+    borderLeftColor: '#ff006e',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 0, 110, 0.3)',
   },
 
   networkErrorIcon: {
@@ -1155,7 +1193,7 @@ const styles = StyleSheet.create({
   },
 
   networkErrorTitle: {
-    color: '#FF6B6B',
+    color: '#ff006e',
     fontSize: 18,
     fontWeight: '700',
     marginBottom: 10,
@@ -1163,7 +1201,7 @@ const styles = StyleSheet.create({
   },
 
   networkErrorMessage: {
-    color: '#AAA',
+    color: '#b0b0b0',
     fontSize: 14,
     marginBottom: 20,
     textAlign: 'center',
@@ -1171,11 +1209,15 @@ const styles = StyleSheet.create({
   },
 
   networkErrorBtn: {
-    backgroundColor: '#5568FE',
+    background: 'linear-gradient(135deg, #ff006e, #00d4ff)',
     paddingHorizontal: 30,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 20,
     minWidth: 100,
+    shadowColor: '#ff006e',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 10,
   },
 
   networkErrorBtnText: {
@@ -1194,13 +1236,15 @@ const styles = StyleSheet.create({
   },
 
   confirmModalCard: {
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderRadius: 15,
     padding: 25,
     width: '100%',
     maxWidth: 400,
     borderLeftWidth: 4,
-    borderLeftColor: '#5568FE',
+    borderLeftColor: '#ff006e',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 0, 110, 0.3)',
   },
 
   confirmModalTitle: {
@@ -1212,14 +1256,14 @@ const styles = StyleSheet.create({
   },
 
   confirmModalSubtitle: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 14,
     marginBottom: 20,
     textAlign: 'center',
   },
 
   confirmPriceBreakdown: {
-    backgroundColor: '#0B0D2A',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
     borderRadius: 10,
     padding: 15,
     marginBottom: 20,
@@ -1233,7 +1277,7 @@ const styles = StyleSheet.create({
   },
 
   confirmPriceLabel: {
-    color: '#ccc',
+    color: '#e0e0e0',
     fontSize: 14,
   },
 
@@ -1245,14 +1289,14 @@ const styles = StyleSheet.create({
 
   confirmTotalDivider: {
     height: 1,
-    backgroundColor: '#2A2D5A',
+    backgroundColor: 'rgba(255, 0, 110, 0.2)',
     marginVertical: 10,
   },
 
   confirmTotalRow: {
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: '#2A2D5A',
+    borderTopColor: 'rgba(255, 0, 110, 0.2)',
   },
 
   confirmTotalLabel: {
@@ -1274,9 +1318,11 @@ const styles = StyleSheet.create({
 
   confirmCancelBtn: {
     flex: 1,
-    backgroundColor: '#2A2D5A',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 0, 110, 0.3)',
     paddingVertical: 14,
-    borderRadius: 10,
+    borderRadius: 20,
     alignItems: 'center',
   },
 
@@ -1288,10 +1334,14 @@ const styles = StyleSheet.create({
 
   confirmProceedBtn: {
     flex: 1,
-    backgroundColor: '#5568FE',
+    background: 'linear-gradient(135deg, #ff006e, #00d4ff)',
     paddingVertical: 14,
-    borderRadius: 10,
+    borderRadius: 20,
     alignItems: 'center',
+    shadowColor: '#ff006e',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 10,
   },
 
   confirmProceedBtnText: {
@@ -1301,14 +1351,16 @@ const styles = StyleSheet.create({
   },
 
   paymentFailedCard: {
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderRadius: 15,
     padding: 25,
     alignItems: 'center',
     borderLeftWidth: 4,
-    borderLeftColor: '#FF6B6B',
+    borderLeftColor: '#ff006e',
     width: '100%',
     maxWidth: 400,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 0, 110, 0.3)',
   },
 
   paymentFailedIcon: {
@@ -1317,7 +1369,7 @@ const styles = StyleSheet.create({
   },
 
   paymentFailedTitle: {
-    color: '#FF6B6B',
+    color: '#ff006e',
     fontSize: 20,
     fontWeight: '700',
     marginBottom: 12,
@@ -1325,7 +1377,7 @@ const styles = StyleSheet.create({
   },
 
   paymentFailedMessage: {
-    color: '#AAA',
+    color: '#b0b0b0',
     fontSize: 14,
     marginBottom: 20,
     textAlign: 'center',
@@ -1333,11 +1385,15 @@ const styles = StyleSheet.create({
   },
 
   paymentFailedBtn: {
-    backgroundColor: '#5568FE',
+    background: 'linear-gradient(135deg, #ff006e, #00d4ff)',
     paddingHorizontal: 30,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 20,
     minWidth: 100,
+    shadowColor: '#ff006e',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 10,
   },
 
   paymentFailedBtnText: {

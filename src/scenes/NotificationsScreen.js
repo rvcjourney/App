@@ -145,12 +145,12 @@ export default function NotificationsScreen({ navigation }) {
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
           <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-            <ChevronRight width={24} height={24} color="#5568FE" style={{ transform: [{ rotate: '180deg' }] }} />
+            <ChevronRight width={24} height={24} color="#ff006e" style={{ transform: [{ rotate: '180deg' }] }} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Notifications</Text>
         </View>
         <View style={styles.center}>
-          <ActivityIndicator size="large" color="#5568FE" />
+          <ActivityIndicator size="large" color="#ff006e" />
         </View>
       </SafeAreaView>
     );
@@ -160,14 +160,14 @@ export default function NotificationsScreen({ navigation }) {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <ChevronRight width={24} height={24} color="#5568FE" style={{ transform: [{ rotate: '180deg' }] }} />
+          <ChevronRight width={24} height={24} color="#ff006e" style={{ transform: [{ rotate: '180deg' }] }} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Notifications</Text>
       </View>
 
       {loading && items.length === 0 ? (
         <View style={styles.center}>
-          <ActivityIndicator size="large" color="#5568FE" />
+          <ActivityIndicator size="large" color="#ff006e" />
           <Text style={styles.loadingText}>Loading notifications...</Text>
         </View>
       ) : items.length === 0 ? (
@@ -183,14 +183,14 @@ export default function NotificationsScreen({ navigation }) {
           keyExtractor={keyExtractor}
           contentContainerStyle={styles.listContent}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#5568FE']} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#ff006e']} />
           }
           onEndReached={onLoadMore}
           onEndReachedThreshold={0.3}
           ListFooterComponent={
             loadingMore ? (
               <View style={styles.footerLoader}>
-                <ActivityIndicator size="small" color="#5568FE" />
+                <ActivityIndicator size="small" color="#ff006e" />
               </View>
             ) : null
           }
@@ -203,7 +203,7 @@ export default function NotificationsScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0B0D2A',
+    backgroundColor: '#0f1b3f',
   },
   header: {
     flexDirection: 'row',
@@ -211,13 +211,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1F4A',
+    borderBottomColor: 'rgba(255, 0, 110, 0.2)',
   },
   backBtn: {
     width: 40,
     height: 40,
     borderRadius: 10,
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 0, 110, 0.3)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -235,20 +237,30 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1F4A',
-    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: 16,
     padding: 14,
     marginBottom: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 0, 110, 0.3)',
+    shadowColor: 'rgba(255, 0, 110, 0.2)',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 10,
   },
   cardUnread: {
     borderLeftWidth: 4,
-    borderLeftColor: '#5568FE',
+    borderLeftColor: '#ff006e',
+    shadowColor: 'rgba(255, 0, 110, 0.6)',
+    shadowRadius: 15,
   },
   iconWrap: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#2A2D5A',
+    backgroundColor: 'rgba(255, 0, 110, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 0, 110, 0.3)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -260,7 +272,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   typeLabel: {
-    color: '#5568FE',
+    color: '#ff006e',
     fontSize: 11,
     fontWeight: '600',
     marginBottom: 2,
@@ -272,12 +284,12 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   message: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 12,
     marginBottom: 4,
   },
   time: {
-    color: '#666',
+    color: '#808080',
     fontSize: 11,
   },
   center: {
@@ -286,7 +298,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    color: '#999',
+    color: '#b0b0b0',
     marginTop: 10,
   },
   empty: {
@@ -306,7 +318,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   emptySub: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 14,
     textAlign: 'center',
   },

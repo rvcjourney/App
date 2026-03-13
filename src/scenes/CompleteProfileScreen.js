@@ -38,14 +38,14 @@ export default function CompleteProfileScreen({ role, onComplete }) {
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
-    backgroundColor: '#0B0D2A',
+    backgroundColor: '#0f1b3f',
   },
   banner: {
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#2E2E5E',
+    borderBottomColor: 'rgba(255, 0, 110, 0.3)',
   },
   bannerText: {
     color: '#fff',

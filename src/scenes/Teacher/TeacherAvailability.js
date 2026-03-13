@@ -138,7 +138,7 @@ export default function TeacherAvailability({ navigation }) {
     return (
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <View style={styles.centerContent}>
-          <ActivityIndicator size="large" color="#5568FE" />
+          <ActivityIndicator size="large" color="#ff006e" />
           <Text style={styles.loadingText}>Loading availability...</Text>
         </View>
       </SafeAreaView>
@@ -152,7 +152,7 @@ export default function TeacherAvailability({ navigation }) {
         <View style={styles.header}>
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
             {/* <Text style={styles.backButton}>← Back</Text> */}
-            <ChevronRight width={24} height={24} color="#5568FE" style={{ transform: [{ rotate: '180deg' }] }} />
+            <ChevronRight width={24} height={24} color="#ff006e" style={{ transform: [{ rotate: '180deg' }] }} />
           </TouchableOpacity>
           <Text style={styles.title}>Set Your Availability</Text>
         </View>
@@ -179,8 +179,8 @@ export default function TeacherAvailability({ navigation }) {
                 <Switch
                   value={dayAvail.isActive}
                   onValueChange={() => toggleDay(dayIndex)}
-                  trackColor={{ false: '#3a3a3a', true: '#5568FE' }}
-                  thumbColor={dayAvail.isActive ? '#fff' : '#999'}
+                  trackColor={{ false: '#3a3a3a', true: '#ff006e' }}
+                  thumbColor={dayAvail.isActive ? '#fff' : '#b0b0b0'}
                 />
               </View>
 
@@ -321,7 +321,7 @@ export default function TeacherAvailability({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0B0D2A',
+    backgroundColor: '#0f1b3f',
   },
   centerContent: {
     flex: 1,
@@ -329,7 +329,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    color: '#ccc',
+    color: '#e0e0e0',
     marginTop: 10,
     fontSize: 16,
   },
@@ -340,14 +340,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   backButton: {
-    color: '#5568FE',
+    color: '#ff006e',
     fontSize: 16,
     fontWeight: '600',
     marginRight: 15,
     width: 40,
     height: 40,
     borderRadius: 10,
-    backgroundColor: '#1C1F4A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -362,10 +362,10 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginBottom: 20,
     padding: 15,
-    backgroundColor: '#1a1d3a',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderRadius: 12,
     borderLeftWidth: 4,
-    borderLeftColor: '#5568FE',
+    borderLeftColor: '#ff006e',
   },
   infoTitle: {
     color: '#fff',
@@ -374,7 +374,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   infoText: {
-    color: '#aaa',
+    color: '#b0b0b0',
     fontSize: 12,
     marginBottom: 6,
     lineHeight: 18,
@@ -383,7 +383,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginBottom: 15,
     padding: 15,
-    backgroundColor: '#1a1d3a',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderRadius: 10,
   },
   dayHeader: {
@@ -406,26 +406,26 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   timeLabel: {
-    color: '#aaa',
+    color: '#b0b0b0',
     fontSize: 12,
     marginBottom: 8,
     fontWeight: '500',
   },
   timeButton: {
     padding: 10,
-    backgroundColor: '#0B0D2A',
+    backgroundColor: '#0f1b3f',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#5568FE',
+    borderColor: '#ff006e',
   },
   timeButtonText: {
-    color: '#5568FE',
+    color: '#ff006e',
     fontSize: 14,
     fontWeight: '600',
     textAlign: 'center',
   },
   unavailableText: {
-    color: '#999',
+    color: '#b0b0b0',
     fontSize: 12,
     fontStyle: 'italic',
   },
@@ -440,7 +440,7 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   timePickerContent: {
-    backgroundColor: '#1a1d3a',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 20,
@@ -460,13 +460,13 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#2a2d4a',
+    borderBottomColor: 'rgba(255, 0, 110, 0.2)',
   },
   timePickerOptionSelected: {
-    backgroundColor: '#5568FE',
+    backgroundColor: 'rgba(255, 0, 110, 0.3)',
   },
   timePickerOptionText: {
-    color: '#aaa',
+    color: '#b0b0b0',
     fontSize: 14,
   },
   timePickerOptionTextSelected: {
@@ -477,7 +477,7 @@ const styles = StyleSheet.create({
     marginTop: 15,
     paddingVertical: 12,
     paddingHorizontal: 15,
-    backgroundColor: '#5568FE',
+    backgroundColor: 'transparent',   // Use LinearGradient wrapper for gradient
     borderRadius: 8,
   },
   timePickerCloseText: {
@@ -491,7 +491,8 @@ const styles = StyleSheet.create({
     marginVertical: 20,
     paddingVertical: 14,
     paddingHorizontal: 20,
-    backgroundColor: '#5568FE',
+    background: 'linear-gradient(135deg, #ff006e, #00d4ff)',
+    backgroundColor: 'transparent',   // Use LinearGradient wrapper for gradient
     borderRadius: 10,
   },
   saveButtonDisabled: {

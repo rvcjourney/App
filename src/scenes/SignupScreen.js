@@ -127,7 +127,7 @@ export default function SignupScreen({ navigation, route }) {
 
       <TextInput
         placeholder="Full Name"
-        placeholderTextColor="#999"
+        placeholderTextColor="#b0b0b0"
         style={styles.input}
         value={fullName}
         onChangeText={setFullName}
@@ -136,7 +136,7 @@ export default function SignupScreen({ navigation, route }) {
 
       <TextInput
         placeholder="Email"
-        placeholderTextColor="#999"
+        placeholderTextColor="#b0b0b0"
         style={styles.input}
         value={email}
         onChangeText={setEmail}
@@ -146,7 +146,7 @@ export default function SignupScreen({ navigation, route }) {
 
       <TextInput
         placeholder="Password"
-        placeholderTextColor="#999"
+        placeholderTextColor="#b0b0b0"
         secureTextEntry
         style={styles.input}
         value={password}
@@ -205,7 +205,7 @@ export default function SignupScreen({ navigation, route }) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#0B0D2A',
+        backgroundColor: '#0f1b3f',
         justifyContent: 'center',
         padding: 20,
     },
@@ -218,19 +218,26 @@ const styles = StyleSheet.create({
     },
 
     input: {
-        backgroundColor: '#1C1F4A',
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        borderColor: 'rgba(255, 0, 110, 0.3)',
+        borderWidth: 1,
         color: '#fff',
         padding: 15,
-        borderRadius: 10,
+        borderRadius: 12,
         marginBottom: 15,
     },
 
     signupBtn: {
-        backgroundColor: '#1E2BFF',
+        background: 'linear-gradient(135deg, #ff006e, #00d4ff)',
         padding: 15,
         borderRadius: 30,
         alignItems: 'center',
         marginTop: 10,
+        shadowColor: 'rgba(255, 0, 110, 0.6)',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.6,
+        shadowRadius: 15,
+        elevation: 6,
     },
 
     signupText: {
@@ -240,7 +247,7 @@ const styles = StyleSheet.create({
     },
 
     loginText: {
-        color: '#6CA0FF',
+        color: '#ff006e',
         textAlign: 'center',
         marginTop: 20,
         fontSize: 16,
@@ -255,12 +262,14 @@ const styles = StyleSheet.create({
     },
 
     networkErrorCard: {
-      backgroundColor: '#1C1F4A',
+      backgroundColor: 'rgba(255, 255, 255, 0.08)',
+      borderColor: 'rgba(255, 0, 110, 0.3)',
+      borderWidth: 1,
       borderRadius: 15,
       padding: 25,
       alignItems: 'center',
       borderLeftWidth: 4,
-      borderLeftColor: '#FF6B6B',
+      borderLeftColor: '#ff006e',
     },
 
     networkErrorIcon: {
@@ -269,7 +278,7 @@ const styles = StyleSheet.create({
     },
 
     networkErrorTitle: {
-      color: '#FF6B6B',
+      color: '#ff006e',
       fontSize: 18,
       fontWeight: '700',
       marginBottom: 10,
@@ -277,7 +286,7 @@ const styles = StyleSheet.create({
     },
 
     networkErrorMessage: {
-      color: '#AAA',
+      color: '#b0b0b0',
       fontSize: 14,
       marginBottom: 20,
       textAlign: 'center',
@@ -285,7 +294,7 @@ const styles = StyleSheet.create({
     },
 
     networkErrorBtn: {
-      backgroundColor: '#5568FE',
+      backgroundColor: '#ff006e',
       paddingHorizontal: 30,
       paddingVertical: 12,
       borderRadius: 8,
