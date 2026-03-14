@@ -577,7 +577,7 @@ export default function StudentDashboard({ navigation }) {
               {/* <ThemedText style={styles.backButton}>← Back</ThemedText> */}
               
               <View style={styles.backButton}>
-                <ChevronRight width={24} height={24} color={UNIFIED_THEME.colors.accent.primary} style={{ transform: [{ rotate: '180deg' }] }} />
+                <Icon name="chevronRight" size={24} color="primary" style={{ transform: [{ rotate: '180deg' }] }} />
               </View>
             </TouchableOpacity>
             <ThemedText style={styles.modalTitle}>Select Available Slot</ThemedText>
@@ -929,7 +929,7 @@ export default function StudentDashboard({ navigation }) {
             style={[styles.navItem, activeTab === 'lectures' && styles.navItemActive]}
             onPress={() => setActiveTab('lectures')}
           >
-            <BookOpen width={24} height={24} fill={activeTab === 'lectures' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <Icon name="book" size={24} color={activeTab === 'lectures' ? 'primary' : 'muted'} />
             <ThemedText style={styles.navLabel}>Lectures</ThemedText>
           </TouchableOpacity>
           */}
@@ -1151,7 +1151,7 @@ export default function StudentDashboard({ navigation }) {
             style={styles.navItem}
             onPress={() => setActiveTab('lectures')}
           >
-            <BookOpen width={22} height={22} fill={activeTab === 'lectures' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <Icon name="book" size={22} color={activeTab === 'lectures' ? 'primary' : 'muted'} />
             <ThemedText style={styles.navLabel}>Lectures</ThemedText>
           </TouchableOpacity>
           */}
@@ -1196,7 +1196,7 @@ export default function StudentDashboard({ navigation }) {
             <>
               <View style={styles.sectionHeader}>
                 <ThemedText style={styles.sectionTitle}>My Favorite Teachers</ThemedText>
-                <Heart width={18} height={18} fill={UNIFIED_THEME.colors.accent.error} />
+                <Icon name="heart" size={18} color="error" />
               </View>
               {favoriteTeachers.map(teacher => (
                 <View key={teacher.id} style={styles.favTeacherCard}>
@@ -1299,7 +1299,7 @@ export default function StudentDashboard({ navigation }) {
 
             <TouchableOpacity style={styles.settingItem} onPress={() => Alert.alert('Help & Support')}>
               <View style={styles.settingIconContainer}>
-                <Phone width={18} height={18} fill={UNIFIED_THEME.colors.accent.primary} />
+                <Icon name="phone" size={18} color="primary" />
               </View>
               <ThemedText style={styles.settingText}>Help & Support</ThemedText>
             </TouchableOpacity>
@@ -1345,7 +1345,7 @@ export default function StudentDashboard({ navigation }) {
             style={styles.navItem}
             onPress={() => setActiveTab('lectures')}
           >
-            <BookOpen width={22} height={22} fill={activeTab === 'lectures' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <Icon name="book" size={22} color={activeTab === 'lectures' ? 'primary' : 'muted'} />
             <ThemedText style={styles.navLabel}>Lectures</ThemedText>
           </TouchableOpacity>
           */}
