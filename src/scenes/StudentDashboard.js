@@ -830,10 +830,7 @@ export default function StudentDashboard({ navigation }) {
               value={searchQuery}
               onChangeText={setSearchQuery}
             />
-            {/* <ThemedText style={styles.searchIcon}>🔍</ThemedText> */}
-            <View style={styles.searchIcon}>
-              <SearchIcon width={25} height={25} fill={UNIFIED_THEME.colors.text.secondary} />
-            </View>
+            <Icon name="search" size={25} color="secondary" style={styles.searchIcon} />
 
           </View>
 

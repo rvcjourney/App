@@ -18,21 +18,6 @@ import { getTeacherProfile, getTeacherBookings, getTeacherTodayCallHistory, getT
 import UNIFIED_THEME from '../constants/unifiedTheme';
 import ThemedText from '../components/ThemedText';
 import Icon from '../components/Icon';
-import Home from '../assets/icons/Home';
-import DollarSign from '../assets/icons/DollarSign';
-import Phone from '../assets/icons/Phone';
-import Settings from '../assets/icons/Settings';
-import BookOpen from '../assets/icons/BookOpen';
-import Play from '../assets/icons/Play';
-import Calendar from '../assets/icons/Calendar';
-import Video from '../assets/icons/Video';
-import Clock from '../assets/icons/Clock';
-import Star from '../assets/icons/Star';
-import Users from '../assets/icons/Users';
-import ChevronRight from '../assets/icons/ChevronRight';
-import User from '../assets/icons/User';
-import CheckCircle from '../assets/icons/CheckCircle';
-import MoneyBag from '../assets/icons/MoneyBag';
 
 
 export default function TeacherDashboard({ navigation }) {
@@ -392,7 +377,7 @@ export default function TeacherDashboard({ navigation }) {
             <View style={styles.profileSection}>
               <TouchableOpacity onPress={handleStatusPress} style={styles.profileImageWrapper} activeOpacity={0.8}>
                 <View style={styles.profileImageContainer}>
-                  <User width={48} height={48} fill="#ff006e" />
+                  <Icon name="user" size={48} color="#ff006e" />
                 </View>
                 <View style={[styles.statusDot, { backgroundColor: statusColor[teacherStatus] }]} />
               </TouchableOpacity>
@@ -429,12 +414,12 @@ export default function TeacherDashboard({ navigation }) {
             style={[styles.actionCard, styles.scheduleCard]}
             onPress={() => navigation.navigate(SCREEN_NAMES.ScheduleLecture)}
           >
-            <BookOpen width={32} height={32} fill="#2ECC71" style={{ marginRight: 12 }} />
+            <Icon name="academicTeacher" size={32} color="#2ECC71" style={{ marginRight: 12 }} />
             <View style={styles.actionContent}>
               <Text style={styles.actionTitle}>Schedule Lecture</Text>
               <Text style={styles.actionSubtitle}>Plan a group class</Text>
             </View>
-            <ChevronRight width={24} height={24} fill="#666" />
+            <Icon name="forward" size={24} color="muted" />
           </TouchableOpacity>
           */}
 
@@ -443,12 +428,12 @@ export default function TeacherDashboard({ navigation }) {
             style={[styles.actionCard, styles.availableCard]}
             onPress={() => navigation.navigate(SCREEN_NAMES.Join)}
           >
-            <Video width={32} height={32} fill="#FF6B6B" style={{ marginRight: 12 }} />
+            <Icon name="video" size={32} color="#FF6B6B" style={{ marginRight: 12 }} />
             <View style={styles.actionContent}>
               <Text style={styles.actionTitle}>Go Live</Text>
               <Text style={styles.actionSubtitle}>Start teaching now</Text>
             </View>
-            <ChevronRight width={24} height={24} fill="#666" />
+            <Icon name="forward" size={24} color="muted" />
           </TouchableOpacity>
           */}
 
@@ -456,12 +441,12 @@ export default function TeacherDashboard({ navigation }) {
             style={[styles.actionCard, styles.upcomingCard]}
             onPress={() => setActiveTab('calls')}
           >
-            <Calendar width={32} height={32} fill="#4ECDC4" style={{ marginRight: 12 }} />
+            <Icon name="calendar" size={32} color="#4ECDC4" style={{ marginRight: 12 }} />
             <View style={styles.actionContent}>
               <ThemedText variant="heading" size="xs" color="primary" weight="700">Upcoming Calls</ThemedText>
               <ThemedText variant="body" size="sm" color="secondary" style={{ marginTop: 2 }}>{upcomingBookings.length} sessions scheduled</ThemedText>
             </View>
-            <ChevronRight width={24} height={24} fill={UNIFIED_THEME.colors.text.muted} />
+            <Icon name="forward" size={24} color="muted" />
           </TouchableOpacity>
 
           {/* Today's Earnings */}
@@ -499,7 +484,7 @@ export default function TeacherDashboard({ navigation }) {
             style={[styles.navItem, activeTab === 'home']}
             onPress={() => setActiveTab('home')}
           >
-            <Home width={24} height={24} fill={activeTab === 'home' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <Icon name="home" size={24} color={activeTab === 'home' ? 'primary' : 'muted'} />
             <ThemedText variant="body" size="xs" color={activeTab === 'home' ? 'secondary' : 'muted'} style={{ marginTop: 4 }}>Home</ThemedText>
           </TouchableOpacity>
 
@@ -507,7 +492,7 @@ export default function TeacherDashboard({ navigation }) {
             style={[styles.navItem, activeTab === 'earnings']}
             onPress={() => setActiveTab('earnings')}
           >
-            <DollarSign width={24} height={24} fill={activeTab === 'earnings' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <Icon name="dollarSign" size={24} color={activeTab === 'earnings' ? 'primary' : 'muted'} />
             <ThemedText variant="body" size="xs" color={activeTab === 'earnings' ? 'secondary' : 'muted'} style={{ marginTop: 4 }}>Earnings</ThemedText>
           </TouchableOpacity>
 
@@ -516,7 +501,7 @@ export default function TeacherDashboard({ navigation }) {
             onPress={() => setActiveTab('calls')}
           >
             <View style={{ position: 'relative' }}>
-              <Phone width={24} height={24} fill={activeTab === 'calls' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+              <Icon name="phone" size={24} color={activeTab === 'calls' ? 'primary' : 'muted'} />
               {upcomingBookings.filter(b => b.status === 'confirmed' && !b.meeting_id).length > 0 && (
                 <View style={{
                   position: 'absolute',
@@ -542,7 +527,7 @@ export default function TeacherDashboard({ navigation }) {
             style={[styles.navItem, activeTab === 'settings']}
             onPress={() => setActiveTab('settings')}
           >
-            <Settings width={24} height={24} fill={activeTab === 'settings' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <Icon name="settings" size={24} color={activeTab === 'settings' ? 'primary' : 'muted'} />
             <ThemedText variant="body" size="xs" color={activeTab === 'settings' ? 'secondary' : 'muted'} style={{ marginTop: 4 }}>Settings</ThemedText>
           </TouchableOpacity>
         </View>
@@ -573,7 +558,7 @@ export default function TeacherDashboard({ navigation }) {
           <View style={styles.header}>
             <View style={styles.welcomeContainer}>
               <ThemedText variant="heading" size="sm" color="primary" weight="700">Earnings Analytics</ThemedText>
-              <DollarSign width={20} height={20} fill={UNIFIED_THEME.colors.accent.primary} style={{ marginLeft: 8 }} />
+              <Icon name="dollarSign" size={20} color="primary" style={{ marginLeft: 8 }} />
             </View>
           </View>
 
@@ -652,7 +637,7 @@ export default function TeacherDashboard({ navigation }) {
             style={styles.navItem}
             onPress={() => setActiveTab('home')}
           >
-            <Home width={22} height={22} fill={activeTab === 'home' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <Icon name="home" size={22} color={activeTab === 'home' ? 'primary' : 'muted'} />
             <ThemedText variant="body" size="xs" color={activeTab === 'home' ? 'secondary' : 'muted'} style={{ marginTop: 4 }}>Home</ThemedText>
           </TouchableOpacity>
 
@@ -660,7 +645,7 @@ export default function TeacherDashboard({ navigation }) {
             style={[styles.navItem]}
             onPress={() => setActiveTab('earnings')}
           >
-            <DollarSign width={22} height={22} fill={activeTab === 'earnings' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <Icon name="dollarSign" size={22} color={activeTab === 'earnings' ? 'primary' : 'muted'} />
             <ThemedText variant="body" size="xs" color={activeTab === 'earnings' ? 'secondary' : 'muted'} style={{ marginTop: 4 }}>Earnings</ThemedText>
           </TouchableOpacity>
 
@@ -668,7 +653,7 @@ export default function TeacherDashboard({ navigation }) {
             style={styles.navItem}
             onPress={() => setActiveTab('calls')}
           >
-            <Phone width={22} height={22} fill={activeTab === 'calls' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <Icon name="phone" size={22} color={activeTab === 'calls' ? 'primary' : 'muted'} />
             <ThemedText variant="body" size="xs" color={activeTab === 'calls' ? 'secondary' : 'muted'} style={{ marginTop: 4 }}>Calls</ThemedText>
           </TouchableOpacity>
 
@@ -676,7 +661,7 @@ export default function TeacherDashboard({ navigation }) {
             style={styles.navItem}
             onPress={() => setActiveTab('settings')}
           >
-            <Settings width={22} height={22} fill={activeTab === 'settings' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <Icon name="settings" size={22} color={activeTab === 'settings' ? 'primary' : 'muted'} />
             <ThemedText variant="body" size="xs" color={activeTab === 'settings' ? 'secondary' : 'muted'} style={{ marginTop: 4 }}>Settings</ThemedText>
           </TouchableOpacity>
         </View>
@@ -710,7 +695,7 @@ export default function TeacherDashboard({ navigation }) {
           <View style={styles.header}>
             <View style={styles.welcomeContainer}>
               <ThemedText variant="heading" size="sm" color="primary" weight="700">My Calls</ThemedText>
-              <Phone width={20} height={20} fill={UNIFIED_THEME.colors.accent.primary} style={{ marginLeft: 8 }} />
+              <Icon name="phone" size={20} color="primary" style={{ marginLeft: 8 }} />
             </View>
           </View>
 
@@ -730,10 +715,10 @@ export default function TeacherDashboard({ navigation }) {
                       <ThemedText variant="body" size="sm" color="primary" weight="600">{booking.student?.full_name || 'Student'}</ThemedText>
                       <ThemedText variant="body" size="xs" color="muted" style={{ marginTop: 2 }}>{booking.subject}</ThemedText>
                       <View style={styles.callMeta}>
-                        <Clock width={12} height={12} fill={UNIFIED_THEME.colors.text.muted} style={{ marginRight: 4 }} />
+                        <Icon name="clock" size={12} color="muted" style={{ marginRight: 4 }} />
                         <ThemedText variant="body" size="xs" color="secondary">{booking.duration_minutes} min</ThemedText>
                         <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 12 }}>
-                          <DollarSign width={12} height={12} fill={UNIFIED_THEME.colors.status.approved} style={{ marginRight: 4 }} />
+                          <Icon name="dollarSign" size={12} color="approved" style={{ marginRight: 4 }} />
                           <ThemedText variant="body" size="xs" color="approved" weight="700">₹{pricePerCall}</ThemedText>
                         </View>
                       </View>
@@ -747,7 +732,7 @@ export default function TeacherDashboard({ navigation }) {
                       isTeacher: true,
                     })}
                   >
-                    <Phone width={18} height={18} fill={UNIFIED_THEME.colors.text.primary} style={{ marginRight: 6 }} />
+                    <Icon name="phone" size={18} color="primary" style={{ marginRight: 6 }} />
                     <ThemedText variant="body" size="sm" color="primary" weight="600">Join</ThemedText>
                   </TouchableOpacity>
                 </View>
@@ -763,7 +748,7 @@ export default function TeacherDashboard({ navigation }) {
           {readyToStart.length === 0 ? (
             <View style={styles.emptyStateContainer}>
               <View style={styles.emptyStateIcon}>
-                <Calendar width={48} height={48} fill={UNIFIED_THEME.colors.accent.primary} />
+                <Icon name="calendar" size={48} color="primary" />
               </View>
               <ThemedText variant="heading" size="sm" color="primary" weight="600">No upcoming calls</ThemedText>
               <ThemedText variant="body" size="sm" color="muted" style={{ marginTop: 8, textAlign: 'center', lineHeight: 18 }}>Booked sessions will appear here once students book your slots</ThemedText>
@@ -779,10 +764,10 @@ export default function TeacherDashboard({ navigation }) {
                     <ThemedText variant="body" size="sm" color="primary" weight="600">{booking.student?.full_name || 'Student'}</ThemedText>
                     <ThemedText variant="body" size="xs" color="muted" style={{ marginTop: 2 }}>{booking.subject}</ThemedText>
                     <View style={styles.callMeta}>
-                      <Clock width={12} height={12} fill={UNIFIED_THEME.colors.text.muted} style={{ marginRight: 4 }} />
+                      <Icon name="clock" size={12} color="muted" style={{ marginRight: 4 }} />
                       <ThemedText variant="body" size="xs" color="secondary">{booking.duration_minutes} min</ThemedText>
                       <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 12 }}>
-                        <DollarSign width={12} height={12} fill={UNIFIED_THEME.colors.status.approved} style={{ marginRight: 4 }} />
+                        <Icon name="dollarSign" size={12} color="approved" style={{ marginRight: 4 }} />
                         <ThemedText variant="body" size="xs" color="approved" weight="700">₹{pricePerCall}</ThemedText>
                       </View>
                     </View>
@@ -795,7 +780,7 @@ export default function TeacherDashboard({ navigation }) {
                     isTeacher: true,
                   })}
                 >
-                  <Phone width={18} height={18} fill={UNIFIED_THEME.colors.text.primary} style={{ marginRight: 6 }} />
+                  <Icon name="phone" size={18} color="primary" style={{ marginRight: 6 }} />
                   <ThemedText variant="body" size="sm" color="primary" weight="600">Start Call</ThemedText>
                 </TouchableOpacity>
               </View>
@@ -812,7 +797,7 @@ export default function TeacherDashboard({ navigation }) {
           {todayCallHistory.length === 0 ? (
             <View style={styles.emptyStateContainer}>
               <View style={styles.emptyStateIcon}>
-                <Video width={48} height={48} fill={UNIFIED_THEME.colors.accent.primary} />
+                <Icon name="video" size={48} color="primary" />
               </View>
               <ThemedText variant="heading" size="sm" color="primary" weight="600">No calls today yet</ThemedText>
               <ThemedText variant="body" size="sm" color="muted" style={{ marginTop: 8, textAlign: 'center', lineHeight: 18 }}>Completed sessions will appear here as you finish your calls</ThemedText>
@@ -831,7 +816,7 @@ export default function TeacherDashboard({ navigation }) {
                   <ThemedText variant="body" size="sm" color="primary" weight="600">{booking.student?.full_name || 'Student'}</ThemedText>
                   <ThemedText variant="body" size="xs" color="muted" style={{ marginTop: 2 }}>{booking.subject}</ThemedText>
                   <View style={styles.callMeta}>
-                    <Clock width={12} height={12} fill={UNIFIED_THEME.colors.text.muted} style={{ marginRight: 4 }} />
+                    <Icon name="clock" size={12} color="muted" style={{ marginRight: 4 }} />
                     <ThemedText variant="body" size="xs" color="secondary">{booking.duration_minutes || 60} min</ThemedText>
                   </View>
                   <ThemedText variant="body" size="xs" color="approved" weight="700" style={{ marginTop: 4 }}>✓ Completed</ThemedText>
@@ -846,7 +831,7 @@ export default function TeacherDashboard({ navigation }) {
             style={styles.navItem}
             onPress={() => setActiveTab('home')}
           >
-            <Home width={22} height={22} fill={activeTab === 'home' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <Icon name="home" size={22} color={activeTab === 'home' ? 'primary' : 'muted'} />
             <ThemedText variant="body" size="xs" color={activeTab === 'home' ? 'secondary' : 'muted'} style={{ marginTop: 4 }}>Home</ThemedText>
           </TouchableOpacity>
 
@@ -854,7 +839,7 @@ export default function TeacherDashboard({ navigation }) {
             style={styles.navItem}
             onPress={() => setActiveTab('earnings')}
           >
-            <DollarSign width={22} height={22} fill={activeTab === 'earnings' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <Icon name="dollarSign" size={22} color={activeTab === 'earnings' ? 'primary' : 'muted'} />
             <ThemedText variant="body" size="xs" color={activeTab === 'earnings' ? 'secondary' : 'muted'} style={{ marginTop: 4 }}>Earnings</ThemedText>
           </TouchableOpacity>
 
@@ -862,7 +847,7 @@ export default function TeacherDashboard({ navigation }) {
             style={[styles.navItem]}
             onPress={() => setActiveTab('calls')}
           >
-            <Phone width={22} height={22} fill={activeTab === 'calls' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <Icon name="phone" size={22} color={activeTab === 'calls' ? 'primary' : 'muted'} />
             <ThemedText variant="body" size="xs" color={activeTab === 'calls' ? 'secondary' : 'muted'} style={{ marginTop: 4 }}>Calls</ThemedText>
           </TouchableOpacity>
 
@@ -870,7 +855,7 @@ export default function TeacherDashboard({ navigation }) {
             style={styles.navItem}
             onPress={() => setActiveTab('settings')}
           >
-            <Settings width={22} height={22} fill={activeTab === 'settings' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <Icon name="settings" size={22} color={activeTab === 'settings' ? 'primary' : 'muted'} />
             <ThemedText variant="body" size="xs" color={activeTab === 'settings' ? 'secondary' : 'muted'} style={{ marginTop: 4 }}>Settings</ThemedText>
           </TouchableOpacity>
         </View>
@@ -886,7 +871,7 @@ export default function TeacherDashboard({ navigation }) {
           <View style={styles.header}>
             <View style={styles.settingsHeaderContainer}>
               <ThemedText variant="heading" size="sm" color="primary" weight="700">Settings</ThemedText>
-              {/* <Settings width={24} height={24} fill={UNIFIED_THEME.colors.accent.primary} /> */}
+              {/* <Icon name="settings" size={24} color="primary" /> */}
             </View>
           </View>
 
@@ -894,7 +879,7 @@ export default function TeacherDashboard({ navigation }) {
           <View style={styles.profileSettingsCard}>
             <TouchableOpacity onPress={handleStatusPress} style={styles.profileImageWrapperSettings} activeOpacity={0.8}>
               <View style={[styles.profileImageContainer, styles.profileImageContainerSettings]}>
-                <User width={64} height={64} fill={UNIFIED_THEME.colors.accent.primary} />
+                <Icon name="user" size={64} color="primary" />
               </View>
               <View style={[styles.statusDot, styles.statusDotSettings, { backgroundColor: statusColor[teacherStatus] }]} />
             </TouchableOpacity>
@@ -910,15 +895,15 @@ export default function TeacherDashboard({ navigation }) {
               onPress={() => navigation.navigate(SCREEN_NAMES.EditTeacherProfile)}
             >
               <View style={styles.settingIconContainer}>
-                <User width={20} height={20} fill={UNIFIED_THEME.colors.accent.primary} />
+                <Icon name="user" size={20} color="primary" />
               </View>
               <ThemedText variant="body" size="sm" color="primary" weight="500" style={{ flex: 1 }}>Edit Profile</ThemedText>
-              <ChevronRight width={16} height={16} fill={UNIFIED_THEME.colors.text.muted} />
+              <Icon name="forward" size={16} color="muted" />
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.settingItem} onPress={() => Alert.alert('Set Price', `Current: ₹${pricePerCall}/call`)}>
               <View style={styles.settingIconContainer}>
-                <DollarSign width={20} height={20} fill={UNIFIED_THEME.colors.accent.primary} />
+                <Icon name="dollarSign" size={20} color="primary" />
               </View>
               <ThemedText variant="body" size="sm" color="primary" weight="500" style={{ flex: 1 }}>Set Hourly Rate</ThemedText>
               <ThemedText variant="body" size="sm" color="primary">₹{pricePerCall}</ThemedText>
@@ -929,18 +914,18 @@ export default function TeacherDashboard({ navigation }) {
               onPress={() => navigation.navigate(SCREEN_NAMES.BankAccountSettings)}
             >
               <View style={styles.settingIconContainer}>
-                <User width={20} height={20} fill={UNIFIED_THEME.colors.accent.primary} />
+                <Icon name="user" size={20} color="primary" />
               </View>
               <ThemedText variant="body" size="sm" color="primary" weight="500" style={{ flex: 1 }}>Bank Account</ThemedText>
-              <ChevronRight width={16} height={16} fill={UNIFIED_THEME.colors.text.muted} />
+              <Icon name="forward" size={16} color="muted" />
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.settingItem} onPress={() => navigation.navigate(SCREEN_NAMES.Notifications)}>
               <View style={styles.settingIconContainer}>
-                <Clock width={20} height={20} fill={UNIFIED_THEME.colors.accent.primary} />
+                <Icon name="clock" size={20} color="primary" />
               </View>
               <ThemedText variant="body" size="sm" color="primary" weight="500" style={{ flex: 1 }}>Notifications</ThemedText>
-              <ChevronRight width={16} height={16} fill={UNIFIED_THEME.colors.text.muted} />
+              <Icon name="forward" size={16} color="muted" />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -972,7 +957,7 @@ export default function TeacherDashboard({ navigation }) {
                 <ThemedText style={{ fontSize: 18 }}>🔒</ThemedText>
               </View>
               <ThemedText variant="body" size="sm" color="primary" weight="500" style={{ flex: 1 }}>Reset Password</ThemedText>
-              <ChevronRight width={16} height={16} fill={UNIFIED_THEME.colors.text.muted} />
+              <Icon name="forward" size={16} color="muted" />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -980,18 +965,18 @@ export default function TeacherDashboard({ navigation }) {
               onPress={() => navigation.navigate(SCREEN_NAMES.TeacherAvailability)}
             >
               <View style={styles.settingIconContainer}>
-                <Calendar width={20} height={20} fill={UNIFIED_THEME.colors.accent.primary} />
+                <Icon name="calendar" size={20} color="primary" />
               </View>
               <ThemedText variant="body" size="sm" color="primary" weight="500" style={{ flex: 1 }}>Set Availability</ThemedText>
-              <ChevronRight width={16} height={16} fill={UNIFIED_THEME.colors.text.muted} />
+              <Icon name="forward" size={16} color="muted" />
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.settingItem} onPress={() => Alert.alert('Privacy')}>
               <View style={styles.settingIconContainer}>
-                <User width={20} height={20} fill={UNIFIED_THEME.colors.accent.primary} />
+                <Icon name="user" size={20} color="primary" />
               </View>
               <ThemedText variant="body" size="sm" color="primary" weight="500" style={{ flex: 1 }}>Privacy & Security</ThemedText>
-              <ChevronRight width={16} height={16} fill={UNIFIED_THEME.colors.text.muted} />
+              <Icon name="forward" size={16} color="muted" />
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.settingItem} onPress={() => Alert.alert('Help')}>
@@ -1005,10 +990,10 @@ export default function TeacherDashboard({ navigation }) {
               onPress={() => navigation.navigate(SCREEN_NAMES.TeacherEarnings)}
             >
               <View style={styles.settingIconContainer}>
-                <MoneyBag width={20} height={20} fill={UNIFIED_THEME.colors.accent.primary} />
+                <Icon name="money" size={20} color="primary" />
               </View>
               <ThemedText variant="body" size="sm" color="primary" weight="500" style={{ flex: 1 }}>My Earnings & Withdrawals</ThemedText>
-              <ChevronRight width={16} height={16} fill={UNIFIED_THEME.colors.text.muted} />
+              <Icon name="forward" size={16} color="muted" />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -1038,7 +1023,7 @@ export default function TeacherDashboard({ navigation }) {
             style={styles.navItem}
             onPress={() => setActiveTab('home')}
           >
-            <Home width={22} height={22} fill={activeTab === 'home' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <Icon name="home" size={22} color={activeTab === 'home' ? 'primary' : 'muted'} />
             <ThemedText variant="body" size="xs" color={activeTab === 'home' ? 'secondary' : 'muted'} style={{ marginTop: 4 }}>Home</ThemedText>
           </TouchableOpacity>
 
@@ -1046,7 +1031,7 @@ export default function TeacherDashboard({ navigation }) {
             style={styles.navItem}
             onPress={() => setActiveTab('earnings')}
           >
-            <DollarSign width={22} height={22} fill={activeTab === 'earnings' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <Icon name="dollarSign" size={22} color={activeTab === 'earnings' ? 'primary' : 'muted'} />
             <ThemedText variant="body" size="xs" color={activeTab === 'earnings' ? 'secondary' : 'muted'} style={{ marginTop: 4 }}>Earnings</ThemedText>
           </TouchableOpacity>
 
@@ -1054,7 +1039,7 @@ export default function TeacherDashboard({ navigation }) {
             style={styles.navItem}
             onPress={() => setActiveTab('calls')}
           >
-            <Phone width={22} height={22} fill={activeTab === 'calls' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <Icon name="phone" size={22} color={activeTab === 'calls' ? 'primary' : 'muted'} />
             <ThemedText variant="body" size="xs" color={activeTab === 'calls' ? 'secondary' : 'muted'} style={{ marginTop: 4 }}>Calls</ThemedText>
           </TouchableOpacity>
 
@@ -1062,7 +1047,7 @@ export default function TeacherDashboard({ navigation }) {
             style={[styles.navItem]}
             onPress={() => setActiveTab('settings')}
           >
-            <Settings width={22} height={22} fill={activeTab === 'settings' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <Icon name="settings" size={22} color={activeTab === 'settings' ? 'primary' : 'muted'} />
             <ThemedText variant="body" size="xs" color={activeTab === 'settings' ? 'secondary' : 'muted'} style={{ marginTop: 4 }}>Settings</ThemedText>
           </TouchableOpacity>
         </View>
