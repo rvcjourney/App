@@ -518,7 +518,7 @@ export default function StudentDashboard({ navigation }) {
           <View style={styles.cardBottomRow}>
             {/* Rating */}
             <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 8 }}>
-              <Star width={16} height={16} fill={UNIFIED_THEME.colors.accent.primary} />
+              <Icon name="star" size={16} color="primary" />
               <ThemedText style={styles.rating}>{(item.rating || 5.0).toFixed(1)}</ThemedText>
             </View>
 
@@ -534,9 +534,9 @@ export default function StudentDashboard({ navigation }) {
               onPress={() => toggleFavorite(item)}
             >
               {isFavorite ? (
-                <HeartFilled width={20} height={20} fill={UNIFIED_THEME.colors.accent.error} />
+                <Icon name="heart" size={20} color="error" />
               ) : (
-                <HeartOutline width={20} height={20} stroke="UNIFIED_THEME.colors.accent.error" />
+                <Icon name="heart-outline" size={20} color="error" />
               )}
             </TouchableOpacity>
           </View>
@@ -912,7 +912,7 @@ export default function StudentDashboard({ navigation }) {
             style={[styles.navItem, activeTab === 'home' && styles.navItemActive]}
             onPress={() => setActiveTab('home')}
           >
-            <Home width={24} height={24} fill={activeTab === 'home' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <Icon name="home" size={24} color={activeTab === 'home' ? 'primary' : 'muted'} />
             <ThemedText style={styles.navLabel}>Home</ThemedText>
           </TouchableOpacity>
 
@@ -920,7 +920,7 @@ export default function StudentDashboard({ navigation }) {
             style={[styles.navItem, activeTab === 'bookings' && styles.navItemActive]}
             onPress={() => setActiveTab('bookings')}
           >
-            <Calendar width={24} height={24} fill={activeTab === 'bookings' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <Icon name="calendar" size={24} color={activeTab === 'bookings' ? 'primary' : 'muted'} />
             <ThemedText style={styles.navLabel}>Bookings</ThemedText>
           </TouchableOpacity>
 
@@ -964,7 +964,7 @@ export default function StudentDashboard({ navigation }) {
           <View style={styles.bookingsHeader}>
             <View style={styles.headerContent}>
               <View style={styles.headerIconContainer}>
-                <Calendar width={20} height={20} fill={UNIFIED_THEME.colors.text.primary} />
+                <Icon name="calendar" size={20} color="primary" />
               </View>
               <View>
                 <ThemedText style={styles.headerTitle}>My Bookings</ThemedText>
@@ -976,7 +976,7 @@ export default function StudentDashboard({ navigation }) {
           {myBookings.length === 0 ? (
             <View style={styles.emptyState}>
               <View style={styles.emptyIconContainer}>
-                <Calendar width={56} height={56} fill={UNIFIED_THEME.colors.accent.primary} />
+                <Icon name="calendar" size={56} color="primary" />
               </View>
               <ThemedText style={styles.emptyText}>No bookings yet</ThemedText>
               <ThemedText style={styles.emptySubtext}>Browse teachers and book your first session</ThemedText>
@@ -994,7 +994,7 @@ export default function StudentDashboard({ navigation }) {
                 <>
                   <View style={styles.bookingSectionHeader}>
                     <View style={styles.sectionBadge}>
-                      <Clock width={16} height={16} fill={UNIFIED_THEME.colors.accent.error} />
+                      <Icon name="clock" size={16} color="error" />
                       <ThemedText style={styles.sectionBadgeText}>Payment Pending</ThemedText>
                     </View>
                     <ThemedText style={styles.sectionCount}>{pendingBookings.length}</ThemedText>
@@ -1024,9 +1024,9 @@ export default function StudentDashboard({ navigation }) {
                           <ThemedText style={styles.bookingTeacher}>{booking.teacher_profile?.full_name || 'Teacher'}</ThemedText>
                           <ThemedText style={styles.bookingSubject}>{booking.subject}</ThemedText>
                           <View style={styles.bookingMeta}>
-                            <Calendar width={12} height={12} fill={UNIFIED_THEME.colors.text.muted} style={{ marginRight: 4 }} />
+                            <Icon name="calendar" size={12} color="muted" style={{ marginRight: 4 }} />
                             <ThemedText style={styles.bookingDate}>{new Date(booking.booked_date).toLocaleDateString()}</ThemedText>
-                            <Clock width={12} height={12} fill={UNIFIED_THEME.colors.text.muted} style={{ marginLeft: 12, marginRight: 4 }} />
+                            <Icon name="clock" size={12} color="muted" style={{ marginLeft: 12, marginRight: 4 }} />
                             <ThemedText style={styles.bookingDate}>{new Date(booking.booked_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</ThemedText>
                           </View>
                           <View style={[styles.statusBadge, { backgroundColor: 'rgba(239, 68, 68, 0.1)', borderColor: UNIFIED_THEME.colors.accent.error }]}>
@@ -1044,7 +1044,7 @@ export default function StudentDashboard({ navigation }) {
                 <>
                   <View style={styles.bookingSectionHeader}>
                     <View style={styles.sectionBadge}>
-                      <CheckCircle width={16} height={16} fill={UNIFIED_THEME.colors.accent.success} />
+                      <Icon name="check-circle" size={16} color="success" />
                       <ThemedText style={styles.sectionBadgeText}>Confirmed</ThemedText>
                     </View>
                     <ThemedText style={styles.sectionCount}>{confirmedBookings.length}</ThemedText>
@@ -1062,9 +1062,9 @@ export default function StudentDashboard({ navigation }) {
                             <ThemedText style={styles.bookingTeacher}>{booking.teacher_profile?.full_name || 'Teacher'}</ThemedText>
                             <ThemedText style={styles.bookingSubject}>{booking.subject}</ThemedText>
                             <View style={styles.bookingMeta}>
-                              <Calendar width={12} height={12} fill={UNIFIED_THEME.colors.text.muted} style={{ marginRight: 4 }} />
+                              <Icon name="calendar" size={12} color="muted" style={{ marginRight: 4 }} />
                               <ThemedText style={styles.bookingDate}>{new Date(booking.booked_date).toLocaleDateString()}</ThemedText>
-                              <Clock width={12} height={12} fill={UNIFIED_THEME.colors.text.muted} style={{ marginLeft: 12, marginRight: 4 }} />
+                              <Icon name="clock" size={12} color="muted" style={{ marginLeft: 12, marginRight: 4 }} />
                               <ThemedText style={styles.bookingDate}>{new Date(booking.booked_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</ThemedText>
                             </View>
                             {booking.meeting_id && (
@@ -1072,7 +1072,7 @@ export default function StudentDashboard({ navigation }) {
                                 style={styles.meetingIdContainer}
                                 onPress={(e) => { e?.stopPropagation?.(); copyMeetingIdToClipboard(booking.meeting_id); }}
                               >
-                                <Video width={12} height={12} fill={UNIFIED_THEME.colors.text.primary} style={{ marginRight: 6 }} />
+                                <Icon name="video" size={12} color="primary" style={{ marginRight: 6 }} />
                                 <ThemedText style={styles.meetingIdLabel}>Meeting ID: {booking.meeting_id}</ThemedText>
                                 <ThemedText style={styles.meetingIdCopy}>Copy</ThemedText>
                               </TouchableOpacity>
@@ -1081,7 +1081,7 @@ export default function StudentDashboard({ navigation }) {
                         </View>
                         {booking.meeting_id ? (
                           <View style={styles.joinBtn}>
-                            <Video width={16} height={16} fill={UNIFIED_THEME.colors.text.primary} />
+                            <Icon name="video" size={16} color="primary" />
                             <ThemedText style={styles.joinBtnText}>Join</ThemedText>
                           </View>
                         ) : (
@@ -1100,7 +1100,7 @@ export default function StudentDashboard({ navigation }) {
                 <>
                   <View style={styles.bookingSectionHeader}>
                     <View style={styles.sectionBadge}>
-                      <CheckCircle width={16} height={16} fill={UNIFIED_THEME.colors.text.muted} />
+                      <Icon name="check-circle" size={16} color="muted" />
                       <ThemedText style={styles.sectionBadgeText}>Completed</ThemedText>
                     </View>
                     <ThemedText style={styles.sectionCount}>{completedBookings.length}</ThemedText>
@@ -1109,19 +1109,19 @@ export default function StudentDashboard({ navigation }) {
                     <View key={booking.id} style={[styles.bookingCard, styles.completedCard]}>
                       <View style={styles.bookingCardLeft}>
                         <View style={styles.bookingTeacherIcon}>
-                          <CheckCircle width={24} height={24} fill={UNIFIED_THEME.colors.text.muted} />
+                          <Icon name="check-circle" size={24} color="muted" />
                         </View>
                         <View style={styles.bookingInfo}>
                           <ThemedText style={styles.bookingTeacher}>{booking.teacher_profile?.full_name || 'Teacher'}</ThemedText>
                           <ThemedText style={styles.bookingSubject}>Topics:{booking.subject}</ThemedText>
                           <View style={styles.bookingMeta}>
-                            <Calendar width={12} height={12} fill={UNIFIED_THEME.colors.text.muted} style={{ marginRight: 4 }} />
+                            <Icon name="calendar" size={12} color="muted" style={{ marginRight: 4 }} />
                             <ThemedText style={styles.bookingDate}>{new Date(booking.booked_date).toLocaleDateString()}</ThemedText>
                           </View>
                         </View>
                       </View>
                       <View style={styles.completedBadge}>
-                        <CheckCircle width={20} height={20} fill={UNIFIED_THEME.colors.text.muted} />
+                        <Icon name="check-circle" size={20} color="muted" />
                       </View>
                     </View>
                   ))}
@@ -1136,14 +1136,14 @@ export default function StudentDashboard({ navigation }) {
             style={styles.navItem}
             onPress={() => setActiveTab('home')}
           >
-            <Home width={22} height={22} fill={activeTab === 'home' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <Icon name="home" size={22} color={activeTab === 'home' ? 'primary' : 'muted'} />
             <ThemedText style={styles.navLabel}>Home</ThemedText>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.navItem, styles.navItemActive]}
             onPress={() => setActiveTab('bookings')}
           >
-            <Calendar width={22} height={22} fill={activeTab === 'bookings' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <Icon name="calendar" size={22} color={activeTab === 'bookings' ? 'primary' : 'muted'} />
             <ThemedText style={styles.navLabel}>Bookings</ThemedText>
           </TouchableOpacity>
           {/* Lectures tab hidden for students
@@ -1222,10 +1222,10 @@ export default function StudentDashboard({ navigation }) {
                         setShowBookingModal(true);
                       }}
                     >
-                      <Calendar width={20} height={20} fill={UNIFIED_THEME.colors.accent.primary} />
+                      <Icon name="calendar" size={20} color="primary" />
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => toggleFavorite(teacher)} style={{ marginLeft: 12 }}>
-                      <HeartFilled width={20} height={20} fill={UNIFIED_THEME.colors.accent.error} />
+                      <Icon name="heart" size={20} color="error" />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -1247,7 +1247,7 @@ export default function StudentDashboard({ navigation }) {
 
             <TouchableOpacity style={styles.settingItem} onPress={() => navigation.navigate(SCREEN_NAMES.Notifications)}>
               <View style={styles.settingIconContainer}>
-                <Clock width={18} height={18} fill={UNIFIED_THEME.colors.accent.primary} />
+                <Icon name="clock" size={18} color="primary" />
               </View>
               <ThemedText style={styles.settingText}>Notifications</ThemedText>
             </TouchableOpacity>
@@ -1330,14 +1330,14 @@ export default function StudentDashboard({ navigation }) {
             style={styles.navItem}
             onPress={() => setActiveTab('home')}
           >
-            <Home width={22} height={22} fill={activeTab === 'home' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <Icon name="home" size={22} color={activeTab === 'home' ? 'primary' : 'muted'} />
             <ThemedText style={styles.navLabel}>Home</ThemedText>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.navItem}
             onPress={() => setActiveTab('bookings')}
           >
-            <Calendar width={22} height={22} fill={activeTab === 'bookings' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <Icon name="calendar" size={22} color={activeTab === 'bookings' ? 'primary' : 'muted'} />
             <ThemedText style={styles.navLabel}>Bookings</ThemedText>
           </TouchableOpacity>
           {/* Lectures tab hidden for students
