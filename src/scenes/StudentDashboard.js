@@ -504,7 +504,7 @@ export default function StudentDashboard({ navigation }) {
         <View style={styles.teacherCardContent}>
           {/* Profile Photo */}
           <View style={styles.teacherAvatarWrapper}>
-            <User width={48} height={48} fill={UNIFIED_THEME.colors.accent.primary} style={{ marginBottom: UNIFIED_THEME.spacing.sm }} />
+            <Icon name="user" size={48} color="primary" style={{ marginBottom: UNIFIED_THEME.spacing.sm }} />
             <View style={[styles.teacherStatusDot, { backgroundColor: teacherStatusColor(status) }]} />
           </View>
 
@@ -524,7 +524,7 @@ export default function StudentDashboard({ navigation }) {
 
             {/* Followers */}
             <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 8 }}>
-              <Users width={16} height={16} fill={UNIFIED_THEME.colors.text.muted} style={{ marginRight: 4 }} />
+              <Icon name="users" size={16} color="muted" style={{ marginRight: 4 }} />
               <ThemedText style={styles.followers}>{item.followers || 0}</ThemedText>
             </View>
 
@@ -586,7 +586,7 @@ export default function StudentDashboard({ navigation }) {
           {/* Teacher Info */}
           <View style={styles.teacherInfoCard}>
             <View style={styles.teacherModalAvatarWrapper}>
-              <User width={56} height={56} fill={UNIFIED_THEME.colors.accent.primary} style={{ marginBottom: UNIFIED_THEME.spacing.md }} />
+              <Icon name="user" size={56} color="primary" style={{ marginBottom: UNIFIED_THEME.spacing.md }} />
               <View style={[styles.teacherStatusDotModal, { backgroundColor: teacherStatusColor(selectedTeacher.availability_status) }]} />
             </View>
             <ThemedText style={styles.teacherName}>{selectedTeacher.profile?.full_name}</ThemedText>
@@ -938,7 +938,7 @@ export default function StudentDashboard({ navigation }) {
             style={[styles.navItem, activeTab === 'profile' && styles.navItemActive]}
             onPress={() => setActiveTab('profile')}
           >
-            <User width={24} height={24} fill={activeTab === 'profile' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <Icon name="user" size={24} color={activeTab === 'profile' ? 'primary' : 'muted'} />
             <ThemedText style={styles.navLabel}>Profile</ThemedText>
           </TouchableOpacity>
         </View>
@@ -1018,7 +1018,7 @@ export default function StudentDashboard({ navigation }) {
                     >
                       <View style={styles.bookingCardLeft}>
                         <View style={styles.bookingTeacherIcon}>
-                          <User width={24} height={24} fill={UNIFIED_THEME.colors.accent.error} />
+                          <Icon name="user" size={24} color="error" />
                         </View>
                         <View style={styles.bookingInfo}>
                           <ThemedText style={styles.bookingTeacher}>{booking.teacher_profile?.full_name || 'Teacher'}</ThemedText>
@@ -1056,7 +1056,7 @@ export default function StudentDashboard({ navigation }) {
                       <CardWrapper key={booking.id} style={[styles.bookingCard, styles.confirmedCard]} {...cardProps}>
                         <View style={styles.bookingCardLeft}>
                           <View style={styles.bookingTeacherIcon}>
-                            <User width={24} height={24} fill={UNIFIED_THEME.colors.accent.success} />
+                            <Icon name="user" size={24} color="success" />
                           </View>
                           <View style={styles.bookingInfo}>
                             <ThemedText style={styles.bookingTeacher}>{booking.teacher_profile?.full_name || 'Teacher'}</ThemedText>
@@ -1159,7 +1159,7 @@ export default function StudentDashboard({ navigation }) {
             style={styles.navItem}
             onPress={() => setActiveTab('profile')}
           >
-            <User width={22} height={22} fill={activeTab === 'profile' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <Icon name="user" size={22} color={activeTab === 'profile' ? 'primary' : 'muted'} />
             <ThemedText style={styles.navLabel}>Profile</ThemedText>
           </TouchableOpacity>
         </View>
@@ -1176,7 +1176,7 @@ export default function StudentDashboard({ navigation }) {
             <View style={styles.welcomeContainer}>
               <View style={styles.headerContent}>
                 <View style={styles.headerIconContainer}>
-                  <User width={20} height={20} fill={UNIFIED_THEME.colors.text.primary} />
+                  <Icon name="user" size={20} color="primary" />
                 </View>
                 <ThemedText style={styles.welcometab}>My Profile</ThemedText>
               </View>
@@ -1185,7 +1185,7 @@ export default function StudentDashboard({ navigation }) {
 
           <View style={styles.profileCard}>
             <View style={styles.profileImageContainer}>
-              <User width={56} height={56} fill={UNIFIED_THEME.colors.accent.primary} />
+              <Icon name="user" size={56} color="primary" />
             </View>
             <ThemedText style={styles.profileName}>{studentName}</ThemedText>
             <ThemedText style={styles.profileEmail}>Student ID: {studentId?.substring(0, 8)}...</ThemedText>
@@ -1202,7 +1202,7 @@ export default function StudentDashboard({ navigation }) {
                 <View key={teacher.id} style={styles.favTeacherCard}>
                   <View style={styles.favTeacherImageContainer}>
                     <View style={styles.favTeacherAvatarWrapper}>
-                      <User width={40} height={40} fill={UNIFIED_THEME.colors.accent.primary} />
+                      <Icon name="user" size={40} color="primary" />
                       <View style={[styles.favTeacherStatusDot, { backgroundColor: teacherStatusColor(teacher.availability_status) }]} />
                     </View>
                   </View>
@@ -1240,7 +1240,7 @@ export default function StudentDashboard({ navigation }) {
               onPress={() => navigation.navigate(SCREEN_NAMES.EditStudentProfile)}
             >
               <View style={styles.settingIconContainer}>
-                <User width={18} height={18} fill={UNIFIED_THEME.colors.accent.primary} />
+                <Icon name="user" size={18} color="primary" />
               </View>
               <ThemedText style={styles.settingText}>Edit Profile</ThemedText>
             </TouchableOpacity>
@@ -1285,14 +1285,14 @@ export default function StudentDashboard({ navigation }) {
 
             <TouchableOpacity style={styles.settingItem} onPress={() => Alert.alert('Payment History')}>
               <View style={styles.settingIconContainer}>
-                <User width={18} height={18} fill={UNIFIED_THEME.colors.accent.primary} />
+                <Icon name="user" size={18} color="primary" />
               </View>
               <ThemedText style={styles.settingText}>Payment History</ThemedText>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.settingItem} onPress={() => Alert.alert('Privacy & Security')}>
               <View style={styles.settingIconContainer}>
-                <User width={18} height={18} fill={UNIFIED_THEME.colors.accent.primary} />
+                <Icon name="user" size={18} color="primary" />
               </View>
               <ThemedText style={styles.settingText}>Privacy & Security</ThemedText>
             </TouchableOpacity>
@@ -1318,7 +1318,7 @@ export default function StudentDashboard({ navigation }) {
               }
             >
               <View style={styles.settingIconContainer}>
-                <User width={18} height={18} fill={UNIFIED_THEME.colors.accent.error} />
+                <Icon name="user" size={18} color="error" />
               </View>
               <ThemedText style={styles.settingText}>Logout</ThemedText>
             </TouchableOpacity>
@@ -1353,7 +1353,7 @@ export default function StudentDashboard({ navigation }) {
             style={[styles.navItem, styles.navItemActive]}
             onPress={() => setActiveTab('profile')}
           >
-            <User width={22} height={22} fill={activeTab === 'profile' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <Icon name="user" size={22} color={activeTab === 'profile' ? 'primary' : 'muted'} />
             <ThemedText style={styles.navLabel}>Profile</ThemedText>
           </TouchableOpacity>
         </View>
