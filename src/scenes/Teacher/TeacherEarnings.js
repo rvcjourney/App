@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
@@ -13,6 +12,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-simple-toast';
 import { supabase } from '../../../supabase';
 import { API_URL } from '../../api/api';
+import UNIFIED_THEME from '../../constants/unifiedTheme';
+import ThemedText from '../../components/ThemedText';
+import Icon from '../../components/Icon';
 import ChevronRight from '../../assets/icons/ChevronRight';
 
 /**
@@ -97,7 +99,7 @@ export default function TeacherEarnings({ navigation, route }) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color="#ff006e" />
+          <ActivityIndicator size="large" color={UNIFIED_THEME.colors.accent.primary} />
         </View>
       </SafeAreaView>
     );
@@ -108,9 +110,9 @@ export default function TeacherEarnings({ navigation, route }) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <ChevronRight width={24} height={24} fill="#ff006e" style={{ transform: [{ rotate: '180deg' }] }} />
+          <ChevronRight width={24} height={24} fill={UNIFIED_THEME.colors.accent.primary} style={{ transform: [{ rotate: '180deg' }] }} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>My Earnings</Text>
+        <ThemedText variant="heading" size="md">My Earnings</ThemedText>
       </View>
 
       <ScrollView
@@ -120,50 +122,70 @@ export default function TeacherEarnings({ navigation, route }) {
         {/* Main Balance Card */}
         <View style={styles.mainBalanceCard}>
           <View>
-            <Text style={styles.balanceLabel}>Total Earned</Text>
-            <Text style={styles.mainBalance}>₹{wallet?.total_balance?.toLocaleString() || 0}</Text>
+            <ThemedText variant="body" size="sm" color="muted">Total Earned</ThemedText>
+            <ThemedText variant="heading" size="lg" color="success">₹{wallet?.total_balance?.toLocaleString() || 0}</ThemedText>
           </View>
           <View style={styles.divider} />
           <View>
-            <Text style={styles.balanceLabel}>Available to Withdraw</Text>
-            <Text style={styles.availableBalance}>₹{wallet?.available_balance?.toLocaleString() || 0}</Text>
+            <ThemedText variant="body" size="sm" color="muted">Available to Withdraw</ThemedText>
+            <ThemedText variant="heading" size="lg" color="success">₹{wallet?.available_balance?.toLocaleString() || 0}</ThemedText>
           </View>
         </View>
 
         {/* Pending Balance - only if exists */}
         {(wallet?.pending_balance || 0) > 0 && (
           <View style={styles.pendingSection}>
-            <Text style={styles.pendingLabel}>⏳ Pending (from ongoing sessions)</Text>
-            <Text style={styles.pendingAmount}>₹{wallet?.pending_balance?.toLocaleString() || 0}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+              <Icon name="hourglass" size={18} color="warning" style={{ marginRight: 6 }} />
+              <ThemedText variant="label" size="md" color="warning">Pending (from ongoing sessions)</ThemedText>
+            </View>
+            <ThemedText variant="heading" size="lg" color="warning">₹{wallet?.pending_balance?.toLocaleString() || 0}</ThemedText>
           </View>
         )}
 
         {/* Quick Info */}
         <View style={styles.quickInfoBox}>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>💡 How you earn:</Text>
-            <Text style={styles.infoValue}>Student pays → You get 100% of your rate</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+              <Icon name="lightbulb" size={18} color="info" style={{ marginRight: 6 }} />
+              <ThemedText variant="label" size="sm" color="primary">How you earn:</ThemedText>
+            </View>
+            <ThemedText variant="body" size="sm" color="secondary">Student pays → You get 100% of your rate</ThemedText>
           </View>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>📊 Fee structure:</Text>
-            <Text style={styles.infoValue}>18% GST + 7.5% platform fee (deducted from student payment)</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+              <Icon name="barChart" size={18} color="primary" style={{ marginRight: 6 }} />
+              <ThemedText variant="label" size="sm" color="primary">Fee structure:</ThemedText>
+            </View>
+            <ThemedText variant="body" size="sm" color="secondary">18% GST + 7.5% platform fee (deducted from student payment)</ThemedText>
           </View>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>💰 Gets added:</Text>
-            <Text style={styles.infoValue}>After your session completes</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+              <Icon name="money" size={18} color="success" style={{ marginRight: 6 }} />
+              <ThemedText variant="label" size="sm" color="primary">Gets added:</ThemedText>
+            </View>
+            <ThemedText variant="body" size="sm" color="secondary">After your session completes</ThemedText>
           </View>
         </View>
 
         {/* Withdrawal Section */}
         {eligibility && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Withdrawal</Text>
-            
-            <View style={[styles.statusBox, { borderLeftColor: eligibility.can_withdraw ? '#4CAF50' : '#FF9800' }]}>
+            <ThemedText variant="heading" size="md" color="primary">Withdrawal</ThemedText>
+
+            <View style={[styles.statusBox, { borderLeftColor: eligibility.can_withdraw ? UNIFIED_THEME.colors.status.approved : UNIFIED_THEME.colors.status.pending }]}>
               <View>
-                <Text style={[styles.statusText, { color: eligibility.can_withdraw ? '#4CAF50' : '#FF9800' }]}>
-                  {eligibility.can_withdraw ? '✓ Ready to Withdraw' : '⏳ ' + eligibility.eligibility_reason}
-                </Text>
+                {eligibility.can_withdraw ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Icon name="check" size={20} color="success" style={{ marginRight: 6 }} />
+                    <ThemedText variant="label" size="md" color="success">Ready to Withdraw</ThemedText>
+                  </View>
+                ) : (
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Icon name="hourglass" size={20} color="warning" style={{ marginRight: 6 }} />
+                    <ThemedText variant="label" size="md" color="warning">{eligibility.eligibility_reason}</ThemedText>
+                  </View>
+                )}
               </View>
               {eligibility.can_withdraw && (
                 <TouchableOpacity
@@ -175,7 +197,7 @@ export default function TeacherEarnings({ navigation, route }) {
                     })
                   }
                 >
-                  <Text style={styles.withdrawBtnText}>Withdraw Now</Text>
+                  <ThemedText variant="label" size="sm" color="onAccent">Withdraw Now</ThemedText>
                 </TouchableOpacity>
               )}
             </View>
@@ -185,15 +207,15 @@ export default function TeacherEarnings({ navigation, route }) {
         {/* Recent Earnings - Simplified */}
         <View style={styles.section}>
           <View style={styles.sectionTitleRow}>
-            <Text style={styles.sectionTitle}>Recent Sessions</Text>
-            {earnings.length > 0 && <Text style={styles.countBadge}>{earnings.length}</Text>}
+            <ThemedText variant="heading" size="md" color="primary">Recent Sessions</ThemedText>
+            {earnings.length > 0 && <ThemedText variant="label" size="sm" color="primary" style={styles.countBadge}>{earnings.length}</ThemedText>}
           </View>
 
           {earnings.length === 0 ? (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyIcon}>📭</Text>
-              <Text style={styles.emptyText}>No earnings yet</Text>
-              <Text style={styles.emptySubtext}>Complete your first session to earn</Text>
+              <Icon name="bell" size={48} color="muted" style={styles.emptyIcon} />
+              <ThemedText variant="heading" size="md" color="primary">No earnings yet</ThemedText>
+              <ThemedText variant="body" size="sm" color="muted">Complete your first session to earn</ThemedText>
             </View>
           ) : (
             earnings.slice(0, 15).map((earning, index) => {
@@ -201,15 +223,25 @@ export default function TeacherEarnings({ navigation, route }) {
               return (
                 <View key={earning.id || index} style={[styles.earningCard, isPending && styles.earningCardPending]}>
                   <View style={styles.earningLeft}>
-                    <Text style={styles.earningDate}>
+                    <ThemedText variant="label" size="md" color="primary">
                       {new Date(earning.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
-                    </Text>
-                    <Text style={styles.earningStatus}>{isPending ? '⏳ Pending' : '✓ Completed'}</Text>
+                    </ThemedText>
+                    {isPending ? (
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Icon name="hourglass" size={16} color="warning" style={{ marginRight: 4 }} />
+                        <ThemedText variant="body" size="sm" color="warning">Pending</ThemedText>
+                      </View>
+                    ) : (
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Icon name="check" size={16} color="success" style={{ marginRight: 4 }} />
+                        <ThemedText variant="body" size="sm" color="success">Completed</ThemedText>
+                      </View>
+                    )}
                   </View>
-                  
-                  <Text style={[styles.earningAmount, isPending ? styles.pending : styles.completed]}>
+
+                  <ThemedText variant="heading" size="lg" color={isPending ? 'warning' : 'success'}>
                     ₹{earning.teacher_earn?.toLocaleString() || 0}
-                  </Text>
+                  </ThemedText>
                 </View>
               );
             })
@@ -225,7 +257,7 @@ export default function TeacherEarnings({ navigation, route }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f1b3f',
+    backgroundColor: UNIFIED_THEME.colors.primary.light,
   },
 
   centerContainer: {
@@ -237,27 +269,20 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
+    paddingHorizontal: UNIFIED_THEME.spacing.lg,
+    paddingVertical: UNIFIED_THEME.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 0, 110, 0.2)',
+    borderBottomColor: UNIFIED_THEME.colors.border.light,
   },
 
   backBtn: {
     width: 40,
     height: 40,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: UNIFIED_THEME.borderRadius.md,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
-  },
-
-  headerTitle: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: '700',
-    flex: 1,
+    marginRight: UNIFIED_THEME.spacing.md,
   },
 
   scrollView: {
@@ -266,147 +291,83 @@ const styles = StyleSheet.create({
   },
 
   mainBalanceCard: {
-    marginHorizontal: 20,
-    marginVertical: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: 16,
-    padding: 20,
+    marginHorizontal: UNIFIED_THEME.spacing.lg,
+    marginVertical: UNIFIED_THEME.spacing.lg,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderRadius: UNIFIED_THEME.borderRadius.lg,
+    padding: UNIFIED_THEME.spacing.lg,
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
   },
 
-  balanceLabel: {
-    color: '#b0b0b0',
-    fontSize: 11,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-
-  mainBalance: {
-    color: '#4CAF50',
-    fontSize: 28,
-    fontWeight: '700',
-  },
-
-  availableBalance: {
-    color: '#2ECC71',
-    fontSize: 24,
-    fontWeight: '700',
-  },
-
   divider: {
     width: 1,
     height: 50,
-    backgroundColor: 'rgba(255, 0, 110, 0.1)',
+    backgroundColor: UNIFIED_THEME.colors.border.light,
   },
 
   section: {
-    paddingHorizontal: 20,
-    marginVertical: 15,
-  },
-
-  sectionTitle: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 12,
+    paddingHorizontal: UNIFIED_THEME.spacing.lg,
+    marginVertical: UNIFIED_THEME.spacing.md,
   },
 
   sectionTitleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: UNIFIED_THEME.spacing.md,
   },
 
   countBadge: {
-    color: '#ff006e',
-    fontSize: 12,
-    fontWeight: '600',
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    paddingHorizontal: UNIFIED_THEME.spacing.sm,
+    paddingVertical: UNIFIED_THEME.spacing.xs,
+    borderRadius: UNIFIED_THEME.borderRadius.sm,
   },
 
   quickInfoBox: {
-    marginHorizontal: 20,
-    marginBottom: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: 12,
-    padding: 15,
+    marginHorizontal: UNIFIED_THEME.spacing.lg,
+    marginBottom: UNIFIED_THEME.spacing.lg,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderRadius: UNIFIED_THEME.borderRadius.lg,
+    padding: UNIFIED_THEME.spacing.md,
   },
 
   infoRow: {
-    marginBottom: 12,
-    paddingBottom: 12,
+    marginBottom: UNIFIED_THEME.spacing.md,
+    paddingBottom: UNIFIED_THEME.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 0, 110, 0.2)',
-  },
-
-  infoLabel: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-
-  infoValue: {
-    color: '#e0e0e0',
-    fontSize: 11,
+    borderBottomColor: UNIFIED_THEME.colors.border.light,
   },
 
   pendingSection: {
-    marginHorizontal: 20,
-    marginBottom: 15,
-    backgroundColor: '#3D3200',
-    borderRadius: 12,
-    padding: 15,
+    marginHorizontal: UNIFIED_THEME.spacing.lg,
+    marginBottom: UNIFIED_THEME.spacing.md,
+    backgroundColor: 'rgba(255, 152, 0, 0.1)',
+    borderRadius: UNIFIED_THEME.borderRadius.lg,
+    padding: UNIFIED_THEME.spacing.md,
     borderLeftWidth: 4,
-    borderLeftColor: '#FF9800',
-  },
-
-  pendingLabel: {
-    color: '#FF9800',
-    fontSize: 12,
-    fontWeight: '600',
-    marginBottom: 6,
-  },
-
-  pendingAmount: {
-    color: '#FFB74D',
-    fontSize: 20,
-    fontWeight: '700',
+    borderLeftColor: UNIFIED_THEME.colors.status.pending,
   },
 
   statusBox: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: 12,
-    padding: 15,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderRadius: UNIFIED_THEME.borderRadius.lg,
+    padding: UNIFIED_THEME.spacing.md,
     borderLeftWidth: 4,
-    marginBottom: 12,
+    marginBottom: UNIFIED_THEME.spacing.md,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
 
-  statusText: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-
   withdrawBtn: {
-    backgroundColor: '#4CAF50',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-
-  withdrawBtnText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '700',
+    backgroundColor: UNIFIED_THEME.colors.status.approved,
+    paddingHorizontal: UNIFIED_THEME.spacing.md,
+    paddingVertical: UNIFIED_THEME.spacing.sm,
+    borderRadius: UNIFIED_THEME.borderRadius.sm,
+    ...UNIFIED_THEME.shadows.small,
   },
 
   emptyState: {
@@ -415,27 +376,14 @@ const styles = StyleSheet.create({
   },
 
   emptyIcon: {
-    fontSize: 48,
-    marginBottom: 12,
-  },
-
-  emptyText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-
-  emptySubtext: {
-    color: '#b0b0b0',
-    fontSize: 12,
+    marginBottom: UNIFIED_THEME.spacing.md,
   },
 
   earningCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 10,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderRadius: UNIFIED_THEME.borderRadius.lg,
+    padding: UNIFIED_THEME.spacing.md,
+    marginBottom: UNIFIED_THEME.spacing.sm,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -443,35 +391,10 @@ const styles = StyleSheet.create({
 
   earningCardPending: {
     borderLeftWidth: 3,
-    borderLeftColor: '#FF9800',
+    borderLeftColor: UNIFIED_THEME.colors.status.pending,
   },
 
   earningLeft: {
     flex: 1,
-  },
-
-  earningDate: {
-    color: '#fff',
-    fontSize: 13,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-
-  earningStatus: {
-    color: '#b0b0b0',
-    fontSize: 11,
-  },
-
-  earningAmount: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-
-  completed: {
-    color: '#4CAF50',
-  },
-
-  pending: {
-    color: '#FF9800',
   },
 });

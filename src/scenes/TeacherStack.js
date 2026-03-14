@@ -2,13 +2,15 @@ import React, { useEffect, useState } from "react";
 import { createStackNavigator } from "@react-navigation/stack";
 import { ActivityIndicator, View } from "react-native";
 import { supabase } from "../../supabase";
+import logger from "../utils/logger";
+import COLORS from "../constants/appColors";
+import { SCREEN_NAMES } from "../constants/screenNames";
 import TeacherDashboard from "./TeacherDashboard";
 import EditTeacherProfile from "./Teacher/EditTeacherProfile";
 import TeacherAvailability from "./Teacher/TeacherAvailability";
 import ScheduleLecture from "./Teacher/ScheduleLecture";
 import Join from "./join";
 import Meeting from "./meeting";
-import { SCREEN_NAMES } from "../navigators/screenNames";
 import TeacherEarnings from "./Teacher/TeacherEarnings";
 import WithdrawalRequest from "./Teacher/WithdrawalRequest";
 import BankAccountSettings from "./Teacher/BankAccountSettings";
@@ -37,15 +39,15 @@ export default function TeacherStack() {
 
           // If profession exists, go to dashboard. Otherwise, show profession select
           if (teacherData?.profession) {
-            setInitialRoute('TeacherDashboard');
+            setInitialRoute(SCREEN_NAMES.TeacherDashboard);
           } else {
-            setInitialRoute('ProfessionSelect');
+            setInitialRoute(SCREEN_NAMES.ProfessionSelect);
           }
         }
       } catch (error) {
-        console.error('Error checking profession:', error);
+        logger.error('TeacherStack: Error checking profession:', error);
         // Default to dashboard if error
-        setInitialRoute('TeacherDashboard');
+        setInitialRoute(SCREEN_NAMES.TeacherDashboard);
       } finally {
         setLoading(false);
       }
@@ -56,8 +58,8 @@ export default function TeacherStack() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0B0D2A' }}>
-        <ActivityIndicator size="large" color="#5568FE" />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.ADMIN_BG }}>
+        <ActivityIndicator size="large" color={COLORS.ADMIN_ACCENT} />
       </View>
     );
   }
@@ -68,11 +70,11 @@ export default function TeacherStack() {
       initialRouteName={initialRoute}
     >
       <RootStack.Screen
-        name="ProfessionSelect"
+        name={SCREEN_NAMES.ProfessionSelect}
         component={ProfessionSelectScreen}
       />
       <RootStack.Screen
-        name="TeacherDashboard"
+        name={SCREEN_NAMES.TeacherDashboard}
         component={TeacherDashboard}
       />
       <RootStack.Screen 

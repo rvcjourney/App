@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
@@ -12,6 +11,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-simple-toast';
 import { API_URL } from '../../api/api';
+import UNIFIED_THEME from '../../constants/unifiedTheme';
+import ThemedText from '../../components/ThemedText';
 
 /**
  * Admin view of a teacher's wallet: balance, eligibility, recent earnings.
@@ -98,8 +99,8 @@ export default function AdminTeacherWallet({ navigation, route }) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color="#5568FE" />
-          <Text style={styles.loadingText}>Loading wallet...</Text>
+          <ActivityIndicator size="large" color={UNIFIED_THEME.colors.accent.primary} />
+          <ThemedText variant="body" size="sm" color="muted" style={styles.loadingText}>Loading wallet...</ThemedText>
         </View>
       </SafeAreaView>
     );
@@ -110,11 +111,11 @@ export default function AdminTeacherWallet({ navigation, route }) {
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.backBtn}>← Back</Text>
+            <ThemedText color="primary" style={styles.backBtn}>← Back</ThemedText>
           </TouchableOpacity>
         </View>
         <View style={styles.centerContainer}>
-          <Text style={styles.emptyText}>No teacher selected</Text>
+          <ThemedText variant="body" size="sm" color="muted" style={styles.emptyText}>No teacher selected</ThemedText>
         </View>
       </SafeAreaView>
     );
@@ -124,52 +125,52 @@ export default function AdminTeacherWallet({ navigation, route }) {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backWrap}>
-          <Text style={styles.backBtn}>← Back</Text>
+          <ThemedText color="primary" style={styles.backBtn}>← Back</ThemedText>
         </TouchableOpacity>
         <View style={styles.headerTitleWrap}>
-          <Text style={styles.headerTitle}>Teacher Wallet</Text>
+          <ThemedText variant="heading" size="md" style={styles.headerTitle}>Teacher Wallet</ThemedText>
           {teacherName ? (
-            <Text style={styles.headerSubtitle} numberOfLines={1}>{teacherName}</Text>
+            <ThemedText variant="body" size="sm" color="muted" numberOfLines={1} style={styles.headerSubtitle}>{teacherName}</ThemedText>
           ) : null}
         </View>
       </View>
 
       <ScrollView
         style={styles.scrollView}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[UNIFIED_THEME.colors.accent.primary]} />}
       >
         <View style={styles.balanceSection}>
           <View style={styles.balanceCard}>
-            <Text style={styles.balanceLabel}>Total Balance</Text>
-            <Text style={styles.balanceAmount}>₹{wallet?.total_balance?.toLocaleString() ?? 0}</Text>
-            <Text style={styles.balanceSubtext}>All time earnings</Text>
+            <ThemedText variant="label" size="sm" color="muted" style={styles.balanceLabel}>Total Balance</ThemedText>
+            <ThemedText variant="heading" size="lg" style={styles.balanceAmount}>₹{wallet?.total_balance?.toLocaleString() ?? 0}</ThemedText>
+            <ThemedText variant="body" size="xs" color="muted" style={styles.balanceSubtext}>All time earnings</ThemedText>
           </View>
-          <View style={[styles.balanceCard, { backgroundColor: '#2E7D32' }]}>
-            <Text style={styles.balanceLabel}>Available Balance</Text>
-            <Text style={styles.balanceAmount}>₹{wallet?.available_balance?.toLocaleString() ?? 0}</Text>
-            <Text style={styles.balanceSubtext}>Can withdraw now</Text>
+          <View style={[styles.balanceCard, { backgroundColor: UNIFIED_THEME.colors.status.approved }]}>
+            <ThemedText variant="label" size="sm" color="muted" style={styles.balanceLabel}>Available Balance</ThemedText>
+            <ThemedText variant="heading" size="lg" style={styles.balanceAmount}>₹{wallet?.available_balance?.toLocaleString() ?? 0}</ThemedText>
+            <ThemedText variant="body" size="xs" color="muted" style={styles.balanceSubtext}>Can withdraw now</ThemedText>
           </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Edit wallet amounts</Text>
+          <ThemedText variant="heading" size="sm" style={styles.sectionTitle}>Edit wallet amounts</ThemedText>
           <View style={styles.editBox}>
-            <Text style={styles.editLabel}>Total balance (₹)</Text>
+            <ThemedText variant="label" size="sm" color="muted" style={styles.editLabel}>Total balance (₹)</ThemedText>
             <TextInput
               style={styles.input}
               value={editTotal}
               onChangeText={setEditTotal}
               placeholder="0"
-              placeholderTextColor="#6b7280"
+              placeholderTextColor={UNIFIED_THEME.colors.text.muted}
               keyboardType="numeric"
             />
-            <Text style={styles.editLabel}>Available balance (₹)</Text>
+            <ThemedText variant="label" size="sm" color="muted" style={styles.editLabel}>Available balance (₹)</ThemedText>
             <TextInput
               style={styles.input}
               value={editAvailable}
               onChangeText={setEditAvailable}
               placeholder="0"
-              placeholderTextColor="#6b7280"
+              placeholderTextColor={UNIFIED_THEME.colors.text.muted}
               keyboardType="numeric"
             />
             <TouchableOpacity
@@ -178,9 +179,9 @@ export default function AdminTeacherWallet({ navigation, route }) {
               disabled={saving}
             >
               {saving ? (
-                <ActivityIndicator color="#fff" size="small" />
+                <ActivityIndicator color={UNIFIED_THEME.colors.text.onAccent} size="small" />
               ) : (
-                <Text style={styles.saveBtnText}>Update wallet</Text>
+                <ThemedText color="onAccent" style={styles.saveBtnText}>Update wallet</ThemedText>
               )}
             </TouchableOpacity>
           </View>
@@ -188,62 +189,64 @@ export default function AdminTeacherWallet({ navigation, route }) {
 
         {eligibility && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Withdrawal Eligibility</Text>
+            <ThemedText variant="heading" size="sm" style={styles.sectionTitle}>Withdrawal Eligibility</ThemedText>
             <View style={styles.eligibilityBox}>
               <View style={styles.statusRow}>
-                <Text style={styles.statusLabel}>Status:</Text>
-                <Text
+                <ThemedText variant="label" size="sm" color="muted" style={styles.statusLabel}>Status:</ThemedText>
+                <ThemedText
+                  variant="label"
+                  size="sm"
                   style={[
                     styles.statusValue,
-                    { color: eligibility.can_withdraw ? '#4CAF50' : '#FF9800' },
+                    { color: eligibility.can_withdraw ? UNIFIED_THEME.colors.status.approved : UNIFIED_THEME.colors.status.pending },
                   ]}
                 >
                   {eligibility.can_withdraw ? '✓ Eligible' : 'Not Eligible'}
-                </Text>
+                </ThemedText>
               </View>
               <View style={styles.reasonBox}>
-                <Text style={styles.reasonText}>{eligibility.eligibility_reason}</Text>
+                <ThemedText variant="body" size="sm" style={styles.reasonText}>{eligibility.eligibility_reason}</ThemedText>
               </View>
             </View>
           </View>
         )}
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Recent Earnings</Text>
+          <ThemedText variant="heading" size="sm" style={styles.sectionTitle}>Recent Earnings</ThemedText>
           {earnings.length === 0 ? (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyIcon}>📭</Text>
-              <Text style={styles.emptyText}>No earnings yet</Text>
+              <ThemedText style={styles.emptyIcon}>📭</ThemedText>
+              <ThemedText variant="body" size="sm" color="muted" style={styles.emptyText}>No earnings yet</ThemedText>
             </View>
           ) : (
             earnings.slice(0, 15).map((earning, index) => (
               <View key={earning.id || index} style={styles.earningCard}>
                 <View style={styles.earningHeader}>
-                  <Text style={styles.earningDate}>
+                  <ThemedText variant="body" size="sm" color="muted" style={styles.earningDate}>
                     {new Date(earning.created_at).toLocaleDateString()}
-                  </Text>
-                  <Text style={styles.earningAmount}>+₹{earning.teacher_earn?.toLocaleString()}</Text>
+                  </ThemedText>
+                  <ThemedText color="success" style={styles.earningAmount}>+₹{earning.teacher_earn?.toLocaleString()}</ThemedText>
                 </View>
                 <View style={styles.earningDetails}>
                   <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Student Paid:</Text>
-                    <Text style={styles.detailValue}>₹{earning.total_collected}</Text>
+                    <ThemedText variant="body" size="xs" color="muted" style={styles.detailLabel}>Student Paid:</ThemedText>
+                    <ThemedText variant="body" size="xs" style={styles.detailValue}>₹{earning.total_collected}</ThemedText>
                   </View>
                   <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Admin Fee:</Text>
-                    <Text style={styles.detailValue}>-₹{earning.admin_deduction}</Text>
+                    <ThemedText variant="body" size="xs" color="muted" style={styles.detailLabel}>Admin Fee:</ThemedText>
+                    <ThemedText variant="body" size="xs" style={styles.detailValue}>-₹{earning.admin_deduction}</ThemedText>
                   </View>
                   <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Platform Fee:</Text>
-                    <Text style={styles.detailValue}>-₹{earning.platform_fee}</Text>
+                    <ThemedText variant="body" size="xs" color="muted" style={styles.detailLabel}>Platform Fee:</ThemedText>
+                    <ThemedText variant="body" size="xs" style={styles.detailValue}>-₹{earning.platform_fee}</ThemedText>
                   </View>
                   <View style={[styles.detailRow, styles.yourEarnRow]}>
-                    <Text style={styles.yourEarnLabel}>Teacher Share:</Text>
-                    <Text style={styles.yourEarnValue}>₹{earning.teacher_earn}</Text>
+                    <ThemedText color="success" style={styles.yourEarnLabel}>Teacher Share:</ThemedText>
+                    <ThemedText color="success" style={styles.yourEarnValue}>₹{earning.teacher_earn}</ThemedText>
                   </View>
                 </View>
                 <View style={styles.statusBadge}>
-                  <Text style={styles.statusBadgeText}>{earning.status}</Text>
+                  <ThemedText color="success" style={styles.statusBadgeText}>{earning.status}</ThemedText>
                 </View>
               </View>
             ))
@@ -251,9 +254,9 @@ export default function AdminTeacherWallet({ navigation, route }) {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.note}>
+          <ThemedText variant="body" size="sm" color="muted" style={styles.note}>
             💡 Approve pending withdrawals from the Withdrawals tab on the admin dashboard.
-          </Text>
+          </ThemedText>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -261,111 +264,108 @@ export default function AdminTeacherWallet({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0B0D2A' },
+  container: { flex: 1, backgroundColor: UNIFIED_THEME.colors.primary.light },
   centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  loadingText: { color: '#9ca3af', marginTop: 10, fontSize: 14 },
+  loadingText: { marginTop: UNIFIED_THEME.spacing.md },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
+    paddingHorizontal: UNIFIED_THEME.spacing.lg,
+    paddingVertical: UNIFIED_THEME.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1F4A',
+    borderBottomColor: UNIFIED_THEME.colors.border.light,
   },
-  backWrap: { marginRight: 12 },
-  backBtn: { color: '#5568FE', fontSize: 16, fontWeight: '600' },
+  backWrap: { marginRight: UNIFIED_THEME.spacing.md },
+  backBtn: { fontSize: 16, fontWeight: '600' },
   headerTitleWrap: { flex: 1 },
-  headerTitle: { color: '#fff', fontSize: 18, fontWeight: '700' },
-  headerSubtitle: { color: '#9ca3af', fontSize: 13, marginTop: 2 },
-  scrollView: { flex: 1, paddingBottom: 30 },
+  headerTitle: {},
+  headerSubtitle: { marginTop: UNIFIED_THEME.spacing.xs },
+  scrollView: { flex: 1, paddingBottom: UNIFIED_THEME.spacing.xxxl },
   balanceSection: {
-    paddingHorizontal: 20,
-    paddingVertical: 15,
+    paddingHorizontal: UNIFIED_THEME.spacing.lg,
+    paddingVertical: UNIFIED_THEME.spacing.md,
     flexDirection: 'row',
-    gap: 12,
+    gap: UNIFIED_THEME.spacing.md,
   },
   balanceCard: {
     flex: 1,
-    backgroundColor: '#1C1F4A',
-    borderRadius: 12,
-    padding: 15,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
+    padding: UNIFIED_THEME.spacing.md,
   },
-  balanceLabel: { color: '#999', fontSize: 11, fontWeight: '600', marginBottom: 6 },
-  balanceAmount: { color: '#fff', fontSize: 22, fontWeight: '700', marginBottom: 4 },
-  balanceSubtext: { color: '#666', fontSize: 10 },
-  section: { paddingHorizontal: 20, marginVertical: 15 },
-  sectionTitle: { color: '#fff', fontSize: 16, fontWeight: '700', marginBottom: 12 },
-  eligibilityBox: { backgroundColor: '#1C1F4A', borderRadius: 12, padding: 15 },
-  statusRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
-  statusLabel: { color: '#999', fontSize: 13 },
-  statusValue: { fontSize: 14, fontWeight: '700' },
-  reasonBox: { backgroundColor: '#0B0D2A', borderRadius: 8, padding: 10 },
-  reasonText: { color: '#FF9800', fontSize: 12, lineHeight: 18 },
-  emptyState: { alignItems: 'center', paddingVertical: 40 },
-  emptyIcon: { fontSize: 48, marginBottom: 12 },
-  emptyText: { color: '#999', fontSize: 14, fontWeight: '600' },
+  balanceLabel: { marginBottom: UNIFIED_THEME.spacing.xs },
+  balanceAmount: { marginBottom: UNIFIED_THEME.spacing.xs },
+  balanceSubtext: {},
+  section: { paddingHorizontal: UNIFIED_THEME.spacing.lg, marginVertical: UNIFIED_THEME.spacing.md },
+  sectionTitle: { marginBottom: UNIFIED_THEME.spacing.md },
+  eligibilityBox: { backgroundColor: UNIFIED_THEME.colors.component.card, borderRadius: UNIFIED_THEME.borderRadius.md, padding: UNIFIED_THEME.spacing.md },
+  statusRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: UNIFIED_THEME.spacing.md },
+  statusLabel: {},
+  statusValue: {},
+  reasonBox: { backgroundColor: UNIFIED_THEME.colors.primary.dark, borderRadius: UNIFIED_THEME.borderRadius.sm, padding: UNIFIED_THEME.spacing.sm },
+  reasonText: {},
+  emptyState: { alignItems: 'center', paddingVertical: UNIFIED_THEME.spacing.xxxl },
+  emptyIcon: { fontSize: 48, marginBottom: UNIFIED_THEME.spacing.lg },
+  emptyText: {},
   earningCard: {
-    backgroundColor: '#1C1F4A',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 10,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
+    padding: UNIFIED_THEME.spacing.md,
+    marginBottom: UNIFIED_THEME.spacing.sm,
   },
   earningHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: UNIFIED_THEME.spacing.md,
   },
-  earningDate: { color: '#999', fontSize: 12 },
-  earningAmount: { color: '#4CAF50', fontSize: 14, fontWeight: '700' },
-  earningDetails: { backgroundColor: '#0B0D2A', borderRadius: 6, padding: 8, marginBottom: 8 },
+  earningDate: {},
+  earningAmount: {},
+  earningDetails: { backgroundColor: UNIFIED_THEME.colors.primary.dark, borderRadius: UNIFIED_THEME.borderRadius.sm, padding: UNIFIED_THEME.spacing.sm, marginBottom: UNIFIED_THEME.spacing.sm },
   detailRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 4,
-    borderBottomColor: '#2A2D5A',
+    paddingVertical: UNIFIED_THEME.spacing.xs,
+    borderBottomColor: UNIFIED_THEME.colors.border.default,
     borderBottomWidth: 1,
   },
-  detailLabel: { color: '#999', fontSize: 11 },
-  detailValue: { color: '#fff', fontSize: 11, fontWeight: '500' },
-  yourEarnRow: { borderBottomWidth: 0, paddingVertical: 4, marginTop: 2 },
-  yourEarnLabel: { color: '#4CAF50', fontSize: 11, fontWeight: '600' },
-  yourEarnValue: { color: '#4CAF50', fontSize: 12, fontWeight: '700' },
+  detailLabel: {},
+  detailValue: {},
+  yourEarnRow: { borderBottomWidth: 0, paddingVertical: UNIFIED_THEME.spacing.xs, marginTop: UNIFIED_THEME.spacing.xs },
+  yourEarnLabel: {},
+  yourEarnValue: {},
   statusBadge: {
     alignSelf: 'flex-start',
-    backgroundColor: '#2E7D32',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+    backgroundColor: UNIFIED_THEME.colors.status.approved,
+    paddingHorizontal: UNIFIED_THEME.spacing.sm,
+    paddingVertical: UNIFIED_THEME.spacing.xs,
+    borderRadius: UNIFIED_THEME.borderRadius.sm,
   },
   statusBadgeText: {
-    color: '#4CAF50',
-    fontSize: 10,
-    fontWeight: '600',
     textTransform: 'capitalize',
   },
-  note: { color: '#9ca3af', fontSize: 12, lineHeight: 18 },
+  note: {},
   editBox: {
-    backgroundColor: '#1C1F4A',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
+    padding: UNIFIED_THEME.spacing.lg,
   },
-  editLabel: { color: '#9ca3af', fontSize: 13, fontWeight: '600', marginBottom: 8, marginTop: 12 },
+  editLabel: { marginBottom: UNIFIED_THEME.spacing.sm, marginTop: UNIFIED_THEME.spacing.md },
   input: {
-    backgroundColor: '#0B0D2A',
-    borderRadius: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    color: '#fff',
+    backgroundColor: UNIFIED_THEME.colors.primary.dark,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
+    paddingVertical: UNIFIED_THEME.spacing.md,
+    paddingHorizontal: UNIFIED_THEME.spacing.md,
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 16,
   },
   saveBtn: {
-    backgroundColor: '#5568FE',
-    borderRadius: 10,
-    paddingVertical: 14,
+    backgroundColor: UNIFIED_THEME.colors.accent.primary,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
+    paddingVertical: UNIFIED_THEME.spacing.md,
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: UNIFIED_THEME.spacing.xxxl,
   },
   saveBtnDisabled: { opacity: 0.7 },
-  saveBtnText: { color: '#fff', fontSize: 15, fontWeight: '600' },
+  saveBtnText: {},
 });

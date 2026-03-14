@@ -1,4 +1,4 @@
-function getRandomColor(varient = 'light' | 'dark') {
+function getRandomColor(varient = 'light') {
   var letters = varient === 'light' ? 'BCDEF' : '0123456789ABCDEF';
   var color = '#';
   for (var i = 0; i < 6; i++) {

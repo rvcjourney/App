@@ -1,10 +1,10 @@
 import React from "react";
 import "react-native-gesture-handler";
 import { createStackNavigator } from "@react-navigation/stack";
-import { SCREEN_NAMES } from  "../navigators/screenNames";
+import { SCREEN_NAMES } from "../constants/screenNames";
 import { LogBox } from "react-native";
 
-import WelcomeScreen from  "./WelcomeScreen";
+import WelcomeScreen from "./WelcomeScreen";
 import RoleSelectScreen from "./RoleSelectScreen";
 import LoginScreen from "./LoginScreen";
 import SignupScreen from "./SignupScreen";
@@ -28,24 +28,24 @@ export default function AuthStack() {
       // initialRouteName={SCREEN_NAMES.Join}
       initialRouteName={SCREEN_NAMES.WelcomeScreen}
     >
-      <RootStack.Screen 
-        name={SCREEN_NAMES.WelcomeScreen} 
-        component={WelcomeScreen} 
-        options={{headerShown: false}} 
+      <RootStack.Screen
+        name={SCREEN_NAMES.WelcomeScreen}
+        component={WelcomeScreen}
+        options={{ headerShown: false }}
       />
 
-      <RootStack.Screen 
+      <RootStack.Screen
         name={SCREEN_NAMES.RoleSelectScreen}
         component={RoleSelectScreen}
-        options={{headerShown: false}}
+        options={{ headerShown: false }}
       />
       <RootStack.Screen
-        name="Login"
+        name={SCREEN_NAMES.Login}
         component={LoginScreen}
         options={{ headerShown: false }}
       />
       <RootStack.Screen
-        name="Signup"
+        name={SCREEN_NAMES.Signup}
         component={SignupScreen}
         options={{ headerShown: false }}
       />
@@ -55,7 +55,7 @@ export default function AuthStack() {
         options={{ headerShown: false }}
       />
       <RootStack.Screen
-        name="OTPVerification"
+        name={SCREEN_NAMES.OTPVerification}
         component={OTPVerificationScreen}
         options={{ headerShown: false }}
       />

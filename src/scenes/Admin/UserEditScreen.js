@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   TouchableOpacity,
   TextInput,
@@ -14,6 +13,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-simple-toast';
 import { SCREEN_NAMES } from '../../navigators/screenNames';
+import UNIFIED_THEME from '../../constants/unifiedTheme';
+import ThemedText from '../../components/ThemedText';
 import {
   updateUserProfileForAdmin,
   getTeacherProfileForAdmin,
@@ -141,8 +142,8 @@ export default function UserEditScreen({ route, navigation }) {
     return (
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <View style={styles.loadingWrap}>
-          <ActivityIndicator size="large" color="#5568FE" />
-          <Text style={styles.loadingText}>Loading user...</Text>
+          <ActivityIndicator size="large" color={UNIFIED_THEME.colors.accent.primary} />
+          <ThemedText variant="body" size="sm" color="muted" style={styles.loadingText}>Loading user...</ThemedText>
         </View>
       </SafeAreaView>
     );
@@ -157,27 +158,27 @@ export default function UserEditScreen({ route, navigation }) {
       >
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Text style={styles.backText}>← Back</Text>
+            <ThemedText color="primary" style={styles.backText}>← Back</ThemedText>
           </TouchableOpacity>
-          <Text style={styles.title}>Edit User</Text>
+          <ThemedText variant="heading" size="md" style={styles.title}>Edit User</ThemedText>
         </View>
 
         <ScrollView contentContainerStyle={styles.scrollContent}>
-          <Text style={styles.sectionLabel}>Profile</Text>
-          <Text style={styles.label}>User ID</Text>
-          <Text style={styles.idText} numberOfLines={1}>{user?.id}</Text>
+          <ThemedText color="primary" style={styles.sectionLabel}>Profile</ThemedText>
+          <ThemedText variant="label" size="sm" color="muted" style={styles.label}>User ID</ThemedText>
+          <ThemedText variant="body" size="xs" color="muted" numberOfLines={1} style={styles.idText}>{user?.id}</ThemedText>
 
-          <Text style={styles.label}>Full Name *</Text>
+          <ThemedText variant="label" size="sm" color="muted" style={styles.label}>Full Name *</ThemedText>
           <TextInput
             style={styles.input}
             placeholder="Full name"
-            placeholderTextColor="#6b7280"
+            placeholderTextColor={UNIFIED_THEME.colors.text.muted}
             value={fullName}
             onChangeText={setFullName}
             autoCapitalize="words"
           />
 
-          <Text style={styles.label}>Role</Text>
+          <ThemedText variant="label" size="sm" color="muted" style={styles.label}>Role</ThemedText>
           <View style={styles.roleRow}>
             {ROLES.map((r) => (
               <TouchableOpacity
@@ -185,78 +186,83 @@ export default function UserEditScreen({ route, navigation }) {
                 style={[styles.roleChip, role === r.value && styles.roleChipActive]}
                 onPress={() => setRole(r.value)}
               >
-                <Text style={[styles.roleChipText, role === r.value && styles.roleChipTextActive]}>
+                <ThemedText
+                  variant="label"
+                  size="sm"
+                  color={role === r.value ? 'onAccent' : 'muted'}
+                  style={styles.roleChipText}
+                >
                   {r.label}
-                </Text>
+                </ThemedText>
               </TouchableOpacity>
             ))}
           </View>
 
           <View style={styles.verifiedRow}>
-            <Text style={styles.label}>Email verified</Text>
-            <Text style={styles.verifiedValue}>{user?.email_verified ? 'Yes' : 'No'}</Text>
+            <ThemedText variant="label" size="sm" color="muted" style={styles.label}>Email verified</ThemedText>
+            <ThemedText variant="body" size="sm" style={styles.verifiedValue}>{user?.email_verified ? 'Yes' : 'No'}</ThemedText>
           </View>
 
           {/* Teacher details */}
           {role === 'teacher' && (
             <>
-              <Text style={styles.sectionLabel}>Teacher details</Text>
-              <Text style={styles.label}>Bio</Text>
+              <ThemedText color="primary" style={styles.sectionLabel}>Teacher details</ThemedText>
+              <ThemedText variant="label" size="sm" color="muted" style={styles.label}>Bio</ThemedText>
               <TextInput
                 style={[styles.input, styles.multiline]}
                 placeholder="Bio"
-                placeholderTextColor="#6b7280"
+                placeholderTextColor={UNIFIED_THEME.colors.text.muted}
                 value={bio}
                 onChangeText={setBio}
                 multiline
                 numberOfLines={3}
               />
-              <Text style={styles.label}>Specializations</Text>
+              <ThemedText variant="label" size="sm" color="muted" style={styles.label}>Specializations</ThemedText>
               <TextInput
                 style={[styles.input, styles.multiline]}
                 placeholder="e.g. Math, Physics (comma separated)"
-                placeholderTextColor="#6b7280"
+                placeholderTextColor={UNIFIED_THEME.colors.text.muted}
                 value={specializations}
                 onChangeText={setSpecializations}
                 multiline
               />
-              <Text style={styles.label}>Price per call (₹)</Text>
+              <ThemedText variant="label" size="sm" color="muted" style={styles.label}>Price per call (₹)</ThemedText>
               <TextInput
                 style={styles.input}
                 placeholder="500"
-                placeholderTextColor="#6b7280"
+                placeholderTextColor={UNIFIED_THEME.colors.text.muted}
                 value={pricePerCall}
                 onChangeText={setPricePerCall}
                 keyboardType="numeric"
               />
-              <Text style={styles.label}>Experience (years)</Text>
+              <ThemedText variant="label" size="sm" color="muted" style={styles.label}>Experience (years)</ThemedText>
               <TextInput
                 style={styles.input}
                 placeholder="0"
-                placeholderTextColor="#6b7280"
+                placeholderTextColor={UNIFIED_THEME.colors.text.muted}
                 value={experienceYears}
                 onChangeText={setExperienceYears}
                 keyboardType="numeric"
               />
-              <Text style={styles.label}>Rating</Text>
+              <ThemedText variant="label" size="sm" color="muted" style={styles.label}>Rating</ThemedText>
               <TextInput
                 style={styles.input}
                 placeholder="4.8"
-                placeholderTextColor="#6b7280"
+                placeholderTextColor={UNIFIED_THEME.colors.text.muted}
                 value={rating}
                 onChangeText={setRating}
                 keyboardType="decimal-pad"
               />
-              <Text style={styles.label}>Followers</Text>
+              <ThemedText variant="label" size="sm" color="muted" style={styles.label}>Followers</ThemedText>
               <TextInput
                 style={styles.input}
                 placeholder="0"
-                placeholderTextColor="#6b7280"
+                placeholderTextColor={UNIFIED_THEME.colors.text.muted}
                 value={followers}
                 onChangeText={setFollowers}
                 keyboardType="numeric"
               />
-              <Text style={styles.label}>Status</Text>
+              <ThemedText variant="label" size="sm" color="muted" style={styles.label}>Status</ThemedText>
               <View style={styles.roleRow}>
                 {STATUS_OPTIONS.map((s) => (
                   <TouchableOpacity
@@ -264,9 +270,14 @@ export default function UserEditScreen({ route, navigation }) {
                     style={[styles.roleChip, availabilityStatus === s.value && styles.roleChipActive]}
                     onPress={() => setAvailabilityStatus(s.value)}
                   >
-                    <Text style={[styles.roleChipText, availabilityStatus === s.value && styles.roleChipTextActive]}>
+                    <ThemedText
+                      variant="label"
+                      size="sm"
+                      color={availabilityStatus === s.value ? 'onAccent' : 'muted'}
+                      style={styles.roleChipText}
+                    >
                       {s.label}
-                    </Text>
+                    </ThemedText>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -279,7 +290,7 @@ export default function UserEditScreen({ route, navigation }) {
                   })
                 }
               >
-                <Text style={styles.walletBtnText}>View teacher wallet</Text>
+                <ThemedText color="primary" style={styles.walletBtnText}>View teacher wallet</ThemedText>
               </TouchableOpacity>
             </>
           )}
@@ -287,29 +298,29 @@ export default function UserEditScreen({ route, navigation }) {
           {/* Student details */}
           {role === 'student' && (
             <>
-              <Text style={styles.sectionLabel}>Student details</Text>
-              <Text style={styles.label}>Grade level</Text>
+              <ThemedText color="primary" style={styles.sectionLabel}>Student details</ThemedText>
+              <ThemedText variant="label" size="sm" color="muted" style={styles.label}>Grade level</ThemedText>
               <TextInput
                 style={styles.input}
                 placeholder="e.g. 10th, High School"
-                placeholderTextColor="#6b7280"
+                placeholderTextColor={UNIFIED_THEME.colors.text.muted}
                 value={gradeLevel}
                 onChangeText={setGradeLevel}
               />
-              <Text style={styles.label}>Subjects interested</Text>
+              <ThemedText variant="label" size="sm" color="muted" style={styles.label}>Subjects interested</ThemedText>
               <TextInput
                 style={[styles.input, styles.multiline]}
                 placeholder="e.g. Math, Science"
-                placeholderTextColor="#6b7280"
+                placeholderTextColor={UNIFIED_THEME.colors.text.muted}
                 value={subjectsInterested}
                 onChangeText={setSubjectsInterested}
                 multiline
               />
-              <Text style={styles.label}>Preferred language</Text>
+              <ThemedText variant="label" size="sm" color="muted" style={styles.label}>Preferred language</ThemedText>
               <TextInput
                 style={styles.input}
                 placeholder="English"
-                placeholderTextColor="#6b7280"
+                placeholderTextColor={UNIFIED_THEME.colors.text.muted}
                 value={preferredLanguage}
                 onChangeText={setPreferredLanguage}
               />
@@ -322,9 +333,9 @@ export default function UserEditScreen({ route, navigation }) {
             disabled={saving}
           >
             {saving ? (
-              <ActivityIndicator color="#fff" size="small" />
+              <ActivityIndicator color={UNIFIED_THEME.colors.text.onAccent} size="small" />
             ) : (
-              <Text style={styles.saveBtnText}>Save changes</Text>
+              <ThemedText color="onAccent" style={styles.saveBtnText}>Save changes</ThemedText>
             )}
           </TouchableOpacity>
         </ScrollView>
@@ -334,55 +345,62 @@ export default function UserEditScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0B0D2A' },
+  container: { flex: 1, backgroundColor: UNIFIED_THEME.colors.primary.light },
   loadingWrap: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  loadingText: { color: '#9ca3af', marginTop: 10, fontSize: 14 },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#1C1F4A' },
-  backBtn: { marginRight: 12 },
-  backText: { color: '#5568FE', fontSize: 16, fontWeight: '600' },
-  title: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
-  scrollContent: { paddingHorizontal: 20, paddingVertical: 24, paddingBottom: 40 },
-  sectionLabel: { color: '#5568FE', fontSize: 14, fontWeight: '700', marginTop: 24, marginBottom: 12 },
-  label: { color: '#9ca3af', fontSize: 13, fontWeight: '600', marginBottom: 8, marginTop: 14 },
-  idText: { color: '#6b7280', fontSize: 12, marginBottom: 4 },
+  loadingText: { marginTop: UNIFIED_THEME.spacing.md },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: UNIFIED_THEME.spacing.lg,
+    paddingVertical: UNIFIED_THEME.spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: UNIFIED_THEME.colors.border.light,
+  },
+  backBtn: { marginRight: UNIFIED_THEME.spacing.md },
+  backText: { fontSize: 16, fontWeight: '600' },
+  title: { fontWeight: 'bold' },
+  scrollContent: { paddingHorizontal: UNIFIED_THEME.spacing.lg, paddingVertical: UNIFIED_THEME.spacing.xxxl, paddingBottom: UNIFIED_THEME.spacing.xxxl },
+  sectionLabel: { marginTop: UNIFIED_THEME.spacing.xxxl, marginBottom: UNIFIED_THEME.spacing.md },
+  label: { marginBottom: UNIFIED_THEME.spacing.sm, marginTop: UNIFIED_THEME.spacing.md },
+  idText: { marginBottom: UNIFIED_THEME.spacing.xs },
   input: {
-    backgroundColor: '#1C1F4A',
-    borderRadius: 10,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    color: '#fff',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
+    paddingVertical: UNIFIED_THEME.spacing.md,
+    paddingHorizontal: UNIFIED_THEME.spacing.lg,
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 15,
   },
   multiline: { minHeight: 80, textAlignVertical: 'top' },
-  roleRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 8 },
+  roleRow: { flexDirection: 'row', flexWrap: 'wrap', gap: UNIFIED_THEME.spacing.md, marginTop: UNIFIED_THEME.spacing.sm },
   roleChip: {
-    paddingVertical: 10,
-    paddingHorizontal: 18,
-    borderRadius: 10,
-    backgroundColor: '#1C1F4A',
+    paddingVertical: UNIFIED_THEME.spacing.md,
+    paddingHorizontal: UNIFIED_THEME.spacing.lg,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
   },
-  roleChipActive: { backgroundColor: '#5568FE' },
-  roleChipText: { color: '#9ca3af', fontSize: 14, fontWeight: '500' },
-  roleChipTextActive: { color: '#fff' },
+  roleChipActive: { backgroundColor: UNIFIED_THEME.colors.accent.primary },
+  roleChipText: {},
+  roleChipTextActive: { color: UNIFIED_THEME.colors.text.onAccent },
   walletBtn: {
-    backgroundColor: '#1C1F4A',
-    borderRadius: 10,
-    paddingVertical: 14,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
+    paddingVertical: UNIFIED_THEME.spacing.md,
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: UNIFIED_THEME.spacing.xxxl,
     borderWidth: 1,
-    borderColor: '#5568FE',
+    borderColor: UNIFIED_THEME.colors.accent.primary,
   },
-  walletBtnText: { color: '#5568FE', fontSize: 15, fontWeight: '600' },
-  verifiedRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 20 },
-  verifiedValue: { color: '#fff', fontSize: 14 },
+  walletBtnText: { fontSize: 15, fontWeight: '600' },
+  verifiedRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: UNIFIED_THEME.spacing.xxxl },
+  verifiedValue: {},
   saveBtn: {
-    backgroundColor: '#5568FE',
-    borderRadius: 10,
-    paddingVertical: 16,
+    backgroundColor: UNIFIED_THEME.colors.accent.primary,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
+    paddingVertical: UNIFIED_THEME.spacing.lg,
     alignItems: 'center',
-    marginTop: 32,
+    marginTop: UNIFIED_THEME.spacing.xxxl,
   },
   saveBtnDisabled: { opacity: 0.7 },
-  saveBtnText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  saveBtnText: {},
 });

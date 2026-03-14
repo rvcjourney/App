@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   TouchableOpacity,
   TextInput,
@@ -12,16 +11,12 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-simple-toast';
 import { supabase } from '../../../supabase';
+import logger from '../../utils/logger';
+import { PROFESSIONS } from '../../constants/professions';
+import UNIFIED_THEME from '../../constants/unifiedTheme';
+import ThemedText from '../../components/ThemedText';
 import ChevronRight from '../../assets/icons/ChevronRight';
 import User from '../../assets/icons/User';
-
-const PROFESSIONS = [
-  { id: 1, name: 'Yoga Profession', icon: '🧘' },
-  { id: 2, name: 'Gym Trainer', icon: '💪' },
-  { id: 3, name: 'Academic Teacher', icon: '📚' },
-  { id: 4, name: 'Business Consultant', icon: '💼' },
-  { id: 5, name: 'Astrologers', icon: '🔮' },
-];
 
 export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
   const [fullName, setFullName] = useState('');
@@ -39,8 +34,8 @@ export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
   useEffect(() => {
     const loadProfile = async () => {
       try {
-        console.log('🔵 [EditTeacherProfile] Loading profile...');
-        
+        logger.info('EditTeacherProfile: Loading profile...');
+
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           setTeacherId(user.id);
@@ -73,9 +68,9 @@ export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
             setProfession(teacherData.profession || null);
           }
         }
-        
+
       } catch (error) {
-        console.error('🔴 Error loading profile:', error);
+        logger.error('EditTeacherProfile: Error loading profile:', error);
         Toast.show('Error loading profile');
       } finally {
         setLoading(false);
@@ -147,7 +142,7 @@ export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#ff006e" />
+          <ActivityIndicator size="large" color={UNIFIED_THEME.colors.accent.primary} />
         </View>
       </SafeAreaView>
     );
@@ -158,10 +153,10 @@ export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
       <ScrollView>
         <View style={styles.header}>
           <TouchableOpacity style={styles.backButtonContainer} onPress={() => navigation.goBack()}>
-            {/* <Text style={styles.backButton}>← Back</Text> */}
-            <ChevronRight width={24} height={24} fill="#ff006e" style={{ transform: [{ rotate: '180deg' }] }} />
+            {/* <ThemedText style={styles.backButton}>← Back</ThemedText> */}
+            <ChevronRight width={24} height={24} fill={UNIFIED_THEME.colors.accent.primary} style={{ transform: [{ rotate: '180deg' }] }} />
           </TouchableOpacity>
-          <Text style={styles.title}>Edit Profile</Text>
+          <ThemedText variant="heading" size="md" style={{ flex: 1 }}>Edit Profile</ThemedText>
         </View>
 
         <View style={styles.content}>
@@ -173,11 +168,11 @@ export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
 
           {/* Full Name */}
           <View style={styles.fieldSection}>
-            <Text style={styles.label}>Full Name *</Text>
+            <ThemedText variant="label" size="md" color="primary">Full Name *</ThemedText>
             <TextInput
               style={styles.input}
               placeholder="Enter your full name"
-              placeholderTextColor="#b0b0b0"
+              placeholderTextColor={UNIFIED_THEME.colors.text.muted}
               value={fullName}
               onChangeText={setFullName}
             />
@@ -185,15 +180,15 @@ export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
 
           {/* Email */}
           <View style={styles.fieldSection}>
-            <Text style={styles.label}>Email</Text>
+            <ThemedText variant="label" size="md" color="primary">Email</ThemedText>
             <View style={[styles.input, styles.readonlyInput]}>
-              <Text style={styles.readonlyText}>{email}</Text>
+              <ThemedText variant="body" size="md" color="muted">{email}</ThemedText>
             </View>
           </View>
 
           {/* Profession */}
           <View style={styles.fieldSection}>
-            <Text style={styles.label}>Profession (Optional)</Text>
+            <ThemedText variant="label" size="md" color="primary">Profession (Optional)</ThemedText>
             <View style={styles.professionGrid}>
               {PROFESSIONS.map((prof) => (
                 <TouchableOpacity
@@ -204,10 +199,10 @@ export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
                   ]}
                   onPress={() => setProfession(prof.name)}
                 >
-                  <Text style={styles.professionIcon}>{prof.icon}</Text>
-                  <Text style={styles.professionName}>{prof.name}</Text>
+                  <ThemedText style={styles.professionIcon}>{prof.icon}</ThemedText>
+                  <ThemedText variant="label" size="sm" color="primary" style={{ textAlign: 'center' }}>{prof.name}</ThemedText>
                   {profession === prof.name && (
-                    <Text style={styles.professionCheckmark}>✓</Text>
+                    <ThemedText style={styles.professionCheckmark}>✓</ThemedText>
                   )}
                 </TouchableOpacity>
               ))}
@@ -216,11 +211,11 @@ export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
 
           {/* Bio */}
           <View style={styles.fieldSection}>
-            <Text style={styles.label}>Bio</Text>
+            <ThemedText variant="label" size="md" color="primary">Bio</ThemedText>
             <TextInput
               style={[styles.input, styles.multilineInput]}
               placeholder="Write a brief bio about yourself..."
-              placeholderTextColor="#b0b0b0"
+              placeholderTextColor={UNIFIED_THEME.colors.text.muted}
               value={bio}
               onChangeText={setBio}
               multiline
@@ -230,11 +225,11 @@ export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
 
           {/* Specializations */}
           <View style={styles.fieldSection}>
-            <Text style={styles.label}>Specializations</Text>
+            <ThemedText variant="label" size="md" color="primary">Specializations</ThemedText>
             <TextInput
               style={[styles.input, styles.multilineInput]}
               placeholder="e.g., Math, Physics, Chemistry (comma separated)"
-              placeholderTextColor="#b0b0b0"
+              placeholderTextColor={UNIFIED_THEME.colors.text.muted}
               value={specializations}
               onChangeText={setSpecializations}
               multiline
@@ -244,18 +239,18 @@ export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
 
           {/* Price Per Hour Call */}
           <View style={styles.fieldSection}>
-            <Text style={styles.label}>Price Per Hour Call (₹)</Text>
+            <ThemedText variant="label" size="md" color="primary">Price Per Hour Call (₹)</ThemedText>
             <View style={styles.priceRow}>
               <TouchableOpacity
                 style={styles.priceAdjustBtn}
                 onPress={() => setPricePerCall(String(Math.max(100, parseInt(pricePerCall) - 50)))}
               >
-                <Text style={styles.priceAdjustText}>-</Text>
+                <ThemedText variant="heading" size="md" color="primary">-</ThemedText>
               </TouchableOpacity>
               <TextInput
                 style={[styles.input, styles.priceInput]}
                 placeholder="500"
-                placeholderTextColor="#b0b0b0"
+                placeholderTextColor={UNIFIED_THEME.colors.text.muted}
                 value={pricePerCall}
                 onChangeText={setPricePerCall}
                 keyboardType="numeric"
@@ -264,18 +259,18 @@ export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
                 style={styles.priceAdjustBtn}
                 onPress={() => setPricePerCall(String(parseInt(pricePerCall) + 50 || 550))}
               >
-                <Text style={styles.priceAdjustText}>+</Text>
+                <ThemedText variant="heading" size="md" color="primary">+</ThemedText>
               </TouchableOpacity>
             </View>
           </View>
 
           {/* Experience Years */}
           <View style={styles.fieldSection}>
-            <Text style={styles.label}>Years of Experience</Text>
+            <ThemedText variant="label" size="md" color="primary">Years of Experience</ThemedText>
             <TextInput
               style={styles.input}
               placeholder="e.g., 5"
-              placeholderTextColor="#b0b0b0"
+              placeholderTextColor={UNIFIED_THEME.colors.text.muted}
               value={experienceYears}
               onChangeText={setExperienceYears}
               keyboardType="numeric"
@@ -289,9 +284,9 @@ export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
           onPress={handleSave}
           disabled={saving}
         >
-          <Text style={styles.saveButtonText}>
+          <ThemedText variant="label" size="lg" color="onAccent">
             {saving ? 'Saving...' : 'Save Changes'}
-          </Text>
+          </ThemedText>
         </TouchableOpacity>
 
         <View style={{ marginBottom: 30 }} />
@@ -303,7 +298,7 @@ export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f1b3f',
+    backgroundColor: UNIFIED_THEME.colors.primary.light,
   },
 
   loadingContainer: {
@@ -316,75 +311,55 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 18,
-    borderBottomColor: 'rgba(255, 0, 110, 0.2)',
+    paddingHorizontal: UNIFIED_THEME.spacing.md,
+    paddingVertical: UNIFIED_THEME.spacing.lg,
+    borderBottomColor: UNIFIED_THEME.colors.border.light,
     borderBottomWidth: 1,
   },
 
-  // backButton: {
-  //   color: '#1E90FF',
-  //   fontSize: 16,
-  //   fontWeight: '600',
-  //   marginRight: 10,
-  // },
   backButtonContainer: {
     width: 40,
     height: 40,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: UNIFIED_THEME.borderRadius.md,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
-  },
-
-  title: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: 'bold',
+    marginRight: UNIFIED_THEME.spacing.md,
   },
 
   content: {
-    paddingHorizontal: 20,
-    paddingVertical: 20,
+    paddingHorizontal: UNIFIED_THEME.spacing.lg,
+    paddingVertical: UNIFIED_THEME.spacing.lg,
   },
 
   avatarSection: {
-    marginBottom: 30,
+    marginBottom: UNIFIED_THEME.spacing.xxxl,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: 100,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderRadius: UNIFIED_THEME.borderRadius.round,
     width: 80,
     height: 80,
     alignSelf: 'center',
   },
-  
 
   avatar: {
     fontSize: 64,
   },
 
   fieldSection: {
-    marginBottom: 20,
-  },
-
-  label: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 8,
+    marginBottom: UNIFIED_THEME.spacing.xl,
   },
 
   input: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    backgroundColor: UNIFIED_THEME.colors.component.input,
+    borderColor: UNIFIED_THEME.colors.border.default,
     borderWidth: 1,
-    borderRadius: 10,
-    color: '#fff',
+    borderRadius: UNIFIED_THEME.borderRadius.md,
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 14,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: UNIFIED_THEME.spacing.md,
+    paddingVertical: UNIFIED_THEME.spacing.md,
   },
 
   readonlyInput: {
@@ -392,14 +367,9 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
 
-  readonlyText: {
-    color: '#b0b0b0',
-    fontSize: 14,
-  },
-
   multilineInput: {
-    paddingVertical: 12,
-    paddingTop: 12,
+    paddingVertical: UNIFIED_THEME.spacing.md,
+    paddingTop: UNIFIED_THEME.spacing.md,
     minHeight: 80,
     textAlignVertical: 'top',
   },
@@ -407,24 +377,18 @@ const styles = StyleSheet.create({
   priceRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: UNIFIED_THEME.spacing.sm,
   },
 
   priceAdjustBtn: {
     width: 45,
     height: 45,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderColor: UNIFIED_THEME.colors.border.default,
     borderWidth: 1,
-    borderRadius: 10,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-
-  priceAdjustText: {
-    color: '#ff006e',
-    fontSize: 18,
-    fontWeight: '600',
   },
 
   priceInput: {
@@ -435,62 +399,48 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    gap: 10,
+    gap: UNIFIED_THEME.spacing.sm,
   },
 
   professionCard: {
     width: '48%',
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderRadius: UNIFIED_THEME.borderRadius.lg,
+    padding: UNIFIED_THEME.spacing.md,
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    borderColor: UNIFIED_THEME.colors.border.default,
   },
 
   professionCardSelected: {
-    borderColor: '#ff006e',
+    borderColor: UNIFIED_THEME.colors.accent.primary,
     backgroundColor: 'rgba(255, 0, 110, 0.15)',
   },
 
   professionIcon: {
     fontSize: 32,
-    marginBottom: 8,
-  },
-
-  professionName: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
-    textAlign: 'center',
-    lineHeight: 16,
+    marginBottom: UNIFIED_THEME.spacing.md,
   },
 
   professionCheckmark: {
     position: 'absolute',
-    top: 8,
-    right: 8,
-    color: '#ff006e',
+    top: UNIFIED_THEME.spacing.sm,
+    right: UNIFIED_THEME.spacing.sm,
     fontSize: 16,
     fontWeight: 'bold',
   },
 
   saveButton: {
-    marginHorizontal: 20,
-    marginVertical: 20,
-    backgroundColor: 'transparent',   // Use LinearGradient wrapper for gradient
-    borderRadius: 10,
-    paddingVertical: 15,
+    marginHorizontal: UNIFIED_THEME.spacing.lg,
+    marginVertical: UNIFIED_THEME.spacing.lg,
+    backgroundColor: UNIFIED_THEME.colors.accent.primary,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
+    paddingVertical: UNIFIED_THEME.spacing.lg,
     alignItems: 'center',
+    ...UNIFIED_THEME.shadows.medium,
   },
 
   saveButtonDisabled: {
     opacity: 0.5,
-  },
-
-  saveButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
   },
 });

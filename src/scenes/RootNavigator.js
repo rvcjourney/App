@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { View, ActivityIndicator, Text } from 'react-native';
 import { supabase } from '../../supabase';
 import { isProfileComplete } from '../database/database';
+import logger from '../utils/logger';
+import COLORS from '../constants/appColors';
 import AuthStack from './AuthStack';
 import StudentStack from './StudentStack';
 import TeacherStack from './TeacherStack';
@@ -17,19 +19,19 @@ export default function RootNavigator() {
 
   // Initialize auth session
   useEffect(() => {
-    console.log('🔵 RootNavigator: Initializing auth');
-    
+    logger.info('RootNavigator: Initializing auth');
+
     const initAuth = async () => {
       try {
         const { data: { session: currentSession } } = await supabase.auth.getSession();
-        console.log('🔵 RootNavigator: Current session:', currentSession?.user?.id);
+        logger.info('RootNavigator: Current session:', currentSession?.user?.id);
         setSession(currentSession);
-        
+
         if (currentSession?.user) {
           await fetchRole(currentSession.user);
         }
       } catch (err) {
-        console.error('🔴 RootNavigator: Auth init error:', err);
+        logger.error('RootNavigator: Auth init error:', err);
       } finally {
         setLoading(false);
       }
@@ -39,9 +41,9 @@ export default function RootNavigator() {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
-      console.log('🔵 RootNavigator: Auth state changed:', event, newSession?.user?.id);
+      logger.info('RootNavigator: Auth state changed:', event, newSession?.user?.id);
       setSession(newSession);
-      
+
       if (newSession?.user) {
         await fetchRole(newSession.user);
         setProfileComplete(null);
@@ -62,7 +64,7 @@ export default function RootNavigator() {
     if (!userId) return;
 
     try {
-      console.log('🔵 RootNavigator: Fetching role and verification status for user:', userId);
+      logger.info('RootNavigator: Fetching role and verification status for user:', userId);
 
       // Retry logic in case profile is not synced yet (e.g. right after signup)
       const maxAttempts = 6;
@@ -83,7 +85,7 @@ export default function RootNavigator() {
         profile = Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
 
         if (!error && profile?.role) {
-          console.log('✅ RootNavigator: Role fetched:', profile.role, 'Verified:', profile.email_verified);
+          logger.success('RootNavigator: Role fetched:', profile.role, 'Verified:', profile.email_verified);
           setRole(profile.role);
           setEmailVerified(profile.email_verified || false);
           return;
@@ -91,7 +93,7 @@ export default function RootNavigator() {
 
         attempts++;
         if (attempts < maxAttempts) {
-          console.log(`⏳ RootNavigator: Retry ${attempts}/${maxAttempts} - waiting for profile sync...`);
+          logger.wait(`RootNavigator: Retry ${attempts}/${maxAttempts} - waiting for profile sync...`);
           await new Promise(resolve => setTimeout(resolve, retryDelayMs));
         }
       }
@@ -99,7 +101,7 @@ export default function RootNavigator() {
       // Fallback: use role from signup metadata so teacher doesn't land on student dashboard
       const metaRole = user?.user_metadata?.role;
       if (metaRole === 'teacher' || metaRole === 'student') {
-        console.log('⚠️ RootNavigator: Using role from user_metadata:', metaRole);
+        logger.warn('RootNavigator: Using role from user_metadata:', metaRole);
         setRole(metaRole);
         setEmailVerified(false);
         return;
@@ -112,7 +114,7 @@ export default function RootNavigator() {
         throw new Error('Role not found in profile after retries');
       }
     } catch (err) {
-      console.error('🔴 RootNavigator: Failed to fetch role:', err.message);
+      logger.error('RootNavigator: Failed to fetch role:', err.message);
       const metaRole = user?.user_metadata?.role;
       if (metaRole === 'teacher' || metaRole === 'student') {
         setRole(metaRole);
@@ -140,32 +142,32 @@ export default function RootNavigator() {
   // Loading state
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0B0D2A' }}>
-        <ActivityIndicator size="large" color="#2ECC71" />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.ADMIN_BG }}>
+        <ActivityIndicator size="large" color={COLORS.ADMIN_INDICATOR} />
       </View>
     );
   }
 
   // Not authenticated - show auth screens
   if (!session) {
-    console.log('🔵 RootNavigator: No session, showing AuthStack');
+    logger.info('RootNavigator: No session, showing AuthStack');
     return <AuthStack />;
   }
 
   // Authenticated but role/verification not loaded yet
   if (!role || emailVerified === null) {
-    console.log('🔵 RootNavigator: Session exists, waiting for role and verification status');
+    logger.info('RootNavigator: Session exists, waiting for role and verification status');
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0B0D2A' }}>
-        <ActivityIndicator size="large" color="#2ECC71" />
-        <Text style={{ color: '#fff', marginTop: 10 }}>Loading your dashboard...</Text>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.ADMIN_BG }}>
+        <ActivityIndicator size="large" color={COLORS.ADMIN_INDICATOR} />
+        <Text style={{ color: COLORS.TEXT, marginTop: 10 }}>Loading your dashboard...</Text>
       </View>
     );
   }
 
   // Check if email is not verified - show OTP screen (super_admin skips verification)
   if (role !== 'super_admin' && !emailVerified) {
-    console.log('🔵 RootNavigator: Email not verified, showing verification screen');
+    logger.info('RootNavigator: Email not verified, showing verification screen');
     return (
       <EmailVerificationScreen
         route={{
@@ -177,7 +179,7 @@ export default function RootNavigator() {
         }}
         onVerificationComplete={() => {
           // Refresh email verification status
-          console.log('✅ RootNavigator: Email verification complete, refreshing...');
+          logger.success('RootNavigator: Email verification complete, refreshing...');
           setEmailVerified(true);
         }}
       />
@@ -187,22 +189,23 @@ export default function RootNavigator() {
   // Wait for profile-completion check (done in useEffect above)
   if (profileComplete === null) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0B0D2A' }}>
-        <ActivityIndicator size="large" color="#2ECC71" />
-        <Text style={{ color: '#fff', marginTop: 10 }}>Loading...</Text>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.ADMIN_BG }}>
+        <ActivityIndicator size="large" color={COLORS.ADMIN_INDICATOR} />
+        <Text style={{ color: COLORS.TEXT, marginTop: 10 }}>Loading...</Text>
       </View>
     );
   }
 
   // When profile is incomplete we still show the dashboard; snackbar there prompts "Go to edit profile"
   if (profileComplete === false) {
-    console.log('🔵 RootNavigator: Profile incomplete, showing dashboard with snackbar prompt');
+    logger.info('RootNavigator: Profile incomplete, showing dashboard with snackbar prompt');
   }
 
   // Authenticated, verified - show role-based stack (snackbar on dashboard if profile incomplete)
-  console.log('🔵 RootNavigator: Showing stack for role:', role);
+  logger.info('RootNavigator: Showing stack for role:', role);
 
-  if (role === 'super_admin') {
+  // Route based on role (consolidate admin and super_admin)
+  if (role === 'super_admin' || role === 'admin') {
     return <AdminStack />;
   }
 
@@ -214,14 +217,11 @@ export default function RootNavigator() {
     return <StudentStack />;
   }
 
-  if(role === 'admin') {
-    return <AdminStack />;
-  }
   // Invalid role
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0B0D2A' }}>
-      <Text style={{ color: '#fff', fontSize: 18 }}>Invalid role: {role}</Text>
-      <Text style={{ color: '#aaa', marginTop: 10 }}>Please contact support</Text>
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.ADMIN_BG }}>
+      <Text style={{ color: COLORS.TEXT, fontSize: 18 }}>Invalid role: {role}</Text>
+      <Text style={{ color: COLORS.TEXT_MUTED, marginTop: 10 }}>Please contact support</Text>
     </View>
   );
 }

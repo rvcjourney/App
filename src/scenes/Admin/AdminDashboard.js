@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
@@ -16,6 +15,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-simple-toast';
 import { supabase } from '../../../supabase';
 import { API_URL } from '../../api/api';
+import UNIFIED_THEME from '../../constants/unifiedTheme';
+import ThemedText from '../../components/ThemedText';
 
 export default function AdminDashboard({ navigation }) {
   const [activeTab, setActiveTab] = useState('charges'); // charges, withdrawals, analytics
@@ -224,10 +225,10 @@ export default function AdminDashboard({ navigation }) {
   // ==========================================
   const renderChargesTab = () => (
     <View style={styles.tabContent}>
-      <Text style={styles.tabTitle}>Manage Teacher Charges</Text>
-      <Text style={styles.tabDescription}>
+      <ThemedText variant="heading" size="md" style={styles.tabTitle}>Manage Teacher Charges</ThemedText>
+      <ThemedText variant="body" size="sm" color="muted" style={styles.tabDescription}>
         Set base price + admin charge that will be visible to students
-      </Text>
+      </ThemedText>
 
       {teachers.map(teacher => (
         <TouchableOpacity
@@ -241,11 +242,11 @@ export default function AdminDashboard({ navigation }) {
           }}
         >
           <View style={styles.teacherInfo}>
-            <Text style={styles.teacherName}>{teacher.profile?.full_name}</Text>
-            <Text style={styles.teacherEmail}>{teacher.profile?.email}</Text>
-            <Text style={styles.priceInfo}>Current: ₹{teacher.price_per_call || 0}/hr</Text>
+            <ThemedText variant="body" size="md" style={styles.teacherName}>{teacher.profile?.full_name}</ThemedText>
+            <ThemedText variant="body" size="sm" color="muted" style={styles.teacherEmail}>{teacher.profile?.email}</ThemedText>
+            <ThemedText variant="body" size="sm" color="warning" style={styles.priceInfo}>Current: ₹{teacher.price_per_call || 0}/hr</ThemedText>
           </View>
-          <Text style={styles.editArrow}>→</Text>
+          <ThemedText color="primary" style={styles.editArrow}>→</ThemedText>
         </TouchableOpacity>
       ))}
     </View>
@@ -256,15 +257,15 @@ export default function AdminDashboard({ navigation }) {
   // ==========================================
   const renderWithdrawalsTab = () => (
     <View style={styles.tabContent}>
-      <Text style={styles.tabTitle}>Payment Requests</Text>
-      <Text style={styles.tabDescription}>
+      <ThemedText variant="heading" size="md" style={styles.tabTitle}>Payment Requests</ThemedText>
+      <ThemedText variant="body" size="sm" color="muted" style={styles.tabDescription}>
         Review teacher redemption requests. Tap a request to see full details and approve.
-      </Text>
+      </ThemedText>
 
       {withdrawals.length === 0 ? (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyIcon}>📭</Text>
-          <Text style={styles.emptyText}>No pending payment requests</Text>
+          <ThemedText style={styles.emptyIcon}>📭</ThemedText>
+          <ThemedText variant="body" size="sm" color="muted" style={styles.emptyText}>No pending payment requests</ThemedText>
         </View>
       ) : (
         withdrawals.map((withdrawal) => (
@@ -275,24 +276,24 @@ export default function AdminDashboard({ navigation }) {
             activeOpacity={0.8}
           >
             <View style={styles.withdrawalHeader}>
-              <Text style={styles.teacherName}>
+              <ThemedText variant="body" size="md" style={styles.teacherName}>
                 {withdrawal.sender?.full_name || withdrawal.account_holder_name}
-              </Text>
-              <Text style={styles.withdrawalAmount}>₹{Number(withdrawal.amount).toLocaleString()}</Text>
+              </ThemedText>
+              <ThemedText variant="heading" size="sm" color="warning" style={styles.withdrawalAmount}>₹{Number(withdrawal.amount).toLocaleString()}</ThemedText>
             </View>
             <View style={styles.withdrawalDetails}>
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Account:</Text>
-                <Text style={styles.detailValue}>{withdrawal.bank_account_number_masked || '******'}</Text>
+                <ThemedText variant="body" size="sm" color="muted" style={styles.detailLabel}>Account:</ThemedText>
+                <ThemedText variant="body" size="sm" style={styles.detailValue}>{withdrawal.bank_account_number_masked || '******'}</ThemedText>
               </View>
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Requested:</Text>
-                <Text style={styles.detailValue}>
+                <ThemedText variant="body" size="sm" color="muted" style={styles.detailLabel}>Requested:</ThemedText>
+                <ThemedText variant="body" size="sm" style={styles.detailValue}>
                   {new Date(withdrawal.requested_at).toLocaleDateString()}
-                </Text>
+                </ThemedText>
               </View>
             </View>
-            <Text style={styles.tapToView}>Tap to view details →</Text>
+            <ThemedText variant="body" size="sm" color="primary" style={styles.tapToView}>Tap to view details →</ThemedText>
           </TouchableOpacity>
         ))
       )}
@@ -304,32 +305,32 @@ export default function AdminDashboard({ navigation }) {
   // ==========================================
   const renderAnalyticsTab = () => (
     <View style={styles.tabContent}>
-      <Text style={styles.tabTitle}>Payment Analytics</Text>
+      <ThemedText variant="heading" size="md" style={styles.tabTitle}>Payment Analytics</ThemedText>
 
       {!analytics ? (
-        <ActivityIndicator size="large" color="#5568FE" />
+        <ActivityIndicator size="large" color={UNIFIED_THEME.colors.accent.primary} />
       ) : (
         <>
           {/* Revenue Cards */}
           <View style={styles.analyticsCard}>
-            <Text style={styles.analyticsLabel}>Total Revenue</Text>
-            <Text style={styles.analyticsAmount}>₹{analytics.totalRevenue?.toLocaleString()}</Text>
-            <Text style={styles.analyticsSubtext}>{analytics.totalPayments} transactions</Text>
+            <ThemedText variant="body" size="sm" color="muted" style={styles.analyticsLabel}>Total Revenue</ThemedText>
+            <ThemedText variant="heading" size="lg" style={styles.analyticsAmount}>₹{analytics.totalRevenue?.toLocaleString()}</ThemedText>
+            <ThemedText variant="body" size="xs" color="muted" style={styles.analyticsSubtext}>{analytics.totalPayments} transactions</ThemedText>
           </View>
 
-          <View style={[styles.analyticsCard, { backgroundColor: '#2E7D32' }]}>
-            <Text style={styles.analyticsLabel}>Pending Withdrawals</Text>
-            <Text style={styles.analyticsAmount}>₹{analytics.pendingWithdrawals?.toLocaleString()}</Text>
-            <Text style={styles.analyticsSubtext}>Awaiting processing</Text>
+          <View style={[styles.analyticsCard, { backgroundColor: UNIFIED_THEME.colors.status.approved }]}>
+            <ThemedText variant="body" size="sm" color="muted" style={styles.analyticsLabel}>Pending Withdrawals</ThemedText>
+            <ThemedText variant="heading" size="lg" style={styles.analyticsAmount}>₹{analytics.pendingWithdrawals?.toLocaleString()}</ThemedText>
+            <ThemedText variant="body" size="xs" color="muted" style={styles.analyticsSubtext}>Awaiting processing</ThemedText>
           </View>
 
           {/* Top Teachers */}
-          <Text style={styles.sectionTitle}>Top Earning Teachers</Text>
+          <ThemedText variant="heading" size="sm" style={styles.sectionTitle}>Top Earning Teachers</ThemedText>
           {analytics.topTeachers?.map((item, index) => (
             <View key={index} style={styles.topTeacherRow}>
-              <Text style={styles.rank}>{index + 1}.</Text>
-              <Text style={styles.topTeacherName}>Teacher {item.teacher_id?.substring(0, 8)}</Text>
-              <Text style={styles.topTeacherEarnings}>₹{item.teacher_earn?.toLocaleString()}</Text>
+              <ThemedText variant="body" size="sm" color="primary" style={styles.rank}>{index + 1}.</ThemedText>
+              <ThemedText variant="body" size="sm" style={styles.topTeacherName}>Teacher {item.teacher_id?.substring(0, 8)}</ThemedText>
+              <ThemedText variant="body" size="sm" color="success" style={styles.topTeacherEarnings}>₹{item.teacher_earn?.toLocaleString()}</ThemedText>
             </View>
           ))}
         </>
@@ -342,9 +343,9 @@ export default function AdminDashboard({ navigation }) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backBtnText}>← Back</Text>
+          <ThemedText color="primary" style={styles.backBtnText}>← Back</ThemedText>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Finance</Text>
+        <ThemedText variant="heading" size="md" style={styles.headerTitle}>Finance</ThemedText>
       </View>
 
       {/* Tab Navigation */}
@@ -353,46 +354,46 @@ export default function AdminDashboard({ navigation }) {
           style={[styles.tabButton, activeTab === 'charges' && styles.tabButtonActive]}
           onPress={() => setActiveTab('charges')}
         >
-          <Text
-            style={[styles.tabButtonText, activeTab === 'charges' && styles.tabButtonTextActive]}
+          <ThemedText
+            variant="label"
+            size="sm"
+            color={activeTab === 'charges' ? 'primary' : 'muted'}
           >
             💰 Charges
-          </Text>
+          </ThemedText>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={[styles.tabButton, activeTab === 'withdrawals' && styles.tabButtonActive]}
           onPress={() => setActiveTab('withdrawals')}
         >
-          <Text
-            style={[
-              styles.tabButtonText,
-              activeTab === 'withdrawals' && styles.tabButtonTextActive,
-            ]}
+          <ThemedText
+            variant="label"
+            size="sm"
+            color={activeTab === 'withdrawals' ? 'primary' : 'muted'}
           >
             💳 Payment Requests
-          </Text>
+          </ThemedText>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={[styles.tabButton, activeTab === 'analytics' && styles.tabButtonActive]}
           onPress={() => setActiveTab('analytics')}
         >
-          <Text
-            style={[
-              styles.tabButtonText,
-              activeTab === 'analytics' && styles.tabButtonTextActive,
-            ]}
+          <ThemedText
+            variant="label"
+            size="sm"
+            color={activeTab === 'analytics' ? 'primary' : 'muted'}
           >
             📊 Analytics
-          </Text>
+          </ThemedText>
         </TouchableOpacity>
       </View>
 
       {/* Tab Content */}
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#5568FE" />
+          <ActivityIndicator size="large" color={UNIFIED_THEME.colors.accent.primary} />
         </View>
       ) : (
         <ScrollView
@@ -410,7 +411,7 @@ export default function AdminDashboard({ navigation }) {
         <SafeAreaView style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Payment Request Details</Text>
+              <ThemedText variant="heading" size="md" style={styles.modalTitle}>Payment Request Details</ThemedText>
               <TouchableOpacity
                 onPress={() => {
                   setShowRequestModal(false);
@@ -419,98 +420,98 @@ export default function AdminDashboard({ navigation }) {
                   setRevealedAccount(null);
                 }}
               >
-                <Text style={styles.closeBtn}>✕</Text>
+                <ThemedText color="muted" style={styles.closeBtn}>✕</ThemedText>
               </TouchableOpacity>
             </View>
             {detailLoading ? (
               <View style={styles.detailLoadingBox}>
-                <ActivityIndicator size="large" color="#5568FE" />
-                <Text style={styles.detailLoadingText}>Loading request...</Text>
+                <ActivityIndicator size="large" color={UNIFIED_THEME.colors.accent.primary} />
+                <ThemedText variant="body" size="sm" color="muted" style={styles.detailLoadingText}>Loading request...</ThemedText>
               </View>
             ) : requestDetail ? (
               <ScrollView style={styles.requestDetailScroll} showsVerticalScrollIndicator={false}>
-                <Text style={styles.detailSectionTitle}>Sender info</Text>
+                <ThemedText color="primary" style={styles.detailSectionTitle}>Sender info</ThemedText>
                 <View style={styles.detailBlock}>
                   <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Name</Text>
-                    <Text style={styles.detailValue}>
+                    <ThemedText variant="body" size="sm" color="muted" style={styles.detailLabel}>Name</ThemedText>
+                    <ThemedText variant="body" size="sm" style={styles.detailValue}>
                       {requestDetail.sender?.full_name || requestDetail.account_holder_name}
-                    </Text>
+                    </ThemedText>
                   </View>
                   <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Email</Text>
-                    <Text style={styles.detailValue}>{requestDetail.sender?.email || '—'}</Text>
+                    <ThemedText variant="body" size="sm" color="muted" style={styles.detailLabel}>Email</ThemedText>
+                    <ThemedText variant="body" size="sm" style={styles.detailValue}>{requestDetail.sender?.email || '—'}</ThemedText>
                   </View>
                 </View>
 
-                <Text style={styles.detailSectionTitle}>Balance</Text>
+                <ThemedText color="primary" style={styles.detailSectionTitle}>Balance</ThemedText>
                 <View style={styles.detailBlock}>
                   <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Available balance</Text>
-                    <Text style={styles.detailValue}>
+                    <ThemedText variant="body" size="sm" color="muted" style={styles.detailLabel}>Available balance</ThemedText>
+                    <ThemedText variant="body" size="sm" style={styles.detailValue}>
                       ₹{Number(requestDetail.available_balance ?? 0).toLocaleString()}
-                    </Text>
+                    </ThemedText>
                   </View>
                   <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Total balance</Text>
-                    <Text style={styles.detailValue}>
+                    <ThemedText variant="body" size="sm" color="muted" style={styles.detailLabel}>Total balance</ThemedText>
+                    <ThemedText variant="body" size="sm" style={styles.detailValue}>
                       ₹{Number(requestDetail.total_balance ?? 0).toLocaleString()}
-                    </Text>
+                    </ThemedText>
                   </View>
                 </View>
 
-                <Text style={styles.detailSectionTitle}>Account info</Text>
+                <ThemedText color="primary" style={styles.detailSectionTitle}>Account info</ThemedText>
                 <View style={styles.detailBlock}>
                   <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Bank name</Text>
-                    <Text style={styles.detailValue}>
+                    <ThemedText variant="body" size="sm" color="muted" style={styles.detailLabel}>Bank name</ThemedText>
+                    <ThemedText variant="body" size="sm" style={styles.detailValue}>
                       {revealedAccount?.bank_name || requestDetail.bank_name || '—'}
-                    </Text>
+                    </ThemedText>
                   </View>
                   <View style={[styles.detailRow, styles.accountRow]}>
                     <View>
-                      <Text style={styles.detailLabel}>Account number</Text>
-                      <Text style={styles.detailValue}>
+                      <ThemedText variant="body" size="sm" color="muted" style={styles.detailLabel}>Account number</ThemedText>
+                      <ThemedText variant="body" size="sm" style={styles.detailValue}>
                         {revealedAccount
                           ? revealedAccount.bank_account_number
                           : (requestDetail.bank_account_number_masked || '******')}
-                      </Text>
+                      </ThemedText>
                     </View>
                     <TouchableOpacity
                       style={styles.eyeBtn}
                       onPress={toggleRevealAccount}
                     >
-                      <Text style={styles.eyeBtnText}>{revealedAccount ? '🙈 Hide' : '👁 Show'}</Text>
+                      <ThemedText color="primary" style={styles.eyeBtnText}>{revealedAccount ? '🙈 Hide' : '👁 Show'}</ThemedText>
                     </TouchableOpacity>
                   </View>
                   <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>IFSC</Text>
-                    <Text style={styles.detailValue}>
+                    <ThemedText variant="body" size="sm" color="muted" style={styles.detailLabel}>IFSC</ThemedText>
+                    <ThemedText variant="body" size="sm" style={styles.detailValue}>
                       {requestDetail.bank_ifsc_code || '—'}
-                    </Text>
+                    </ThemedText>
                   </View>
                   <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Account holder</Text>
-                    <Text style={styles.detailValue}>
+                    <ThemedText variant="body" size="sm" color="muted" style={styles.detailLabel}>Account holder</ThemedText>
+                    <ThemedText variant="body" size="sm" style={styles.detailValue}>
                       {requestDetail.account_holder_name || '—'}
-                    </Text>
+                    </ThemedText>
                   </View>
                 </View>
 
                 <View style={styles.detailBlock}>
                   <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Requested amount</Text>
-                    <Text style={[styles.detailValue, styles.amountHighlight]}>
+                    <ThemedText variant="body" size="sm" color="muted" style={styles.detailLabel}>Requested amount</ThemedText>
+                    <ThemedText color="warning" style={[styles.detailValue, styles.amountHighlight]}>
                       ₹{Number(requestDetail.amount).toLocaleString()}
-                    </Text>
+                    </ThemedText>
                   </View>
                   <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Requested at</Text>
-                    <Text style={styles.detailValue}>
+                    <ThemedText variant="body" size="sm" color="muted" style={styles.detailLabel}>Requested at</ThemedText>
+                    <ThemedText variant="body" size="sm" style={styles.detailValue}>
                       {requestDetail.requested_at
                         ? new Date(requestDetail.requested_at).toLocaleString()
                         : '—'}
-                    </Text>
+                    </ThemedText>
                   </View>
                 </View>
 
@@ -535,11 +536,11 @@ export default function AdminDashboard({ navigation }) {
                     );
                   }}
                 >
-                  <Text style={styles.approveBtnText}>✓ Approve & start transfer</Text>
+                  <ThemedText color="onAccent" style={styles.approveBtnText}>✓ Approve & start transfer</ThemedText>
                 </TouchableOpacity>
               </ScrollView>
             ) : (
-              <Text style={styles.detailLoadingText}>Could not load request.</Text>
+              <ThemedText variant="body" size="sm" color="muted" style={styles.detailLoadingText}>Could not load request.</ThemedText>
             )}
           </View>
         </SafeAreaView>
@@ -550,23 +551,24 @@ export default function AdminDashboard({ navigation }) {
         <SafeAreaView style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Set Charges</Text>
+              <ThemedText variant="heading" size="md" style={styles.modalTitle}>Set Charges</ThemedText>
               <TouchableOpacity onPress={() => setShowChargeModal(false)}>
-                <Text style={styles.closeBtn}>✕</Text>
+                <ThemedText color="muted" style={styles.closeBtn}>✕</ThemedText>
               </TouchableOpacity>
             </View>
 
             {selectedTeacher && (
               <>
-                <Text style={styles.modalSubtitle}>{selectedTeacher.profile?.full_name}</Text>
+                <ThemedText variant="body" size="sm" color="muted" style={styles.modalSubtitle}>{selectedTeacher.profile?.full_name}</ThemedText>
 
                 {/* Price Breakdown */}
                 <View style={styles.breakdownBox}>
                   <View style={styles.breakdownRow}>
-                    <Text style={styles.breakdownLabel}>Teacher Rate (Base):</Text>
+                    <ThemedText variant="body" size="sm" color="muted" style={styles.breakdownLabel}>Teacher Rate (Base):</ThemedText>
                     <TextInput
                       style={styles.input}
                       placeholder="600"
+                      placeholderTextColor={UNIFIED_THEME.colors.text.muted}
                       value={baseCharge}
                       onChangeText={setBaseCharge}
                       keyboardType="decimal-pad"
@@ -574,10 +576,11 @@ export default function AdminDashboard({ navigation }) {
                   </View>
 
                   <View style={styles.breakdownRow}>
-                    <Text style={styles.breakdownLabel}>Admin Charge:</Text>
+                    <ThemedText variant="body" size="sm" color="muted" style={styles.breakdownLabel}>Admin Charge:</ThemedText>
                     <TextInput
                       style={styles.input}
                       placeholder="150"
+                      placeholderTextColor={UNIFIED_THEME.colors.text.muted}
                       value={adminCharge}
                       onChangeText={setAdminCharge}
                       keyboardType="decimal-pad"
@@ -585,32 +588,32 @@ export default function AdminDashboard({ navigation }) {
                   </View>
 
                   <View style={[styles.breakdownRow, styles.totalRow]}>
-                    <Text style={styles.totalLabel}>Total (Student pays):</Text>
-                    <Text style={styles.totalAmount}>
+                    <ThemedText variant="body" size="md" style={styles.totalLabel}>Total (Student pays):</ThemedText>
+                    <ThemedText color="warning" style={styles.totalAmount}>
                       ₹{(parseFloat(baseCharge || 0) + parseFloat(adminCharge || 0)).toFixed(0)}
-                    </Text>
+                    </ThemedText>
                   </View>
                 </View>
 
                 {/* Fee Breakdown */}
                 <View style={styles.feeBox}>
-                  <Text style={styles.feeTitle}>How the Payment is Split:</Text>
+                  <ThemedText style={styles.feeTitle}>How the Payment is Split:</ThemedText>
                   <View style={styles.feeRow}>
-                    <Text style={styles.feeLabel}>Admin Commission: ₹{adminCharge}</Text>
-                    <Text style={styles.feePercentage}>({((parseFloat(adminCharge || 0) / (parseFloat(baseCharge || 0) + parseFloat(adminCharge || 0))) * 100).toFixed(0)}%)</Text>
+                    <ThemedText variant="body" size="sm" color="muted" style={styles.feeLabel}>Admin Commission: ₹{adminCharge}</ThemedText>
+                    <ThemedText color="warning" style={styles.feePercentage}>({((parseFloat(adminCharge || 0) / (parseFloat(baseCharge || 0) + parseFloat(adminCharge || 0))) * 100).toFixed(0)}%)</ThemedText>
                   </View>
                   <View style={styles.feeRow}>
-                    <Text style={styles.feeLabel}>Platform Fee: ₹100</Text>
-                    <Text style={styles.feePercentage}>(13.33%)</Text>
+                    <ThemedText variant="body" size="sm" color="muted" style={styles.feeLabel}>Platform Fee: ₹100</ThemedText>
+                    <ThemedText color="warning" style={styles.feePercentage}>(13.33%)</ThemedText>
                   </View>
                   <View style={[styles.feeRow, styles.teacherEarnRow]}>
-                    <Text style={styles.teacherEarnLabel}>Teacher Gets: ₹{(parseFloat(baseCharge || 0) + parseFloat(adminCharge || 0) - 100 - parseFloat(adminCharge || 0)).toFixed(0)}</Text>
-                    <Text style={styles.teacherEarnPercentage}>{((parseFloat(baseCharge || 0) / (parseFloat(baseCharge || 0) + parseFloat(adminCharge || 0))) * 100).toFixed(0)}%</Text>
+                    <ThemedText color="success" style={styles.teacherEarnLabel}>Teacher Gets: ₹{(parseFloat(baseCharge || 0) + parseFloat(adminCharge || 0) - 100 - parseFloat(adminCharge || 0)).toFixed(0)}</ThemedText>
+                    <ThemedText color="success" style={styles.teacherEarnPercentage}>{((parseFloat(baseCharge || 0) / (parseFloat(baseCharge || 0) + parseFloat(adminCharge || 0))) * 100).toFixed(0)}%</ThemedText>
                   </View>
                 </View>
 
                 <TouchableOpacity style={styles.saveBtn} onPress={handleSetCharge} disabled={loading}>
-                  <Text style={styles.saveBtnText}>{loading ? 'Saving...' : '✓ Save Charges'}</Text>
+                  <ThemedText color="onAccent" style={styles.saveBtnText}>{loading ? 'Saving...' : '✓ Save Charges'}</ThemedText>
                 </TouchableOpacity>
               </>
             )}
@@ -624,53 +627,51 @@ export default function AdminDashboard({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0B0D2A',
+    backgroundColor: UNIFIED_THEME.colors.primary.light,
   },
 
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
+    paddingHorizontal: UNIFIED_THEME.spacing.lg,
+    paddingVertical: UNIFIED_THEME.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1F4A',
+    borderBottomColor: UNIFIED_THEME.colors.border.light,
   },
-  backBtn: { marginRight: 12 },
-  backBtnText: { color: '#5568FE', fontSize: 16, fontWeight: '600' },
+  backBtn: { marginRight: UNIFIED_THEME.spacing.sm },
+  backBtnText: { fontSize: 16, fontWeight: '600' },
   headerTitle: {
-    color: '#fff',
     fontSize: 20,
     fontWeight: '700',
   },
 
   tabNav: {
     flexDirection: 'row',
-    backgroundColor: '#1C1F4A',
-    marginHorizontal: 20,
-    marginVertical: 10,
-    borderRadius: 10,
-    padding: 5,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    marginHorizontal: UNIFIED_THEME.spacing.lg,
+    marginVertical: UNIFIED_THEME.spacing.md,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
+    padding: UNIFIED_THEME.spacing.xs,
   },
 
   tabButton: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: UNIFIED_THEME.spacing.sm,
     alignItems: 'center',
-    borderRadius: 8,
+    borderRadius: UNIFIED_THEME.borderRadius.sm,
   },
 
   tabButtonActive: {
-    backgroundColor: '#5568FE',
+    backgroundColor: UNIFIED_THEME.colors.accent.primary,
   },
 
   tabButtonText: {
-    color: '#999',
     fontSize: 12,
     fontWeight: '600',
   },
 
   tabButtonTextActive: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
   },
 
   scrollView: {
@@ -684,29 +685,27 @@ const styles = StyleSheet.create({
   },
 
   tabContent: {
-    paddingHorizontal: 20,
-    paddingVertical: 20,
+    paddingHorizontal: UNIFIED_THEME.spacing.lg,
+    paddingVertical: UNIFIED_THEME.spacing.lg,
   },
 
   tabTitle: {
-    color: '#fff',
     fontSize: 18,
     fontWeight: '700',
-    marginBottom: 8,
+    marginBottom: UNIFIED_THEME.spacing.sm,
   },
 
   tabDescription: {
-    color: '#999',
     fontSize: 13,
-    marginBottom: 20,
+    marginBottom: UNIFIED_THEME.spacing.lg,
   },
 
   // Charges Tab
   teacherCard: {
-    backgroundColor: '#1C1F4A',
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 12,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
+    padding: UNIFIED_THEME.spacing.md,
+    marginBottom: UNIFIED_THEME.spacing.sm,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -717,37 +716,33 @@ const styles = StyleSheet.create({
   },
 
   teacherName: {
-    color: '#fff',
     fontSize: 15,
     fontWeight: '600',
-    marginBottom: 4,
+    marginBottom: UNIFIED_THEME.spacing.xs,
   },
 
   teacherEmail: {
-    color: '#999',
     fontSize: 12,
-    marginBottom: 6,
+    marginBottom: UNIFIED_THEME.spacing.xs,
   },
 
   priceInfo: {
-    color: '#FFD700',
     fontSize: 12,
     fontWeight: '600',
   },
 
   editArrow: {
-    color: '#5568FE',
     fontSize: 20,
-    marginLeft: 12,
+    marginLeft: UNIFIED_THEME.spacing.sm,
   },
 
   // Withdrawals Tab
   withdrawalCard: {
-    backgroundColor: '#1C1F4A',
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 12,
-    borderLeftColor: '#FF9800',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
+    padding: UNIFIED_THEME.spacing.md,
+    marginBottom: UNIFIED_THEME.spacing.sm,
+    borderLeftColor: UNIFIED_THEME.colors.status.pending,
     borderLeftWidth: 4,
   },
 
@@ -755,48 +750,44 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: UNIFIED_THEME.spacing.sm,
   },
 
   withdrawalAmount: {
-    color: '#FF9800',
     fontSize: 18,
     fontWeight: '700',
   },
 
   withdrawalDetails: {
-    backgroundColor: '#0B0D2A',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
+    backgroundColor: UNIFIED_THEME.colors.primary.dark,
+    borderRadius: UNIFIED_THEME.borderRadius.sm,
+    padding: UNIFIED_THEME.spacing.sm,
+    marginBottom: UNIFIED_THEME.spacing.sm,
   },
 
   detailRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: UNIFIED_THEME.spacing.xs,
   },
 
   detailLabel: {
-    color: '#999',
     fontSize: 12,
   },
 
   detailValue: {
-    color: '#fff',
     fontSize: 12,
     fontWeight: '500',
   },
 
   approveBtn: {
-    backgroundColor: '#4CAF50',
-    paddingVertical: 12,
-    borderRadius: 8,
+    backgroundColor: UNIFIED_THEME.colors.status.approved,
+    paddingVertical: UNIFIED_THEME.spacing.sm,
+    borderRadius: UNIFIED_THEME.borderRadius.sm,
     alignItems: 'center',
   },
 
   approveBtnText: {
-    color: '#fff',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -804,23 +795,21 @@ const styles = StyleSheet.create({
   // Empty State
   emptyState: {
     alignItems: 'center',
-    paddingVertical: 40,
+    paddingVertical: UNIFIED_THEME.spacing.xxxl,
   },
 
   emptyIcon: {
     fontSize: 48,
-    marginBottom: 12,
+    marginBottom: UNIFIED_THEME.spacing.sm,
   },
 
   emptyText: {
-    color: '#999',
     fontSize: 14,
   },
 
   tapToView: {
-    color: '#5568FE',
     fontSize: 12,
-    marginTop: 8,
+    marginTop: UNIFIED_THEME.spacing.xs,
     textAlign: 'right',
   },
 
@@ -828,27 +817,25 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 40,
+    paddingVertical: UNIFIED_THEME.spacing.xxxl,
   },
   detailLoadingText: {
-    color: '#999',
     fontSize: 14,
   },
   requestDetailScroll: {
     flex: 1,
   },
   detailSectionTitle: {
-    color: '#5568FE',
     fontSize: 13,
     fontWeight: '700',
-    marginTop: 16,
-    marginBottom: 8,
+    marginTop: UNIFIED_THEME.spacing.lg,
+    marginBottom: UNIFIED_THEME.spacing.sm,
   },
   detailBlock: {
-    backgroundColor: '#1C1F4A',
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 12,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
+    padding: UNIFIED_THEME.spacing.md,
+    marginBottom: UNIFIED_THEME.spacing.sm,
   },
   accountRow: {
     flexDirection: 'row',
@@ -856,79 +843,70 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   eyeBtn: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    backgroundColor: '#2A2D5A',
-    borderRadius: 8,
+    paddingVertical: UNIFIED_THEME.spacing.xs,
+    paddingHorizontal: UNIFIED_THEME.spacing.sm,
+    backgroundColor: UNIFIED_THEME.colors.primary.dark,
+    borderRadius: UNIFIED_THEME.borderRadius.sm,
   },
   eyeBtnText: {
-    color: '#5568FE',
     fontSize: 13,
     fontWeight: '600',
   },
   amountHighlight: {
-    color: '#FF9800',
     fontSize: 16,
     fontWeight: '700',
   },
 
   // Analytics
   analyticsCard: {
-    backgroundColor: '#1C1F4A',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 15,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
+    padding: UNIFIED_THEME.spacing.lg,
+    marginBottom: UNIFIED_THEME.spacing.md,
   },
 
   analyticsLabel: {
-    color: '#999',
     fontSize: 12,
-    marginBottom: 8,
+    marginBottom: UNIFIED_THEME.spacing.xs,
   },
 
   analyticsAmount: {
-    color: '#fff',
     fontSize: 28,
     fontWeight: '700',
-    marginBottom: 4,
+    marginBottom: UNIFIED_THEME.spacing.xs,
   },
 
   analyticsSubtext: {
-    color: '#666',
     fontSize: 11,
   },
 
   sectionTitle: {
-    color: '#fff',
     fontSize: 14,
     fontWeight: '700',
-    marginVertical: 15,
+    marginVertical: UNIFIED_THEME.spacing.md,
   },
 
   topTeacherRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
-    borderBottomColor: '#2A2D5A',
+    paddingVertical: UNIFIED_THEME.spacing.sm,
+    borderBottomColor: UNIFIED_THEME.colors.border.light,
     borderBottomWidth: 1,
   },
 
   rank: {
-    color: '#5568FE',
     fontSize: 14,
     fontWeight: '700',
-    marginRight: 12,
+    marginRight: UNIFIED_THEME.spacing.sm,
     width: 20,
   },
 
   topTeacherName: {
-    color: '#fff',
     fontSize: 13,
     flex: 1,
   },
 
   topTeacherEarnings: {
-    color: '#4CAF50',
     fontSize: 13,
     fontWeight: '600',
   },
@@ -936,152 +914,140 @@ const styles = StyleSheet.create({
   // Modal
   modalContainer: {
     flex: 1,
-    backgroundColor: '#0B0D2A',
+    backgroundColor: UNIFIED_THEME.colors.primary.light,
   },
 
   modalContent: {
     flex: 1,
-    paddingHorizontal: 20,
-    paddingVertical: 20,
+    paddingHorizontal: UNIFIED_THEME.spacing.lg,
+    paddingVertical: UNIFIED_THEME.spacing.lg,
   },
 
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: UNIFIED_THEME.spacing.lg,
   },
 
   modalTitle: {
-    color: '#fff',
     fontSize: 20,
     fontWeight: '700',
   },
 
   closeBtn: {
-    color: '#999',
     fontSize: 24,
   },
 
   modalSubtitle: {
-    color: '#999',
     fontSize: 13,
-    marginBottom: 20,
+    marginBottom: UNIFIED_THEME.spacing.lg,
   },
 
   breakdownBox: {
-    backgroundColor: '#1C1F4A',
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 20,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
+    padding: UNIFIED_THEME.spacing.md,
+    marginBottom: UNIFIED_THEME.spacing.lg,
   },
 
   breakdownRow: {
-    marginBottom: 15,
+    marginBottom: UNIFIED_THEME.spacing.md,
   },
 
   breakdownLabel: {
-    color: '#999',
     fontSize: 12,
-    marginBottom: 6,
+    marginBottom: UNIFIED_THEME.spacing.xs,
   },
 
   input: {
-    backgroundColor: '#0B0D2A',
-    borderColor: '#2A2D5A',
+    backgroundColor: UNIFIED_THEME.colors.primary.dark,
+    borderColor: UNIFIED_THEME.colors.border.default,
     borderWidth: 1,
-    borderRadius: 8,
-    color: '#fff',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    borderRadius: UNIFIED_THEME.borderRadius.sm,
+    color: UNIFIED_THEME.colors.text.primary,
+    paddingHorizontal: UNIFIED_THEME.spacing.sm,
+    paddingVertical: UNIFIED_THEME.spacing.xs,
     fontSize: 14,
   },
 
   totalRow: {
-    paddingTop: 15,
-    borderTopColor: '#2A2D5A',
+    paddingTop: UNIFIED_THEME.spacing.md,
+    borderTopColor: UNIFIED_THEME.colors.border.default,
     borderTopWidth: 1,
     marginBottom: 0,
   },
 
   totalLabel: {
-    color: '#fff',
     fontSize: 14,
     fontWeight: '600',
   },
 
   totalAmount: {
-    color: '#FFD700',
     fontSize: 18,
     fontWeight: '700',
   },
 
   feeBox: {
-    backgroundColor: '#1C1F4A',
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 20,
-    borderColor: '#2E7D32',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
+    padding: UNIFIED_THEME.spacing.md,
+    marginBottom: UNIFIED_THEME.spacing.lg,
+    borderColor: UNIFIED_THEME.colors.status.approved,
     borderWidth: 1,
   },
 
   feeTitle: {
-    color: '#fff',
     fontSize: 13,
     fontWeight: '600',
-    marginBottom: 12,
+    marginBottom: UNIFIED_THEME.spacing.sm,
   },
 
   feeRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 8,
-    borderBottomColor: '#2A2D5A',
+    paddingVertical: UNIFIED_THEME.spacing.xs,
+    borderBottomColor: UNIFIED_THEME.colors.border.default,
     borderBottomWidth: 1,
   },
 
   feeLabel: {
-    color: '#999',
     fontSize: 12,
   },
 
   feePercentage: {
-    color: '#FF9800',
     fontSize: 11,
     fontWeight: '600',
   },
 
   teacherEarnRow: {
     borderBottomWidth: 0,
-    paddingVertical: 10,
-    backgroundColor: '#0B0D2A',
-    paddingHorizontal: 8,
-    borderRadius: 6,
-    marginTop: 8,
+    paddingVertical: UNIFIED_THEME.spacing.xs,
+    backgroundColor: UNIFIED_THEME.colors.primary.dark,
+    paddingHorizontal: UNIFIED_THEME.spacing.xs,
+    borderRadius: UNIFIED_THEME.borderRadius.sm,
+    marginTop: UNIFIED_THEME.spacing.xs,
   },
 
   teacherEarnLabel: {
-    color: '#4CAF50',
     fontSize: 12,
     fontWeight: '600',
   },
 
   teacherEarnPercentage: {
-    color: '#4CAF50',
     fontSize: 12,
     fontWeight: '700',
   },
 
   saveBtn: {
-    backgroundColor: '#5568FE',
-    paddingVertical: 14,
-    borderRadius: 10,
+    backgroundColor: UNIFIED_THEME.colors.accent.primary,
+    paddingVertical: UNIFIED_THEME.spacing.md,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
     alignItems: 'center',
   },
 
   saveBtnText: {
-    color: '#fff',
     fontSize: 15,
     fontWeight: '600',
   },

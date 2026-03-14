@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   TouchableOpacity,
   TextInput,
@@ -15,6 +14,8 @@ import ChevronRight from '../../assets/icons/ChevronRight';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-simple-toast';
 import { supabase } from '../../../supabase';
+import UNIFIED_THEME from '../../constants/unifiedTheme';
+import ThemedText from '../../components/ThemedText';
 
 /**
  * Bank Account Settings – collect banking details required for Razorpay Payout.
@@ -119,8 +120,8 @@ export default function BankAccountSettings({ navigation }) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingBox}>
-          <ActivityIndicator size="large" color="#ff006e" />
-          <Text style={styles.loadingText}>Loading bank details...</Text>
+          <ActivityIndicator size="large" color={UNIFIED_THEME.colors.accent.primary} />
+          <ThemedText variant="body" size="md" color="muted" style={{ marginTop: 12 }}>Loading bank details...</ThemedText>
         </View>
       </SafeAreaView>
     );
@@ -134,26 +135,26 @@ export default function BankAccountSettings({ navigation }) {
       >
         <View style={styles.header}>
           <TouchableOpacity style={styles.backButtonContainer} onPress={() => navigation.goBack()}>
-            {/* <Text style={styles.backBtn}>← Back</Text> */}
-            <ChevronRight width={24} height={24} fill="#ff006e" style={{ transform: [{ rotate: '180deg' }] }} />
+            {/* <ThemedText style={styles.backBtn}>← Back</ThemedText> */}
+            <ChevronRight width={24} height={24} fill={UNIFIED_THEME.colors.accent.primary} style={{ transform: [{ rotate: '180deg' }] }} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Bank Account</Text>
+          <ThemedText variant="heading" size="md">Bank Account</ThemedText>
         </View>
 
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           <View style={styles.infoCard}>
-            <Text style={styles.infoTitle}>Razorpay Payout</Text>
-            <Text style={styles.infoText}>
+            <ThemedText variant="label" size="md" color="primary" style={{ marginBottom: 8 }}>Razorpay Payout</ThemedText>
+            <ThemedText variant="body" size="sm" color="secondary">
               These details are used to transfer your earnings to your bank account. They are required for Razorpay Payout and will be used when you request a withdrawal.
-            </Text>
+            </ThemedText>
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Account holder name *</Text>
+            <ThemedText variant="label" size="md" color="secondary" style={{ marginBottom: 8 }}>Account holder name *</ThemedText>
             <TextInput
               style={styles.input}
               placeholder="Full name as on bank account"
-              placeholderTextColor="#666"
+              placeholderTextColor={UNIFIED_THEME.colors.text.muted}
               value={accountHolderName}
               onChangeText={setAccountHolderName}
               editable={!saving}
@@ -162,11 +163,11 @@ export default function BankAccountSettings({ navigation }) {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Bank name *</Text>
+            <ThemedText variant="label" size="md" color="secondary" style={{ marginBottom: 8 }}>Bank name *</ThemedText>
             <TextInput
               style={styles.input}
               placeholder="e.g. HDFC Bank, State Bank of India, ICICI Bank"
-              placeholderTextColor="#666"
+              placeholderTextColor={UNIFIED_THEME.colors.text.muted}
               value={bankName}
               onChangeText={setBankName}
               editable={!saving}
@@ -174,11 +175,11 @@ export default function BankAccountSettings({ navigation }) {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Account number *</Text>
+            <ThemedText variant="label" size="md" color="secondary" style={{ marginBottom: 8 }}>Account number *</ThemedText>
             <TextInput
               style={styles.input}
               placeholder="9–18 digits"
-              placeholderTextColor="#666"
+              placeholderTextColor={UNIFIED_THEME.colors.text.muted}
               value={accountNumber}
               onChangeText={(t) => setAccountNumber(t.replace(/\D/g, ''))}
               keyboardType="numeric"
@@ -188,11 +189,11 @@ export default function BankAccountSettings({ navigation }) {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>IFSC code *</Text>
+            <ThemedText variant="label" size="md" color="secondary" style={{ marginBottom: 8 }}>IFSC code *</ThemedText>
             <TextInput
               style={styles.input}
               placeholder="11 characters (e.g. HDFC0001234)"
-              placeholderTextColor="#666"
+              placeholderTextColor={UNIFIED_THEME.colors.text.muted}
               value={ifscCode}
               onChangeText={(t) => setIfscCode(t.toUpperCase())}
               editable={!saving}
@@ -203,10 +204,10 @@ export default function BankAccountSettings({ navigation }) {
 
           <View style={[styles.section,{marginBottom: 100}]}>
             <View style={styles.termsBox}>
-              <Text style={styles.termsTitle}>Note</Text>
-              <Text style={styles.term}>• Name must match the bank account.</Text>
-              <Text style={styles.term}>• IFSC is on your cheque or net banking.</Text>
-              <Text style={styles.term}>• These details are stored securely and used only for payouts.</Text>
+              <ThemedText variant="label" size="md" color="muted" style={{ marginBottom: 8 }}>Note</ThemedText>
+              <ThemedText variant="body" size="sm" color="muted" style={{ marginBottom: 4 }}>• Name must match the bank account.</ThemedText>
+              <ThemedText variant="body" size="sm" color="muted" style={{ marginBottom: 4 }}>• IFSC is on your cheque or net banking.</ThemedText>
+              <ThemedText variant="body" size="sm" color="muted">• These details are stored securely and used only for payouts.</ThemedText>
             </View>
           </View>
         </ScrollView>
@@ -218,9 +219,9 @@ export default function BankAccountSettings({ navigation }) {
             disabled={saving}
           >
             {saving ? (
-              <ActivityIndicator color="#fff" size="small" />
+              <ActivityIndicator color={UNIFIED_THEME.colors.text.primary} size="small" />
             ) : (
-              <Text style={styles.saveBtnText}>Save bank details</Text>
+              <ThemedText variant="label" size="lg" color="onAccent">Save bank details</ThemedText>
             )}
           </TouchableOpacity>
         </View>
@@ -232,132 +233,81 @@ export default function BankAccountSettings({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f1b3f',
+    backgroundColor: UNIFIED_THEME.colors.primary.light,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
+    paddingHorizontal: UNIFIED_THEME.spacing.lg,
+    paddingVertical: UNIFIED_THEME.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 0, 110, 0.2)',
+    borderBottomColor: UNIFIED_THEME.colors.border.light,
   },
-  // backBtn: {
-  //   color: '#5568FE',
-  //   fontSize: 16,
-  //   fontWeight: '600',
-  //   marginRight: 12,
-  // },
-   backButtonContainer: {
+  backButtonContainer: {
     width: 40,
     height: 40,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: UNIFIED_THEME.borderRadius.md,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
-  },
-  headerTitle: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: '700',
-    flex: 1,
+    marginRight: UNIFIED_THEME.spacing.md,
   },
   loadingBox: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  loadingText: {
-    color: '#b0b0b0',
-    fontSize: 14,
-    marginTop: 12,
-  },
   scrollView: {
     flex: 1,
     paddingBottom: 100,
   },
   infoCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    marginHorizontal: 20,
-    marginTop: 20,
-    padding: 16,
-    borderRadius: 12,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    marginHorizontal: UNIFIED_THEME.spacing.lg,
+    marginTop: UNIFIED_THEME.spacing.lg,
+    padding: UNIFIED_THEME.spacing.md,
+    borderRadius: UNIFIED_THEME.borderRadius.lg,
     borderLeftWidth: 4,
-    borderLeftColor: '#ff006e',
-  },
-  infoTitle: {
-    color: '#ff006e',
-    fontSize: 14,
-    fontWeight: '700',
-    marginBottom: 8,
-  },
-  infoText: {
-    color: '#e0e0e0',
-    fontSize: 13,
-    lineHeight: 20,
+    borderLeftColor: UNIFIED_THEME.colors.accent.primary,
   },
   section: {
-    paddingHorizontal: 20,
-    marginTop: 20,
-  },
-  sectionTitle: {
-    color: '#e0e0e0',
-    fontSize: 13,
-    fontWeight: '600',
-    marginBottom: 8,
+    paddingHorizontal: UNIFIED_THEME.spacing.lg,
+    marginTop: UNIFIED_THEME.spacing.lg,
   },
   input: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: UNIFIED_THEME.colors.component.input,
     borderWidth: 1,
-    borderColor: 'rgba(255, 0, 110, 0.3)',
-    borderRadius: 10,
-    color: '#fff',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    borderColor: UNIFIED_THEME.colors.border.default,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
+    color: UNIFIED_THEME.colors.text.primary,
+    paddingHorizontal: UNIFIED_THEME.spacing.md,
+    paddingVertical: UNIFIED_THEME.spacing.md,
     fontSize: 15,
   },
   termsBox: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    padding: 14,
-    borderRadius: 10,
-  },
-  termsTitle: {
-    color: '#b0b0b0',
-    fontSize: 13,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  term: {
-    color: '#b0b0b0',
-    fontSize: 12,
-    lineHeight: 20,
-    marginBottom: 4,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    padding: UNIFIED_THEME.spacing.md,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
   },
   footer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#0f1b3f',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    backgroundColor: UNIFIED_THEME.colors.primary.light,
+    paddingHorizontal: UNIFIED_THEME.spacing.lg,
+    paddingVertical: UNIFIED_THEME.spacing.md,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 0, 110, 0.2)',
+    borderTopColor: UNIFIED_THEME.colors.border.light,
   },
   saveBtn: {
-    background: 'linear-gradient(135deg, #ff006e, #00d4ff)',
-    backgroundColor: 'transparent',   // Use LinearGradient wrapper for gradient
-    paddingVertical: 14,
-    borderRadius: 10,
+    backgroundColor: UNIFIED_THEME.colors.accent.primary,
+    paddingVertical: UNIFIED_THEME.spacing.lg,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
     alignItems: 'center',
+    ...UNIFIED_THEME.shadows.medium,
   },
   saveBtnDisabled: {
     opacity: 0.7,
-  },
-  saveBtnText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
   },
 });

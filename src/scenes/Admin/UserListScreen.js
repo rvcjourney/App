@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   TouchableOpacity,
   FlatList,
@@ -13,12 +12,16 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SCREEN_NAMES } from '../../navigators/screenNames';
 import { getAllUsersForAdmin } from '../../database/database';
-import User from '../../assets/icons/User';
-import ChevronRight from '../../assets/icons/ChevronRight';
-import SearchIcon from '../../assets/icons/SearchIcon';
+import UNIFIED_THEME from '../../constants/unifiedTheme';
+import ThemedText from '../../components/ThemedText';
+import Icon from '../../components/Icon';
 
 const ROLE_LABELS = { student: 'Student', teacher: 'Teacher', super_admin: 'Super Admin' };
-const ROLE_COLORS = { student: '#3B82F6', teacher: '#2ECC71', super_admin: '#E74C3C' };
+const ROLE_COLORS = {
+  student: UNIFIED_THEME.colors.accent.info,
+  teacher: UNIFIED_THEME.colors.status.approved,
+  super_admin: UNIFIED_THEME.colors.status.rejected,
+};
 
 export default function UserListScreen({ navigation }) {
   const [users, setUsers] = useState([]);
@@ -89,7 +92,7 @@ export default function UserListScreen({ navigation }) {
   const renderItem = ({ item }) => {
     const role = (item.role || 'student').toLowerCase();
     const label = ROLE_LABELS[role] || role;
-    const color = ROLE_COLORS[role] || '#6b7280';
+    const color = ROLE_COLORS[role] || UNIFIED_THEME.colors.text.muted;
     const isTeacher = role === 'teacher';
     return (
       <View style={styles.row}>
@@ -99,13 +102,13 @@ export default function UserListScreen({ navigation }) {
           activeOpacity={0.8}
         >
           <View style={styles.avatar}>
-            <User width={24} height={24} fill="#5568FE" />
+            <Icon name="user" size={24} color={UNIFIED_THEME.colors.accent.primary} />
           </View>
           <View style={styles.rowContent}>
-            <Text style={styles.name} numberOfLines={1}>{item.full_name || '—'}</Text>
-            <Text style={styles.id} numberOfLines={1}>{item.id}</Text>
+            <ThemedText variant="body" size="md" numberOfLines={1} style={styles.name}>{item.full_name || '—'}</ThemedText>
+            <ThemedText variant="body" size="xs" color="muted" numberOfLines={1} style={styles.id}>{item.id}</ThemedText>
             <View style={[styles.badge, { backgroundColor: color + '22' }]}>
-              <Text style={[styles.badgeText, { color }]}>{label}</Text>
+              <ThemedText variant="label" size="xs" style={[styles.badgeText, { color }]}>{label}</ThemedText>
             </View>
           </View>
         </TouchableOpacity>
@@ -115,10 +118,10 @@ export default function UserListScreen({ navigation }) {
             onPress={() => openTeacherWallet(item)}
             activeOpacity={0.8}
           >
-            <Text style={styles.walletChipText}>Wallet</Text>
+            <ThemedText color="primary" style={styles.walletChipText}>Wallet</ThemedText>
           </TouchableOpacity>
         )}
-        <ChevronRight width={20} height={20} fill="#6b7280" />
+        <Icon name="chevronRight" size={20} color={UNIFIED_THEME.colors.text.muted} />
       </View>
     );
   };
@@ -127,21 +130,21 @@ export default function UserListScreen({ navigation }) {
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backText}>← Back</Text>
+          <ThemedText color="primary" style={styles.backText}>← Back</ThemedText>
         </TouchableOpacity>
-        <Text style={styles.title}>Users</Text>
+        <ThemedText variant="heading" size="md" style={styles.title}>Users</ThemedText>
       </View>
 
       <View style={styles.searchWrap}>
         <TextInput
           style={styles.searchInput}
           placeholder="Search by name..."
-          placeholderTextColor="#6b7280"
+          placeholderTextColor={UNIFIED_THEME.colors.text.muted}
           value={search}
           onChangeText={setSearch}
         />
         <View style={styles.searchIcon}>
-          <SearchIcon width={20} height={20} fill="#6b7280" />
+          <Icon name="search" size={20} color={UNIFIED_THEME.colors.text.muted} />
         </View>
       </View>
 
@@ -152,16 +155,21 @@ export default function UserListScreen({ navigation }) {
             style={[styles.filterChip, roleFilter === r && styles.filterChipActive]}
             onPress={() => setRoleFilter(r)}
           >
-            <Text style={[styles.filterChipText, roleFilter === r && styles.filterChipTextActive]}>
+            <ThemedText
+              variant="label"
+              size="sm"
+              color={roleFilter === r ? 'onAccent' : 'muted'}
+              style={styles.filterChipText}
+            >
               {r === 'all' ? 'All' : ROLE_LABELS[r] || r}
-            </Text>
+            </ThemedText>
           </TouchableOpacity>
         ))}
       </View>
 
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#5568FE" />
+          <ActivityIndicator size="large" color={UNIFIED_THEME.colors.accent.primary} />
         </View>
       ) : (
         <FlatList
@@ -171,11 +179,11 @@ export default function UserListScreen({ navigation }) {
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Text style={styles.emptyText}>No users match your filters</Text>
+              <ThemedText variant="body" size="sm" color="muted" style={styles.emptyText}>No users match your filters</ThemedText>
             </View>
           }
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#5568FE']} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[UNIFIED_THEME.colors.accent.primary]} />
           }
         />
       )}
@@ -184,40 +192,47 @@ export default function UserListScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0B0D2A' },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#1C1F4A' },
-  backBtn: { marginRight: 12 },
-  backText: { color: '#5568FE', fontSize: 16, fontWeight: '600' },
-  title: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
-  searchWrap: { marginHorizontal: 20, marginTop: 16, position: 'relative' },
+  container: { flex: 1, backgroundColor: UNIFIED_THEME.colors.primary.light },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: UNIFIED_THEME.spacing.lg,
+    paddingVertical: UNIFIED_THEME.spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: UNIFIED_THEME.colors.border.light,
+  },
+  backBtn: { marginRight: UNIFIED_THEME.spacing.md },
+  backText: { fontSize: 16, fontWeight: '600' },
+  title: { fontWeight: 'bold' },
+  searchWrap: { marginHorizontal: UNIFIED_THEME.spacing.lg, marginTop: UNIFIED_THEME.spacing.lg, position: 'relative' },
   searchInput: {
-    backgroundColor: '#1C1F4A',
-    borderRadius: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
+    paddingVertical: UNIFIED_THEME.spacing.md,
+    paddingHorizontal: UNIFIED_THEME.spacing.lg,
     paddingRight: 44,
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 14,
   },
   searchIcon: { position: 'absolute', right: 14, top: 14 },
-  filterRow: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 20, marginTop: 12, gap: 8 },
+  filterRow: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: UNIFIED_THEME.spacing.lg, marginTop: UNIFIED_THEME.spacing.md, gap: UNIFIED_THEME.spacing.sm },
   filterChip: {
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 20,
-    backgroundColor: '#1C1F4A',
+    paddingVertical: UNIFIED_THEME.spacing.sm,
+    paddingHorizontal: UNIFIED_THEME.spacing.md,
+    borderRadius: UNIFIED_THEME.borderRadius.round,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
   },
-  filterChipActive: { backgroundColor: '#5568FE' },
-  filterChipText: { color: '#9ca3af', fontSize: 13, fontWeight: '500' },
-  filterChipTextActive: { color: '#fff' },
-  listContent: { paddingHorizontal: 20, paddingBottom: 40 },
+  filterChipActive: { backgroundColor: UNIFIED_THEME.colors.accent.primary },
+  filterChipText: {},
+  filterChipTextActive: { color: UNIFIED_THEME.colors.text.onAccent },
+  listContent: { paddingHorizontal: UNIFIED_THEME.spacing.lg, paddingBottom: UNIFIED_THEME.spacing.xxxl },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1F4A',
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 10,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
+    padding: UNIFIED_THEME.spacing.md,
+    marginBottom: UNIFIED_THEME.spacing.sm,
   },
   rowMain: {
     flex: 1,
@@ -225,28 +240,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   walletChip: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    backgroundColor: '#5568FE22',
-    marginRight: 8,
+    paddingVertical: UNIFIED_THEME.spacing.sm,
+    paddingHorizontal: UNIFIED_THEME.spacing.md,
+    borderRadius: UNIFIED_THEME.borderRadius.sm,
+    backgroundColor: 'rgba(255, 0, 110, 0.15)',
+    marginRight: UNIFIED_THEME.spacing.md,
   },
-  walletChipText: { color: '#5568FE', fontSize: 12, fontWeight: '600' },
+  walletChipText: { fontSize: 12, fontWeight: '600' },
   avatar: {
     width: 44,
     height: 44,
-    borderRadius: 22,
-    backgroundColor: '#252965',
+    borderRadius: UNIFIED_THEME.borderRadius.round,
+    backgroundColor: UNIFIED_THEME.colors.primary.dark,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: UNIFIED_THEME.spacing.md,
   },
   rowContent: { flex: 1 },
-  name: { color: '#fff', fontSize: 15, fontWeight: '600', marginBottom: 2 },
-  id: { color: '#6b7280', fontSize: 11, marginBottom: 6 },
-  badge: { alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-  badgeText: { fontSize: 11, fontWeight: '600' },
+  name: { marginBottom: UNIFIED_THEME.spacing.xs },
+  id: { marginBottom: UNIFIED_THEME.spacing.md },
+  badge: { alignSelf: 'flex-start', paddingHorizontal: UNIFIED_THEME.spacing.sm, paddingVertical: UNIFIED_THEME.spacing.xs, borderRadius: UNIFIED_THEME.borderRadius.sm },
+  badgeText: {},
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  empty: { paddingVertical: 40, alignItems: 'center' },
-  emptyText: { color: '#6b7280', fontSize: 14 },
+  empty: { paddingVertical: UNIFIED_THEME.spacing.xxxl, alignItems: 'center' },
+  emptyText: {},
 });

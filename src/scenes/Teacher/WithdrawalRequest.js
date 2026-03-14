@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   TouchableOpacity,
   TextInput,
@@ -15,6 +14,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-simple-toast';
 import { supabase } from '../../../supabase';
 import { API_URL } from '../../api/api';
+import UNIFIED_THEME from '../../constants/unifiedTheme';
+import ThemedText from '../../components/ThemedText';
+import Icon from '../../components/Icon';
 
 /**
  * WithdrawalRequest Component
@@ -167,32 +169,32 @@ export default function WithdrawalRequest({ navigation, route }) {
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.backBtn}>← Back</Text>
+            <Icon name="back" size={24} color="primary" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Request Withdrawal</Text>
+          <ThemedText variant="heading" size="md" style={{ marginLeft: 12, flex: 1 }}>Request Withdrawal</ThemedText>
         </View>
 
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           {/* Available Balance */}
           <View style={styles.section}>
             <View style={styles.balanceCard}>
-              <Text style={styles.balanceLabel}>Available Balance</Text>
-              <Text style={styles.balanceAmount}>₹{availableBalance?.toLocaleString() || 0}</Text>
-              <Text style={styles.balanceSubtext}>Can withdraw up to this amount</Text>
+              <ThemedText variant="body" size="sm" color="muted">Available Balance</ThemedText>
+              <ThemedText variant="heading" size="lg" color="success" style={{ marginVertical: 8 }}>₹{availableBalance?.toLocaleString() || 0}</ThemedText>
+              <ThemedText variant="body" size="sm" color="muted">Can withdraw up to this amount</ThemedText>
             </View>
           </View>
 
           {/* Withdrawal Amount */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Withdrawal Amount</Text>
+            <ThemedText variant="heading" size="md" color="primary" style={{ marginBottom: 10 }}>Withdrawal Amount</ThemedText>
 
             <View style={styles.inputBox}>
               <View style={styles.amountInputRow}>
-                <Text style={styles.currencySymbol}>₹</Text>
+                <ThemedText variant="heading" size="lg" color="primary" style={{ marginRight: 6 }}>₹</ThemedText>
                 <TextInput
                   style={styles.amountInput}
                   placeholder="Enter amount"
-                  placeholderTextColor="#666"
+                  placeholderTextColor={UNIFIED_THEME.colors.text.muted}
                   value={withdrawalAmount}
                   onChangeText={setWithdrawalAmount}
                   keyboardType="decimal-pad"
@@ -213,7 +215,7 @@ export default function WithdrawalRequest({ navigation, route }) {
                       style={styles.quickBtn}
                       onPress={() => setWithdrawalAmount(amount.toString())}
                     >
-                      <Text style={styles.quickBtnText}>₹{amount / 1000}K</Text>
+                      <ThemedText variant="label" size="sm" color="primary">₹{amount / 1000}K</ThemedText>
                     </TouchableOpacity>
                   )
                 ))}
@@ -223,7 +225,7 @@ export default function WithdrawalRequest({ navigation, route }) {
 
           {/* Bank Details */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Bank Details</Text>
+            <ThemedText variant="heading" size="md" color="primary" style={{ marginBottom: 10 }}>Bank Details</ThemedText>
 
             {/* Saved Details Option */}
             {savedBankDetails && (
@@ -231,15 +233,19 @@ export default function WithdrawalRequest({ navigation, route }) {
                 style={[styles.savedDetailsBox, useSavedDetails && styles.savedDetailsBoxActive]}
                 onPress={() => setUseSavedDetails(!useSavedDetails)}
               >
-                <Text style={styles.checkmark}>{useSavedDetails ? '✓' : '○'}</Text>
+                {useSavedDetails ? (
+                  <Icon name="check" size={24} color="primary" style={{ marginRight: 12 }} />
+                ) : (
+                  <ThemedText style={{ marginRight: 12, fontSize: 20 }}>○</ThemedText>
+                )}
                 <View style={styles.savedDetailsContent}>
-                  <Text style={styles.savedDetailsTitle}>Use Saved Bank Details</Text>
-                  <Text style={styles.savedDetailsInfo}>
+                  <ThemedText variant="label" size="md" color="primary" style={{ marginBottom: 4 }}>Use Saved Bank Details</ThemedText>
+                  <ThemedText variant="body" size="sm" color="muted">
                     {savedBankDetails.account_holder_name}
-                  </Text>
-                  <Text style={styles.savedDetailsInfo}>
+                  </ThemedText>
+                  <ThemedText variant="body" size="sm" color="muted">
                     ****{savedBankDetails.bank_account_number?.slice(-4)} • {savedBankDetails.bank_ifsc_code}
-                  </Text>
+                  </ThemedText>
                 </View>
               </TouchableOpacity>
             )}
@@ -249,11 +255,11 @@ export default function WithdrawalRequest({ navigation, route }) {
               <View style={styles.formBox}>
                 {/* Account Holder Name */}
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Account Holder Name *</Text>
+                  <ThemedText variant="label" size="md" color="secondary" style={{ marginBottom: 6 }}>Account Holder Name *</ThemedText>
                   <TextInput
                     style={styles.input}
                     placeholder="Full name as per bank"
-                    placeholderTextColor="#666"
+                    placeholderTextColor={UNIFIED_THEME.colors.text.muted}
                     value={accountHolder}
                     onChangeText={setAccountHolder}
                     editable={!loading}
@@ -262,11 +268,11 @@ export default function WithdrawalRequest({ navigation, route }) {
 
                 {/* Account Number */}
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Account Number *</Text>
+                  <ThemedText variant="label" size="md" color="secondary" style={{ marginBottom: 6 }}>Account Number *</ThemedText>
                   <TextInput
                     style={styles.input}
                     placeholder="9-18 digits"
-                    placeholderTextColor="#666"
+                    placeholderTextColor={UNIFIED_THEME.colors.text.muted}
                     value={accountNumber}
                     onChangeText={(text) => setAccountNumber(text.replace(/\D/g, ''))}
                     editable={!loading}
@@ -276,11 +282,11 @@ export default function WithdrawalRequest({ navigation, route }) {
 
                 {/* IFSC Code */}
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>IFSC Code *</Text>
+                  <ThemedText variant="label" size="md" color="secondary" style={{ marginBottom: 6 }}>IFSC Code *</ThemedText>
                   <TextInput
                     style={styles.input}
                     placeholder="11 characters (e.g., HDFC0000001)"
-                    placeholderTextColor="#666"
+                    placeholderTextColor={UNIFIED_THEME.colors.text.muted}
                     value={ifscCode}
                     onChangeText={(text) => setIfscCode(text.toUpperCase())}
                     editable={!loading}
@@ -293,27 +299,27 @@ export default function WithdrawalRequest({ navigation, route }) {
 
           {/* Transaction Details */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Transaction Details</Text>
+            <ThemedText variant="heading" size="md" color="primary" style={{ marginBottom: 10 }}>Transaction Details</ThemedText>
 
             <View style={styles.detailsBox}>
               <View style={styles.detail}>
-                <Text style={styles.detailLabel}>Withdrawal Amount:</Text>
-                <Text style={styles.detailValue}>₹{withdrawalAmount || 0}</Text>
+                <ThemedText variant="body" size="sm" color="muted">Withdrawal Amount:</ThemedText>
+                <ThemedText variant="label" size="md" color="primary">₹{withdrawalAmount || 0}</ThemedText>
               </View>
 
               <View style={styles.detail}>
-                <Text style={styles.detailLabel}>Processing Time:</Text>
-                <Text style={styles.detailValue}>Within 24hrs after admin approval</Text>
+                <ThemedText variant="body" size="sm" color="muted">Processing Time:</ThemedText>
+                <ThemedText variant="label" size="md" color="primary">Within 24hrs after admin approval</ThemedText>
               </View>
 
               <View style={styles.detail}>
-                <Text style={styles.detailLabel}>Fee:</Text>
-                <Text style={styles.detailValue}>₹0 (No fees)</Text>
+                <ThemedText variant="body" size="sm" color="muted">Fee:</ThemedText>
+                <ThemedText variant="label" size="md" color="primary">₹0 (No fees)</ThemedText>
               </View>
 
               <View style={[styles.detail, styles.totalDetail]}>
-                <Text style={styles.totalLabel}>You'll Receive:</Text>
-                <Text style={styles.totalValue}>₹{withdrawalAmount || 0}</Text>
+                <ThemedText variant="label" size="md" color="success">You'll Receive:</ThemedText>
+                <ThemedText variant="heading" size="lg" color="success">₹{withdrawalAmount || 0}</ThemedText>
               </View>
             </View>
           </View>
@@ -321,24 +327,42 @@ export default function WithdrawalRequest({ navigation, route }) {
           {/* Terms & Conditions */}
           <View style={styles.section}>
             <View style={styles.termsBox}>
-              <Text style={styles.termsTitle}>Before You Withdraw</Text>
-              <Text style={styles.term}>✓ Ensure bank details are correct</Text>
-              <Text style={styles.term}>✓ Amount will be in your bank within 24hrs after approval</Text>
-              <Text style={styles.term}>✓ No fees charged on withdrawals</Text>
-              <Text style={styles.term}>✓ Direct transfer to your bank account</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+                <Icon name="check" size={18} color="success" style={{ marginRight: 6 }} />
+                <ThemedText variant="label" size="md" color="success">Before You Withdraw</ThemedText>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+                <Icon name="check" size={16} color="success" style={{ marginRight: 6 }} />
+                <ThemedText variant="body" size="sm" color="secondary">Ensure bank details are correct</ThemedText>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+                <Icon name="check" size={16} color="success" style={{ marginRight: 6 }} />
+                <ThemedText variant="body" size="sm" color="secondary">Amount will be in your bank within 24hrs after approval</ThemedText>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+                <Icon name="check" size={16} color="success" style={{ marginRight: 6 }} />
+                <ThemedText variant="body" size="sm" color="secondary">No fees charged on withdrawals</ThemedText>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Icon name="check" size={16} color="success" style={{ marginRight: 6 }} />
+                <ThemedText variant="body" size="sm" color="secondary">Direct transfer to your bank account</ThemedText>
+              </View>
             </View>
           </View>
 
           {/* Pro Tips */}
           <View style={styles.section}>
             <View style={styles.tipsBox}>
-              <Text style={styles.tipsTitle}>💡 Pro Tips</Text>
-              <Text style={styles.tip}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+                <Icon name="lightbulb" size={18} color="info" style={{ marginRight: 6 }} />
+                <ThemedText variant="label" size="md" color="info">Pro Tips</ThemedText>
+              </View>
+              <ThemedText variant="body" size="sm" color="secondary" style={{ marginBottom: 6 }}>
                 Save your bank details in your profile for faster withdrawals in future.
-              </Text>
-              <Text style={styles.tip}>
+              </ThemedText>
+              <ThemedText variant="body" size="sm" color="secondary">
                 Max withdrawal limit is your available balance. Minimum depends on your bank.
-              </Text>
+              </ThemedText>
             </View>
           </View>
         </ScrollView>
@@ -346,9 +370,9 @@ export default function WithdrawalRequest({ navigation, route }) {
         {/* Processing status */}
         {loading && (
           <View style={styles.processingOverlay}>
-            <ActivityIndicator size="large" color="#ff006e" />
-            <Text style={styles.processingText}>Processing your redemption request...</Text>
-            <Text style={styles.processingSubtext}>Please wait</Text>
+            <ActivityIndicator size="large" color={UNIFIED_THEME.colors.accent.primary} />
+            <ThemedText variant="heading" size="md" color="primary" style={{ marginTop: 16 }}>Processing your redemption request...</ThemedText>
+            <ThemedText variant="body" size="sm" color="muted" style={{ marginTop: 6 }}>Please wait</ThemedText>
           </View>
         )}
 
@@ -360,9 +384,12 @@ export default function WithdrawalRequest({ navigation, route }) {
             disabled={loading}
           >
             {loading ? (
-              <ActivityIndicator color="#fff" size="small" />
+              <ActivityIndicator color={UNIFIED_THEME.colors.text.primary} size="small" />
             ) : (
-              <Text style={styles.submitBtnText}>📤 Request Withdrawal</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                <Icon name="upload" size={18} color="onAccent" style={{ marginRight: 6 }} />
+                <ThemedText variant="label" size="lg" color="onAccent">Request Withdrawal</ThemedText>
+              </View>
             )}
           </TouchableOpacity>
         </View>
@@ -374,28 +401,14 @@ export default function WithdrawalRequest({ navigation, route }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f1b3f',
+    backgroundColor: UNIFIED_THEME.colors.primary.light,
   },
 
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-  },
-
-  backBtn: {
-    color: '#ff006e',
-    fontSize: 16,
-    fontWeight: '600',
-    marginRight: 12,
-  },
-
-  headerTitle: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: '700',
-    flex: 1,
+    paddingHorizontal: UNIFIED_THEME.spacing.lg,
+    paddingVertical: UNIFIED_THEME.spacing.md,
   },
 
   scrollView: {
@@ -404,246 +417,132 @@ const styles = StyleSheet.create({
   },
 
   section: {
-    paddingHorizontal: 20,
-    marginVertical: 12,
-  },
-
-  sectionTitle: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '700',
-    marginBottom: 10,
+    paddingHorizontal: UNIFIED_THEME.spacing.lg,
+    marginVertical: UNIFIED_THEME.spacing.md,
   },
 
   balanceCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: 12,
-    padding: 15,
-  },
-
-  balanceLabel: {
-    color: '#b0b0b0',
-    fontSize: 12,
-    marginBottom: 6,
-  },
-
-  balanceAmount: {
-    color: '#4CAF50',
-    fontSize: 28,
-    fontWeight: '700',
-    marginBottom: 4,
-  },
-
-  balanceSubtext: {
-    color: '#b0b0b0',
-    fontSize: 11,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderRadius: UNIFIED_THEME.borderRadius.lg,
+    padding: UNIFIED_THEME.spacing.md,
   },
 
   inputBox: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: 12,
-    padding: 15,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderRadius: UNIFIED_THEME.borderRadius.lg,
+    padding: UNIFIED_THEME.spacing.md,
   },
 
   amountInputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#0f1b3f',
-    borderRadius: 8,
-    paddingLeft: 12,
-    marginBottom: 12,
-  },
-
-  currencySymbol: {
-    color: '#FFD700',
-    fontSize: 24,
-    fontWeight: '700',
-    marginRight: 6,
+    backgroundColor: UNIFIED_THEME.colors.primary.light,
+    borderRadius: UNIFIED_THEME.borderRadius.sm,
+    paddingLeft: UNIFIED_THEME.spacing.md,
+    marginBottom: UNIFIED_THEME.spacing.md,
   },
 
   amountInput: {
     flex: 1,
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 20,
     fontWeight: '600',
-    paddingVertical: 12,
-    paddingRight: 12,
+    paddingVertical: UNIFIED_THEME.spacing.md,
+    paddingRight: UNIFIED_THEME.spacing.md,
   },
 
   quickAmountButtons: {
     flexDirection: 'row',
-    gap: 8,
+    gap: UNIFIED_THEME.spacing.sm,
   },
 
   quickBtn: {
     flex: 1,
-    backgroundColor: 'rgba(255, 0, 110, 0.1)',
-    paddingVertical: 8,
-    borderRadius: 6,
+    backgroundColor: UNIFIED_THEME.colors.border.light,
+    paddingVertical: UNIFIED_THEME.spacing.sm,
+    borderRadius: UNIFIED_THEME.borderRadius.sm,
     alignItems: 'center',
-  },
-
-  quickBtnText: {
-    color: '#ff006e',
-    fontSize: 12,
-    fontWeight: '600',
   },
 
   savedDetailsBox: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 12,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderRadius: UNIFIED_THEME.borderRadius.lg,
+    padding: UNIFIED_THEME.spacing.md,
+    marginBottom: UNIFIED_THEME.spacing.md,
     alignItems: 'center',
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    borderColor: UNIFIED_THEME.colors.border.default,
     borderWidth: 1,
   },
 
   savedDetailsBoxActive: {
-    borderColor: '#ff006e',
+    borderColor: UNIFIED_THEME.colors.accent.primary,
     backgroundColor: 'rgba(255, 0, 110, 0.1)',
-  },
-
-  checkmark: {
-    fontSize: 20,
-    color: '#ff006e',
-    marginRight: 12,
   },
 
   savedDetailsContent: {
     flex: 1,
   },
 
-  savedDetailsTitle: {
-    color: '#fff',
-    fontSize: 13,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-
-  savedDetailsInfo: {
-    color: '#b0b0b0',
-    fontSize: 11,
-  },
-
   formBox: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: 12,
-    padding: 15,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderRadius: UNIFIED_THEME.borderRadius.lg,
+    padding: UNIFIED_THEME.spacing.md,
   },
 
   inputGroup: {
-    marginBottom: 15,
-  },
-
-  label: {
-    color: '#e0e0e0',
-    fontSize: 12,
-    fontWeight: '600',
-    marginBottom: 6,
+    marginBottom: UNIFIED_THEME.spacing.lg,
   },
 
   input: {
-    backgroundColor: '#0f1b3f',
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    backgroundColor: UNIFIED_THEME.colors.primary.light,
+    borderColor: UNIFIED_THEME.colors.border.default,
     borderWidth: 1,
-    borderRadius: 8,
-    color: '#fff',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    borderRadius: UNIFIED_THEME.borderRadius.sm,
+    color: UNIFIED_THEME.colors.text.primary,
+    paddingHorizontal: UNIFIED_THEME.spacing.md,
+    paddingVertical: UNIFIED_THEME.spacing.md,
     fontSize: 13,
   },
 
   detailsBox: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: 12,
-    padding: 15,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderRadius: UNIFIED_THEME.borderRadius.lg,
+    padding: UNIFIED_THEME.spacing.md,
   },
 
   detail: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 10,
-    borderBottomColor: 'rgba(255, 0, 110, 0.2)',
+    paddingVertical: UNIFIED_THEME.spacing.md,
+    borderBottomColor: UNIFIED_THEME.colors.border.light,
     borderBottomWidth: 1,
-  },
-
-  detailLabel: {
-    color: '#b0b0b0',
-    fontSize: 13,
-  },
-
-  detailValue: {
-    color: '#fff',
-    fontSize: 13,
-    fontWeight: '600',
   },
 
   totalDetail: {
     borderBottomWidth: 0,
-    paddingVertical: 12,
-    backgroundColor: '#0f1b3f',
-    paddingHorizontal: 10,
-    borderRadius: 6,
-    marginTop: 8,
-  },
-
-  totalLabel: {
-    color: '#4CAF50',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-
-  totalValue: {
-    color: '#4CAF50',
-    fontSize: 16,
-    fontWeight: '700',
+    paddingVertical: UNIFIED_THEME.spacing.md,
+    backgroundColor: UNIFIED_THEME.colors.primary.light,
+    paddingHorizontal: UNIFIED_THEME.spacing.md,
+    borderRadius: UNIFIED_THEME.borderRadius.sm,
+    marginTop: UNIFIED_THEME.spacing.md,
   },
 
   termsBox: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: 12,
-    padding: 15,
-    borderLeftColor: '#2E7D32',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderRadius: UNIFIED_THEME.borderRadius.lg,
+    padding: UNIFIED_THEME.spacing.md,
+    borderLeftColor: UNIFIED_THEME.colors.status.approved,
     borderLeftWidth: 4,
-  },
-
-  termsTitle: {
-    color: '#4CAF50',
-    fontSize: 13,
-    fontWeight: '600',
-    marginBottom: 10,
-  },
-
-  term: {
-    color: '#e0e0e0',
-    fontSize: 12,
-    lineHeight: 18,
-    marginBottom: 6,
   },
 
   tipsBox: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: 12,
-    padding: 15,
-    borderLeftColor: '#FF9800',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderRadius: UNIFIED_THEME.borderRadius.lg,
+    padding: UNIFIED_THEME.spacing.md,
+    borderLeftColor: UNIFIED_THEME.colors.status.pending,
     borderLeftWidth: 4,
-  },
-
-  tipsTitle: {
-    color: '#FF9800',
-    fontSize: 13,
-    fontWeight: '600',
-    marginBottom: 10,
-  },
-
-  tip: {
-    color: '#e0e0e0',
-    fontSize: 12,
-    lineHeight: 18,
-    marginBottom: 6,
   },
 
   processingOverlay: {
@@ -652,21 +551,10 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(11, 13, 42, 0.9)',
+    backgroundColor: UNIFIED_THEME.colors.component.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 10,
-  },
-  processingText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-    marginTop: 16,
-  },
-  processingSubtext: {
-    color: '#b0b0b0',
-    fontSize: 13,
-    marginTop: 6,
   },
 
   footer: {
@@ -674,28 +562,22 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#0f1b3f',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderTopColor: 'rgba(255, 0, 110, 0.2)',
+    backgroundColor: UNIFIED_THEME.colors.primary.light,
+    paddingHorizontal: UNIFIED_THEME.spacing.lg,
+    paddingVertical: UNIFIED_THEME.spacing.md,
+    borderTopColor: UNIFIED_THEME.colors.border.light,
     borderTopWidth: 1,
   },
 
   submitBtn: {
-    background: 'linear-gradient(135deg, #ff006e, #00d4ff)',
-    backgroundColor: 'transparent',   // Use LinearGradient wrapper for gradient
-    paddingVertical: 14,
-    borderRadius: 10,
+    backgroundColor: UNIFIED_THEME.colors.accent.primary,
+    paddingVertical: UNIFIED_THEME.spacing.lg,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
     alignItems: 'center',
+    ...UNIFIED_THEME.shadows.medium,
   },
 
   submitBtnDisabled: {
     opacity: 0.6,
-  },
-
-  submitBtnText: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '700',
   },
 });

@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   FlatList,
   TouchableOpacity,
@@ -11,25 +10,27 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../../supabase';
 import { getNotificationsPage, markNotificationAsRead } from '../database/database';
-import ChevronRight from '../assets/icons/ChevronRight';
+import UNIFIED_THEME from '../constants/unifiedTheme';
+import ThemedText from '../components/ThemedText';
+import Icon from '../components/Icon';
 
 const NOTIFICATION_ICONS = {
-  booking_request: { icon: '📅', label: 'Booking Request' },
-  booking_confirmed: { icon: '✅', label: 'Booking Confirmed' },
-  booking_cancelled: { icon: '❌', label: 'Cancellation' },
-  booking_rescheduled: { icon: '🔄', label: 'Reschedule' },
-  meeting_reminder: { icon: '⏰', label: 'Reminder' },
-  meeting_started: { icon: '📞', label: 'Meeting Started' },
-  meeting_completed: { icon: '✔️', label: 'Meeting Completed' },
-  payment_confirmed: { icon: '💳', label: 'Payment Confirmed' },
-  payment_received: { icon: '💰', label: 'Payment Received' },
-  withdrawal_requested: { icon: '🏦', label: 'Withdrawal Request' },
-  withdrawal_approved: { icon: '✅', label: 'Withdrawal Approved' },
-  earnings_added: { icon: '💵', label: 'Earnings Added' },
+  booking_request: { iconName: 'calendar', label: 'Booking Request' },
+  booking_confirmed: { iconName: 'check', label: 'Booking Confirmed' },
+  booking_cancelled: { iconName: 'close', label: 'Cancellation' },
+  booking_rescheduled: { iconName: 'refresh', label: 'Reschedule' },
+  meeting_reminder: { iconName: 'clock', label: 'Reminder' },
+  meeting_started: { iconName: 'phone', label: 'Meeting Started' },
+  meeting_completed: { iconName: 'checkCircle', label: 'Meeting Completed' },
+  payment_confirmed: { iconName: 'creditCard', label: 'Payment Confirmed' },
+  payment_received: { iconName: 'money', label: 'Payment Received' },
+  withdrawal_requested: { iconName: 'bank', label: 'Withdrawal Request' },
+  withdrawal_approved: { iconName: 'check', label: 'Withdrawal Approved' },
+  earnings_added: { iconName: 'dollarSign', label: 'Earnings Added' },
 };
 
 function getNotificationMeta(type) {
-  return NOTIFICATION_ICONS[type] || { icon: '📬', label: 'Notification' };
+  return NOTIFICATION_ICONS[type] || { iconName: 'inbox', label: 'Notification' };
 }
 
 function formatTime(iso) {
@@ -125,15 +126,15 @@ export default function NotificationsScreen({ navigation }) {
         activeOpacity={0.7}
       >
         <View style={styles.iconWrap}>
-          <Text style={styles.iconText}>{meta.icon}</Text>
+          <Icon name={meta.iconName} size={20} color={UNIFIED_THEME.colors.accent.primary} />
         </View>
         <View style={styles.body}>
-          <Text style={styles.typeLabel}>{meta.label}</Text>
-          <Text style={styles.title} numberOfLines={1}>{item.title}</Text>
-          <Text style={styles.message} numberOfLines={2}>{item.message}</Text>
-          <Text style={styles.time}>{formatTime(item.created_at)}</Text>
+          <ThemedText variant="label" size="sm" color="primary" style={styles.typeLabel}>{meta.label}</ThemedText>
+          <ThemedText variant="body" size="md" numberOfLines={1} style={styles.title}>{item.title}</ThemedText>
+          <ThemedText variant="body" size="sm" color="muted" numberOfLines={2} style={styles.message}>{item.message}</ThemedText>
+          <ThemedText variant="body" size="xs" color="muted" style={styles.time}>{formatTime(item.created_at)}</ThemedText>
         </View>
-        <ChevronRight width={20} height={20} color="#666" />
+        <Icon name="chevronRight" size={20} color={UNIFIED_THEME.colors.text.muted} />
       </TouchableOpacity>
     );
   }, [onPressItem]);
@@ -145,12 +146,12 @@ export default function NotificationsScreen({ navigation }) {
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
           <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-            <ChevronRight width={24} height={24} color="#ff006e" style={{ transform: [{ rotate: '180deg' }] }} />
+            <Icon name="chevronLeft" size={24} color={UNIFIED_THEME.colors.accent.primary} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Notifications</Text>
+          <ThemedText variant="heading" size="md" style={styles.headerTitle}>Notifications</ThemedText>
         </View>
         <View style={styles.center}>
-          <ActivityIndicator size="large" color="#ff006e" />
+          <ActivityIndicator size="large" color={UNIFIED_THEME.colors.accent.primary} />
         </View>
       </SafeAreaView>
     );
@@ -160,21 +161,21 @@ export default function NotificationsScreen({ navigation }) {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <ChevronRight width={24} height={24} color="#ff006e" style={{ transform: [{ rotate: '180deg' }] }} />
+          <Icon name="chevronLeft" size={24} color={UNIFIED_THEME.colors.accent.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Notifications</Text>
+        <ThemedText variant="heading" size="md" style={styles.headerTitle}>Notifications</ThemedText>
       </View>
 
       {loading && items.length === 0 ? (
         <View style={styles.center}>
-          <ActivityIndicator size="large" color="#ff006e" />
-          <Text style={styles.loadingText}>Loading notifications...</Text>
+          <ActivityIndicator size="large" color={UNIFIED_THEME.colors.accent.primary} />
+          <ThemedText variant="body" size="sm" color="muted" style={styles.loadingText}>Loading notifications...</ThemedText>
         </View>
       ) : items.length === 0 ? (
         <View style={styles.empty}>
-          <Text style={styles.emptyIcon}>🔔</Text>
-          <Text style={styles.emptyTitle}>No notifications yet</Text>
-          <Text style={styles.emptySub}>Bookings, payments & reminders will show here</Text>
+          <ThemedText style={styles.emptyIcon}>🔔</ThemedText>
+          <ThemedText variant="heading" size="sm" style={styles.emptyTitle}>No notifications yet</ThemedText>
+          <ThemedText variant="body" size="sm" color="muted" style={styles.emptySub}>Bookings, payments & reminders will show here</ThemedText>
         </View>
       ) : (
         <FlatList
@@ -183,14 +184,14 @@ export default function NotificationsScreen({ navigation }) {
           keyExtractor={keyExtractor}
           contentContainerStyle={styles.listContent}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#ff006e']} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[UNIFIED_THEME.colors.accent.primary]} />
           }
           onEndReached={onLoadMore}
           onEndReachedThreshold={0.3}
           ListFooterComponent={
             loadingMore ? (
               <View style={styles.footerLoader}>
-                <ActivityIndicator size="small" color="#ff006e" />
+                <ActivityIndicator size="small" color={UNIFIED_THEME.colors.accent.primary} />
               </View>
             ) : null
           }
@@ -203,127 +204,100 @@ export default function NotificationsScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f1b3f',
+    backgroundColor: UNIFIED_THEME.colors.primary.light,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: UNIFIED_THEME.spacing.lg,
+    paddingVertical: UNIFIED_THEME.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 0, 110, 0.2)',
+    borderBottomColor: UNIFIED_THEME.colors.border.light,
   },
   backBtn: {
     width: 40,
     height: 40,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: UNIFIED_THEME.borderRadius.md,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
     borderWidth: 1,
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    borderColor: UNIFIED_THEME.colors.border.default,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: UNIFIED_THEME.spacing.md,
   },
   headerTitle: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '700',
     flex: 1,
   },
   listContent: {
-    padding: 16,
-    paddingBottom: 32,
+    padding: UNIFIED_THEME.spacing.lg,
+    paddingBottom: UNIFIED_THEME.spacing.xxxl,
   },
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: 16,
-    padding: 14,
-    marginBottom: 10,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderRadius: UNIFIED_THEME.borderRadius.lg,
+    padding: UNIFIED_THEME.spacing.md,
+    marginBottom: UNIFIED_THEME.spacing.sm,
     borderWidth: 1,
-    borderColor: 'rgba(255, 0, 110, 0.3)',
-    shadowColor: 'rgba(255, 0, 110, 0.2)',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 10,
+    borderColor: UNIFIED_THEME.colors.border.default,
+    ...UNIFIED_THEME.shadows.small,
   },
   cardUnread: {
     borderLeftWidth: 4,
-    borderLeftColor: '#ff006e',
-    shadowColor: 'rgba(255, 0, 110, 0.6)',
-    shadowRadius: 15,
+    borderLeftColor: UNIFIED_THEME.colors.accent.primary,
+    ...UNIFIED_THEME.shadows.medium,
   },
   iconWrap: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: UNIFIED_THEME.borderRadius.round,
     backgroundColor: 'rgba(255, 0, 110, 0.15)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    borderColor: UNIFIED_THEME.colors.border.default,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
-  },
-  iconText: {
-    fontSize: 22,
+    marginRight: UNIFIED_THEME.spacing.md,
   },
   body: {
     flex: 1,
   },
   typeLabel: {
-    color: '#ff006e',
-    fontSize: 11,
-    fontWeight: '600',
-    marginBottom: 2,
+    marginBottom: UNIFIED_THEME.spacing.xs,
   },
   title: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 2,
+    marginBottom: UNIFIED_THEME.spacing.xs,
   },
   message: {
-    color: '#b0b0b0',
-    fontSize: 12,
-    marginBottom: 4,
+    marginBottom: UNIFIED_THEME.spacing.xs,
   },
-  time: {
-    color: '#808080',
-    fontSize: 11,
-  },
+  time: {},
   center: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingText: {
-    color: '#b0b0b0',
-    marginTop: 10,
+    marginTop: UNIFIED_THEME.spacing.md,
   },
   empty: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 40,
+    padding: UNIFIED_THEME.spacing.xxxl,
   },
   emptyIcon: {
     fontSize: 56,
-    marginBottom: 16,
+    marginBottom: UNIFIED_THEME.spacing.lg,
   },
   emptyTitle: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 8,
+    marginBottom: UNIFIED_THEME.spacing.md,
   },
   emptySub: {
-    color: '#b0b0b0',
-    fontSize: 14,
     textAlign: 'center',
   },
   footerLoader: {
-    paddingVertical: 16,
+    paddingVertical: UNIFIED_THEME.spacing.lg,
     alignItems: 'center',
   },
 });

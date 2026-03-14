@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   TouchableOpacity,
   FlatList,
@@ -10,11 +9,16 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getAllBookingsForAdmin } from '../../database/database';
-import Calendar from '../../assets/icons/Calendar';
-import Clock from '../../assets/icons/Clock';
-import CheckCircle from '../../assets/icons/CheckCircle';
+import UNIFIED_THEME from '../../constants/unifiedTheme';
+import ThemedText from '../../components/ThemedText';
+import Icon from '../../components/Icon';
 
-const STATUS_COLORS = { pending: '#F59E0B', confirmed: '#2ECC71', completed: '#6b7280', cancelled: '#E74C3C' };
+const STATUS_COLORS = {
+  pending: UNIFIED_THEME.colors.status.pending,
+  confirmed: UNIFIED_THEME.colors.status.approved,
+  completed: UNIFIED_THEME.colors.text.muted,
+  cancelled: UNIFIED_THEME.colors.status.rejected,
+};
 
 export default function AdminBookingsList({ navigation }) {
   const [bookings, setBookings] = useState([]);
@@ -50,30 +54,30 @@ export default function AdminBookingsList({ navigation }) {
 
   const renderItem = ({ item }) => {
     const status = (item.status || 'pending').toLowerCase();
-    const statusColor = STATUS_COLORS[status] || '#6b7280';
+    const statusColor = STATUS_COLORS[status] || UNIFIED_THEME.colors.text.muted;
     const date = item.booked_date ? new Date(item.booked_date) : null;
     return (
       <View style={styles.card}>
         <View style={styles.cardRow}>
-          <Text style={styles.label}>Student</Text>
-          <Text style={styles.value}>{item.student_name || '—'}</Text>
+          <ThemedText variant="label" size="sm" color="muted" style={styles.label}>Student</ThemedText>
+          <ThemedText variant="body" size="sm" style={styles.value}>{item.student_name || '—'}</ThemedText>
         </View>
         <View style={styles.cardRow}>
-          <Text style={styles.label}>Teacher</Text>
-          <Text style={styles.value}>{item.teacher_name || '—'}</Text>
+          <ThemedText variant="label" size="sm" color="muted" style={styles.label}>Teacher</ThemedText>
+          <ThemedText variant="body" size="sm" style={styles.value}>{item.teacher_name || '—'}</ThemedText>
         </View>
         <View style={styles.cardRow}>
-          <Text style={styles.label}>Subject</Text>
-          <Text style={styles.value}>{item.subject || '—'}</Text>
+          <ThemedText variant="label" size="sm" color="muted" style={styles.label}>Subject</ThemedText>
+          <ThemedText variant="body" size="sm" style={styles.value}>{item.subject || '—'}</ThemedText>
         </View>
         <View style={styles.cardRow}>
-          <Text style={styles.label}>Date & time</Text>
-          <Text style={styles.value}>
+          <ThemedText variant="label" size="sm" color="muted" style={styles.label}>Date & time</ThemedText>
+          <ThemedText variant="body" size="sm" style={styles.value}>
             {date ? date.toLocaleString() : '—'}
-          </Text>
+          </ThemedText>
         </View>
         <View style={[styles.badge, { backgroundColor: statusColor + '22' }]}>
-          <Text style={[styles.badgeText, { color: statusColor }]}>{status}</Text>
+          <ThemedText variant="label" size="xs" style={[styles.badgeText, { color: statusColor }]}>{status}</ThemedText>
         </View>
       </View>
     );
@@ -83,14 +87,14 @@ export default function AdminBookingsList({ navigation }) {
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backText}>← Back</Text>
+          <ThemedText color="primary" style={styles.backText}>← Back</ThemedText>
         </TouchableOpacity>
-        <Text style={styles.title}>All Bookings</Text>
+        <ThemedText variant="heading" size="md" style={styles.title}>All Bookings</ThemedText>
       </View>
 
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#5568FE" />
+          <ActivityIndicator size="large" color={UNIFIED_THEME.colors.accent.primary} />
         </View>
       ) : (
         <FlatList
@@ -100,12 +104,12 @@ export default function AdminBookingsList({ navigation }) {
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Calendar width={48} height={48} fill="#6b7280" />
-              <Text style={styles.emptyText}>No bookings yet</Text>
+              <Icon name="calendar" size={48} color={UNIFIED_THEME.colors.text.muted} />
+              <ThemedText variant="body" size="sm" color="muted" style={styles.emptyText}>No bookings yet</ThemedText>
             </View>
           }
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#5568FE']} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[UNIFIED_THEME.colors.accent.primary]} />
           }
         />
       )}
@@ -114,26 +118,33 @@ export default function AdminBookingsList({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0B0D2A' },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#1C1F4A' },
-  backBtn: { marginRight: 12 },
-  backText: { color: '#5568FE', fontSize: 16, fontWeight: '600' },
-  title: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
-  listContent: { paddingHorizontal: 20, paddingBottom: 40 },
-  card: {
-    backgroundColor: '#1C1F4A',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    borderLeftWidth: 4,
-    borderLeftColor: '#5568FE',
+  container: { flex: 1, backgroundColor: UNIFIED_THEME.colors.primary.light },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: UNIFIED_THEME.spacing.lg,
+    paddingVertical: UNIFIED_THEME.spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: UNIFIED_THEME.colors.border.light,
   },
-  cardRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-  label: { color: '#9ca3af', fontSize: 12 },
-  value: { color: '#fff', fontSize: 13, fontWeight: '500', flex: 1, marginLeft: 8, textAlign: 'right' },
-  badge: { alignSelf: 'flex-start', marginTop: 8, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
-  badgeText: { fontSize: 12, fontWeight: '600' },
+  backBtn: { marginRight: UNIFIED_THEME.spacing.md },
+  backText: { fontSize: 16, fontWeight: '600' },
+  title: { fontWeight: 'bold' },
+  listContent: { paddingHorizontal: UNIFIED_THEME.spacing.lg, paddingBottom: UNIFIED_THEME.spacing.xxxl },
+  card: {
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
+    padding: UNIFIED_THEME.spacing.lg,
+    marginBottom: UNIFIED_THEME.spacing.md,
+    borderLeftWidth: 4,
+    borderLeftColor: UNIFIED_THEME.colors.accent.primary,
+  },
+  cardRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: UNIFIED_THEME.spacing.sm },
+  label: {},
+  value: { flex: 1, marginLeft: UNIFIED_THEME.spacing.md, textAlign: 'right' },
+  badge: { alignSelf: 'flex-start', marginTop: UNIFIED_THEME.spacing.md, paddingHorizontal: UNIFIED_THEME.spacing.sm, paddingVertical: UNIFIED_THEME.spacing.xs, borderRadius: UNIFIED_THEME.borderRadius.sm },
+  badgeText: {},
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  empty: { paddingVertical: 48, alignItems: 'center' },
-  emptyText: { color: '#6b7280', marginTop: 12, fontSize: 14 },
+  empty: { paddingVertical: UNIFIED_THEME.spacing.xxxl, alignItems: 'center' },
+  emptyText: { marginTop: UNIFIED_THEME.spacing.lg },
 });

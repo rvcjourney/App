@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   TouchableOpacity,
   Alert,
@@ -16,6 +15,9 @@ import Toast from 'react-native-simple-toast';
 import { SCREEN_NAMES } from '../navigators/screenNames';
 import { supabase } from '../../supabase';
 import { getTeacherProfile, getTeacherBookings, getTeacherTodayCallHistory, getTeacherEarnings, getTeacherTodayEarnings, getUnreadNotificationCount } from '../database/database';
+import UNIFIED_THEME from '../constants/unifiedTheme';
+import ThemedText from '../components/ThemedText';
+import Icon from '../components/Icon';
 import Home from '../assets/icons/Home';
 import DollarSign from '../assets/icons/DollarSign';
 import Phone from '../assets/icons/Phone';
@@ -325,8 +327,8 @@ export default function TeacherDashboard({ navigation }) {
     return (
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#ff006e" />
-          <Text style={styles.loadingText}>Loading your profile...</Text>
+          <ActivityIndicator size="large" color={UNIFIED_THEME.colors.accent.primary} />
+          <ThemedText variant="body" size="md" color="secondary" style={{ marginTop: 10 }}>Loading your profile...</ThemedText>
         </View>
       </SafeAreaView>
     );
@@ -338,7 +340,7 @@ export default function TeacherDashboard({ navigation }) {
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         {profileIncomplete && (
           <View style={styles.snackbar}>
-            <Text style={styles.snackbarText}>Complete your profile for a better experience.</Text>
+            <ThemedText variant="body" size="sm" color="primary" style={{ flex: 1 }}>Complete your profile for a better experience.</ThemedText>
             <TouchableOpacity
               style={styles.snackbarBtn}
               onPress={() => {
@@ -346,7 +348,7 @@ export default function TeacherDashboard({ navigation }) {
                 navigation.navigate(SCREEN_NAMES.EditTeacherProfile);
               }}
             >
-              <Text style={styles.snackbarBtnText}>Go to edit profile</Text>
+              <ThemedText variant="body" size="sm" color="primary" weight="600">Go to edit profile</ThemedText>
             </TouchableOpacity>
           </View>
         )}
@@ -362,10 +364,10 @@ export default function TeacherDashboard({ navigation }) {
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <View style={styles.welcomeContainer}>
-                <Text style={styles.welcome}>Welcome Back</Text>
-                <Text style={styles.welcomeWave}>👋</Text>
+                <ThemedText variant="body" size="sm" color="secondary">Welcome Back</ThemedText>
+                <ThemedText style={{ marginLeft: 8 }}>👋</ThemedText>
               </View>
-              <Text style={styles.teacherName}>{teacherName}</Text>
+              <ThemedText variant="heading" size="md" color="primary" weight="700">{teacherName}</ThemedText>
             </View>
             <TouchableOpacity
               style={styles.notificationBellWrap}
@@ -373,12 +375,12 @@ export default function TeacherDashboard({ navigation }) {
               activeOpacity={0.7}
             >
               <View style={styles.notificationBell}>
-                <Text style={styles.notificationBellIcon}>🔔</Text>
+                <ThemedText style={{ fontSize: 22 }}>🔔</ThemedText>
                 {unreadNotificationCount > 0 && (
                   <View style={styles.notificationBadge}>
-                    <Text style={styles.notificationBadgeText}>
+                    <ThemedText variant="body" size="xs" color="primary" weight="700">
                       {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
-                    </Text>
+                    </ThemedText>
                   </View>
                 )}
               </View>
@@ -395,31 +397,31 @@ export default function TeacherDashboard({ navigation }) {
                 <View style={[styles.statusDot, { backgroundColor: statusColor[teacherStatus] }]} />
               </TouchableOpacity>
               <View style={styles.profileInfo}>
-                <Text style={styles.profileName}>{teacherName}</Text>
-                <Text style={styles.profileSubtitle}>{specializations || 'Tutor'}</Text>
-                <Text style={styles.statusLabel}>{statusLabel[teacherStatus]}</Text>
+                <ThemedText variant="heading" size="sm" color="primary" weight="700">{teacherName}</ThemedText>
+                <ThemedText variant="body" size="sm" color="secondary" style={{ marginTop: 3 }}>{specializations || 'Tutor'}</ThemedText>
+                <ThemedText variant="body" size="xs" color="muted" style={{ marginTop: 2 }}>{statusLabel[teacherStatus]}</ThemedText>
               </View>
             </View>
 
             <View style={styles.statsContainer}>
               <View style={styles.statBox}>
-                <Text style={styles.statValue}>₹{pricePerCall}</Text>
-                <Text style={styles.statLabel}>Per Call</Text>
+                <ThemedText variant="heading" size="xs" color="primary" weight="700">₹{pricePerCall}</ThemedText>
+                <ThemedText variant="body" size="xs" color="muted" style={{ marginTop: 3 }}>Per Call</ThemedText>
               </View>
               <View style={styles.statBox}>
-                <Text style={styles.statValue}>{rating}</Text>
-                <Text style={styles.statLabel}>Rating</Text>
+                <ThemedText variant="heading" size="xs" color="primary" weight="700">{rating}</ThemedText>
+                <ThemedText variant="body" size="xs" color="muted" style={{ marginTop: 3 }}>Rating</ThemedText>
               </View>
               <View style={styles.statBox}>
-                <Text style={styles.statValue}>{(followers / 1000).toFixed(1)}K</Text>
-                <Text style={styles.statLabel}>Followers</Text>
+                <ThemedText variant="heading" size="xs" color="primary" weight="700">{(followers / 1000).toFixed(1)}K</ThemedText>
+                <ThemedText variant="body" size="xs" color="muted" style={{ marginTop: 3 }}>Followers</ThemedText>
               </View>
             </View>
           </View>
 
           {/* Quick Actions */}
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Quick Actions</Text>
+            <ThemedText variant="heading" size="sm" color="primary" weight="700">Quick Actions</ThemedText>
           </View>
 
           {/* Schedule Lecture - commented out
@@ -456,15 +458,15 @@ export default function TeacherDashboard({ navigation }) {
           >
             <Calendar width={32} height={32} fill="#4ECDC4" style={{ marginRight: 12 }} />
             <View style={styles.actionContent}>
-              <Text style={styles.actionTitle}>Upcoming Calls</Text>
-              <Text style={styles.actionSubtitle}>{upcomingBookings.length} sessions scheduled</Text>
+              <ThemedText variant="heading" size="xs" color="primary" weight="700">Upcoming Calls</ThemedText>
+              <ThemedText variant="body" size="sm" color="secondary" style={{ marginTop: 2 }}>{upcomingBookings.length} sessions scheduled</ThemedText>
             </View>
-            <ChevronRight width={24} height={24} fill="#666" />
+            <ChevronRight width={24} height={24} fill={UNIFIED_THEME.colors.text.muted} />
           </TouchableOpacity>
 
           {/* Today's Earnings */}
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Today's Earnings</Text>
+            <ThemedText variant="heading" size="sm" color="primary" weight="700">Today's Earnings</ThemedText>
           </View>
 
           <TouchableOpacity
@@ -472,19 +474,19 @@ export default function TeacherDashboard({ navigation }) {
             onPress={() => navigation.navigate(SCREEN_NAMES.TeacherEarnings)}
             activeOpacity={0.8}
           >
-            <Text style={styles.earningsAmount}>₹{todayEarnings.totalAmount.toLocaleString()}</Text>
-            <Text style={styles.earningsText}>
+            <ThemedText variant="heading" size="lg" color="approved" weight="700">₹{todayEarnings.totalAmount.toLocaleString()}</ThemedText>
+            <ThemedText variant="body" size="sm" color="secondary" style={{ marginBottom: 12 }}>
               from {todayEarnings.sessionsCount} completed session{todayEarnings.sessionsCount !== 1 ? 's' : ''}
-            </Text>
+            </ThemedText>
             {todayEarnings.pendingCount > 0 && (
-              <Text style={styles.earningsPending}>
+              <ThemedText variant="body" size="xs" color="pending" style={{ marginBottom: 12 }}>
                 ⏳ ₹{todayEarnings.pendingAmount.toLocaleString()} pending ({todayEarnings.pendingCount} session{todayEarnings.pendingCount !== 1 ? 's' : ''})
-              </Text>
+              </ThemedText>
             )}
             <View style={styles.earningsBar}>
               <View style={[styles.earningsBarFill, { width: `${Math.min((todayEarnings.totalAmount / 5000) * 100, 100)}%` }]} />
             </View>
-            {/* <Text style={styles.earningsTarget}>Target: ₹5,000/day</Text> */}
+            {/* <ThemedText variant="body" size="xs" color="muted">Target: ₹5,000/day</ThemedText> */}
           </TouchableOpacity>
 
           {/* Recent Activity */}
@@ -497,16 +499,16 @@ export default function TeacherDashboard({ navigation }) {
             style={[styles.navItem, activeTab === 'home']}
             onPress={() => setActiveTab('home')}
           >
-            <Home width={24} height={24} fill={activeTab === 'home' ? '#ff006e' : '#b0b0b0'} />
-            <Text style={styles.navLabel}>Home</Text>
+            <Home width={24} height={24} fill={activeTab === 'home' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <ThemedText variant="body" size="xs" color={activeTab === 'home' ? 'secondary' : 'muted'} style={{ marginTop: 4 }}>Home</ThemedText>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.navItem, activeTab === 'earnings']}
             onPress={() => setActiveTab('earnings')}
           >
-            <DollarSign width={24} height={24} fill={activeTab === 'earnings' ? '#ff006e' : '#b0b0b0'} />
-            <Text style={styles.navLabel}>Earnings</Text>
+            <DollarSign width={24} height={24} fill={activeTab === 'earnings' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <ThemedText variant="body" size="xs" color={activeTab === 'earnings' ? 'secondary' : 'muted'} style={{ marginTop: 4 }}>Earnings</ThemedText>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -514,34 +516,34 @@ export default function TeacherDashboard({ navigation }) {
             onPress={() => setActiveTab('calls')}
           >
             <View style={{ position: 'relative' }}>
-              <Phone width={24} height={24} fill={activeTab === 'calls' ? '#ff006e' : '#b0b0b0'} />
+              <Phone width={24} height={24} fill={activeTab === 'calls' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
               {upcomingBookings.filter(b => b.status === 'confirmed' && !b.meeting_id).length > 0 && (
                 <View style={{
                   position: 'absolute',
                   top: -8,
                   right: -8,
-                  backgroundColor: '#22c55e',
+                  backgroundColor: UNIFIED_THEME.colors.status.approved,
                   borderRadius: 10,
                   width: 20,
                   height: 20,
                   justifyContent: 'center',
                   alignItems: 'center',
                 }}>
-                  <Text style={{ color: 'white', fontSize: 12, fontWeight: 'bold' }}>
+                  <ThemedText variant="body" size="xs" color="primary" weight="700">
                     {upcomingBookings.filter(b => b.status === 'confirmed' && !b.meeting_id).length}
-                  </Text>
+                  </ThemedText>
                 </View>
               )}
             </View>
-            <Text style={styles.navLabel}>Calls</Text>
+            <ThemedText variant="body" size="xs" color={activeTab === 'calls' ? 'secondary' : 'muted'} style={{ marginTop: 4 }}>Calls</ThemedText>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.navItem, activeTab === 'settings']}
             onPress={() => setActiveTab('settings')}
           >
-            <Settings width={24} height={24} fill={activeTab === 'settings' ? '#ff006e' : '#b0b0b0'} />
-            <Text style={styles.navLabel}>Settings</Text>
+            <Settings width={24} height={24} fill={activeTab === 'settings' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <ThemedText variant="body" size="xs" color={activeTab === 'settings' ? 'secondary' : 'muted'} style={{ marginTop: 4 }}>Settings</ThemedText>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -570,15 +572,15 @@ export default function TeacherDashboard({ navigation }) {
         >
           <View style={styles.header}>
             <View style={styles.welcomeContainer}>
-              <Text style={styles.welcome}>Earnings Analytics</Text>
-              <DollarSign width={20} height={20} fill="#ff006e" style={{ marginLeft: 8 }} />
+              <ThemedText variant="heading" size="sm" color="primary" weight="700">Earnings Analytics</ThemedText>
+              <DollarSign width={20} height={20} fill={UNIFIED_THEME.colors.accent.primary} style={{ marginLeft: 8 }} />
             </View>
           </View>
 
           {/* Total Earnings */}
           <View style={styles.totalEarningsCard}>
-            <Text style={styles.totalEarningsLabel}>Total Earnings ({earningsFilter})</Text>
-            <Text style={styles.totalEarningsAmount}>₹{totalEarnings.toLocaleString()}</Text>
+            <ThemedText variant="body" size="sm" color="secondary">Total Earnings ({earningsFilter})</ThemedText>
+            <ThemedText variant="heading" size="lg" color="approved" weight="700" style={{ marginTop: 8 }}>₹{totalEarnings.toLocaleString()}</ThemedText>
           </View>
 
           {/* Filter Buttons */}
@@ -592,14 +594,14 @@ export default function TeacherDashboard({ navigation }) {
                 ]}
                 onPress={() => setEarningsFilter(filter)}
               >
-                <Text
-                  style={[
-                    styles.filterText,
-                    earningsFilter === filter && styles.filterTextActive,
-                  ]}
+                <ThemedText
+                  variant="body"
+                  size="sm"
+                  color={earningsFilter === filter ? 'primary' : 'secondary'}
+                  weight={earningsFilter === filter ? '600' : '400'}
                 >
                   {filter.charAt(0).toUpperCase() + filter.slice(1)}
-                </Text>
+                </ThemedText>
               </TouchableOpacity>
             ))}
           </View>
@@ -615,7 +617,7 @@ export default function TeacherDashboard({ navigation }) {
                       { height: (item.amount / maxAmount) * 150 },
                     ]}
                   />
-                  <Text style={styles.barLabel}>{item.day || item.month}</Text>
+                  <ThemedText variant="body" size="xs" color="muted">{item.day || item.month}</ThemedText>
                 </View>
               ))}
             </View>
@@ -623,22 +625,22 @@ export default function TeacherDashboard({ navigation }) {
 
           {/* Earnings Breakdown */}
           <View style={styles.breakdownContainer}>
-            <Text style={styles.breakdownTitle}>Earnings Breakdown</Text>
+            <ThemedText variant="heading" size="xs" color="primary" weight="700">Earnings Breakdown</ThemedText>
             <View style={styles.breakdownItem}>
-              <Text style={styles.breakdownLabel}>Gross Earnings</Text>
-              <Text style={styles.breakdownValue}>₹{Math.round(totalEarnings / 0.67).toLocaleString()}</Text>
+              <ThemedText variant="body" size="sm" color="secondary">Gross Earnings</ThemedText>
+              <ThemedText variant="body" size="sm" color="approved" weight="700">₹{Math.round(totalEarnings / 0.67).toLocaleString()}</ThemedText>
             </View>
             <View style={styles.breakdownItem}>
-              <Text style={styles.breakdownLabel}>GST (18%)</Text>
-              <Text style={styles.breakdownValue}>-₹{Math.round((totalEarnings / 0.67) * 0.18).toLocaleString()}</Text>
+              <ThemedText variant="body" size="sm" color="secondary">GST (18%)</ThemedText>
+              <ThemedText variant="body" size="sm" color="approved" weight="700">-₹{Math.round((totalEarnings / 0.67) * 0.18).toLocaleString()}</ThemedText>
             </View>
             <View style={styles.breakdownItem}>
-              <Text style={styles.breakdownLabel}>Platform Fee (15%)</Text>
-              <Text style={styles.breakdownValue}>-₹{Math.round((totalEarnings / 0.67) * 0.15).toLocaleString()}</Text>
+              <ThemedText variant="body" size="sm" color="secondary">Platform Fee (15%)</ThemedText>
+              <ThemedText variant="body" size="sm" color="approved" weight="700">-₹{Math.round((totalEarnings / 0.67) * 0.15).toLocaleString()}</ThemedText>
             </View>
             <View style={[styles.breakdownItem, styles.breakdownItemLast]}>
-              <Text style={styles.breakdownLabel}>Net Earnings (67%)</Text>
-              <Text style={styles.breakdownValueNet}>₹{totalEarnings.toLocaleString()}</Text>
+              <ThemedText variant="body" size="sm" color="secondary">Net Earnings (67%)</ThemedText>
+              <ThemedText variant="body" size="sm" color="approved" weight="700">₹{totalEarnings.toLocaleString()}</ThemedText>
             </View>
           </View>
           <View style={{ marginBottom: 80 }} />
@@ -650,32 +652,32 @@ export default function TeacherDashboard({ navigation }) {
             style={styles.navItem}
             onPress={() => setActiveTab('home')}
           >
-            <Home width={22} height={22} fill={activeTab === 'home' ? '#ff006e' : '#b0b0b0'} />
-            <Text style={styles.navLabel}>Home</Text>
+            <Home width={22} height={22} fill={activeTab === 'home' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <ThemedText variant="body" size="xs" color={activeTab === 'home' ? 'secondary' : 'muted'} style={{ marginTop: 4 }}>Home</ThemedText>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.navItem]}
             onPress={() => setActiveTab('earnings')}
           >
-            <DollarSign width={22} height={22} fill={activeTab === 'earnings' ? '#ff006e' : '#b0b0b0'} />
-            <Text style={styles.navLabel}>Earnings</Text>
+            <DollarSign width={22} height={22} fill={activeTab === 'earnings' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <ThemedText variant="body" size="xs" color={activeTab === 'earnings' ? 'secondary' : 'muted'} style={{ marginTop: 4 }}>Earnings</ThemedText>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.navItem}
             onPress={() => setActiveTab('calls')}
           >
-            <Phone width={22} height={22} fill={activeTab === 'calls' ? '#ff006e' : '#b0b0b0'} />
-            <Text style={styles.navLabel}>Calls</Text>
+            <Phone width={22} height={22} fill={activeTab === 'calls' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <ThemedText variant="body" size="xs" color={activeTab === 'calls' ? 'secondary' : 'muted'} style={{ marginTop: 4 }}>Calls</ThemedText>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.navItem}
             onPress={() => setActiveTab('settings')}
           >
-            <Settings width={22} height={22} fill={activeTab === 'settings' ? '#ff006e' : '#b0b0b0'} />
-            <Text style={styles.navLabel}>Settings</Text>
+            <Settings width={22} height={22} fill={activeTab === 'settings' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <ThemedText variant="body" size="xs" color={activeTab === 'settings' ? 'secondary' : 'muted'} style={{ marginTop: 4 }}>Settings</ThemedText>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -707,8 +709,8 @@ export default function TeacherDashboard({ navigation }) {
         >
           <View style={styles.header}>
             <View style={styles.welcomeContainer}>
-              <Text style={styles.welcome}>My Calls</Text>
-              <Phone width={20} height={20} fill="#ff006e" style={{ marginLeft: 8 }} />
+              <ThemedText variant="heading" size="sm" color="primary" weight="700">My Calls</ThemedText>
+              <Phone width={20} height={20} fill={UNIFIED_THEME.colors.accent.primary} style={{ marginLeft: 8 }} />
             </View>
           </View>
 
@@ -716,37 +718,37 @@ export default function TeacherDashboard({ navigation }) {
           {liveBookings.length > 0 && (
             <>
               <View style={styles.sectionHeader}>
-                <Text style={[styles.sectionTitle, { color: '#FF6B6B' }]}>🔴 LIVE NOW</Text>
+                <ThemedText variant="heading" size="sm" color="rejected" weight="700">🔴 LIVE NOW</ThemedText>
               </View>
               {liveBookings.map(booking => (
-                <View key={booking.id} style={[styles.callCard, { borderLeftColor: '#FF6B6B', borderLeftWidth: 4 }]}>
+                <View key={booking.id} style={[styles.callCard, { borderLeftColor: UNIFIED_THEME.colors.status.rejected, borderLeftWidth: 4 }]}>
                   <View style={styles.callCardLeft}>
-                    <View style={[styles.callTime, { backgroundColor: '#FF6B6B' }]}>
-                      <Text style={styles.callTimeText}>🔴 LIVE</Text>
+                    <View style={[styles.callTime, { backgroundColor: UNIFIED_THEME.colors.status.rejected }]}>
+                      <ThemedText variant="body" size="xs" color="primary" weight="700">🔴 LIVE</ThemedText>
                     </View>
                     <View style={styles.callContent}>
-                      <Text style={styles.callStudent}>{booking.student?.full_name || 'Student'}</Text>
-                      <Text style={styles.callSubject}>{booking.subject}</Text>
+                      <ThemedText variant="body" size="sm" color="primary" weight="600">{booking.student?.full_name || 'Student'}</ThemedText>
+                      <ThemedText variant="body" size="xs" color="muted" style={{ marginTop: 2 }}>{booking.subject}</ThemedText>
                       <View style={styles.callMeta}>
-                        <Clock width={12} height={12} fill="#b0b0b0" style={{ marginRight: 4 }} />
-                        <Text style={styles.callDuration}>{booking.duration_minutes} min</Text>
+                        <Clock width={12} height={12} fill={UNIFIED_THEME.colors.text.muted} style={{ marginRight: 4 }} />
+                        <ThemedText variant="body" size="xs" color="secondary">{booking.duration_minutes} min</ThemedText>
                         <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 12 }}>
-                          <DollarSign width={12} height={12} fill="#2ECC71" style={{ marginRight: 4 }} />
-                          <Text style={styles.callPrice}>₹{pricePerCall}</Text>
+                          <DollarSign width={12} height={12} fill={UNIFIED_THEME.colors.status.approved} style={{ marginRight: 4 }} />
+                          <ThemedText variant="body" size="xs" color="approved" weight="700">₹{pricePerCall}</ThemedText>
                         </View>
                       </View>
-                      <Text style={{ fontSize: 11, color: '#666', marginTop: 5 }}>Meeting ID: {booking.meeting_id}</Text>
+                      <ThemedText variant="body" size="xs" color="muted" style={{ marginTop: 5 }}>Meeting ID: {booking.meeting_id}</ThemedText>
                     </View>
                   </View>
                   <TouchableOpacity
-                    style={[styles.startCallBtn, { backgroundColor: '#FF6B6B' }]}
+                    style={[styles.startCallBtn, { backgroundColor: UNIFIED_THEME.colors.status.rejected }]}
                     onPress={() => navigation.navigate(SCREEN_NAMES.Join, {
                       booking: booking,
                       isTeacher: true,
                     })}
                   >
-                    <Phone width={18} height={18} fill="#fff" style={{ marginRight: 6 }} />
-                    <Text style={styles.startCallBtnText}>Join</Text>
+                    <Phone width={18} height={18} fill={UNIFIED_THEME.colors.text.primary} style={{ marginRight: 6 }} />
+                    <ThemedText variant="body" size="sm" color="primary" weight="600">Join</ThemedText>
                   </TouchableOpacity>
                 </View>
               ))}
@@ -755,33 +757,33 @@ export default function TeacherDashboard({ navigation }) {
 
           {/* Upcoming Calls - Confirmed & Ready to Start */}
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Upcoming Calls</Text>
+            <ThemedText variant="heading" size="sm" color="primary" weight="700">Upcoming Calls</ThemedText>
           </View>
 
           {readyToStart.length === 0 ? (
             <View style={styles.emptyStateContainer}>
               <View style={styles.emptyStateIcon}>
-                <Calendar width={48} height={48} fill="#ff006e" />
+                <Calendar width={48} height={48} fill={UNIFIED_THEME.colors.accent.primary} />
               </View>
-              <Text style={styles.emptyText}>No upcoming calls</Text>
-              <Text style={styles.emptySubtext}>Booked sessions will appear here once students book your slots</Text>
+              <ThemedText variant="heading" size="sm" color="primary" weight="600">No upcoming calls</ThemedText>
+              <ThemedText variant="body" size="sm" color="muted" style={{ marginTop: 8, textAlign: 'center', lineHeight: 18 }}>Booked sessions will appear here once students book your slots</ThemedText>
             </View>
           ) : (
             readyToStart.map(booking => (
               <View key={booking.id} style={styles.callCard}>
                 <View style={styles.callCardLeft}>
                   <View style={styles.callTime}>
-                    <Text style={styles.callTimeText}>{new Date(booking.booked_date).toLocaleTimeString()}</Text>
+                    <ThemedText variant="body" size="xs" color="accent.primary" weight="700">{new Date(booking.booked_date).toLocaleTimeString()}</ThemedText>
                   </View>
                   <View style={styles.callContent}>
-                    <Text style={styles.callStudent}>{booking.student?.full_name || 'Student'}</Text>
-                    <Text style={styles.callSubject}>{booking.subject}</Text>
+                    <ThemedText variant="body" size="sm" color="primary" weight="600">{booking.student?.full_name || 'Student'}</ThemedText>
+                    <ThemedText variant="body" size="xs" color="muted" style={{ marginTop: 2 }}>{booking.subject}</ThemedText>
                     <View style={styles.callMeta}>
-                      <Clock width={12} height={12} fill="#b0b0b0" style={{ marginRight: 4 }} />
-                      <Text style={styles.callDuration}>{booking.duration_minutes} min</Text>
+                      <Clock width={12} height={12} fill={UNIFIED_THEME.colors.text.muted} style={{ marginRight: 4 }} />
+                      <ThemedText variant="body" size="xs" color="secondary">{booking.duration_minutes} min</ThemedText>
                       <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 12 }}>
-                        <DollarSign width={12} height={12} fill="#2ECC71" style={{ marginRight: 4 }} />
-                        <Text style={styles.callPrice}>₹{pricePerCall}</Text>
+                        <DollarSign width={12} height={12} fill={UNIFIED_THEME.colors.status.approved} style={{ marginRight: 4 }} />
+                        <ThemedText variant="body" size="xs" color="approved" weight="700">₹{pricePerCall}</ThemedText>
                       </View>
                     </View>
                   </View>
@@ -793,8 +795,8 @@ export default function TeacherDashboard({ navigation }) {
                     isTeacher: true,
                   })}
                 >
-                  <Phone width={18} height={18} fill="#fff" style={{ marginRight: 6 }} />
-                  <Text style={styles.startCallBtnText}>Start Call</Text>
+                  <Phone width={18} height={18} fill={UNIFIED_THEME.colors.text.primary} style={{ marginRight: 6 }} />
+                  <ThemedText variant="body" size="sm" color="primary" weight="600">Start Call</ThemedText>
                 </TouchableOpacity>
               </View>
             ))
@@ -804,35 +806,35 @@ export default function TeacherDashboard({ navigation }) {
 
           {/* Call History - today only; after the day ends history is not visible */}
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Today&apos;s call history</Text>
+            <ThemedText variant="heading" size="sm" color="primary" weight="700">Today's call history</ThemedText>
           </View>
 
           {todayCallHistory.length === 0 ? (
             <View style={styles.emptyStateContainer}>
               <View style={styles.emptyStateIcon}>
-                <Video width={48} height={48} fill="#ff006e" />
+                <Video width={48} height={48} fill={UNIFIED_THEME.colors.accent.primary} />
               </View>
-              <Text style={styles.emptyText}>No calls today yet</Text>
-              <Text style={styles.emptySubtext}>Completed sessions will appear here as you finish your calls</Text>
+              <ThemedText variant="heading" size="sm" color="primary" weight="600">No calls today yet</ThemedText>
+              <ThemedText variant="body" size="sm" color="muted" style={{ marginTop: 8, textAlign: 'center', lineHeight: 18 }}>Completed sessions will appear here as you finish your calls</ThemedText>
             </View>
           ) : (
             todayCallHistory.map(booking => (
-              <View key={booking.id} style={[styles.callCard, { borderLeftColor: '#999', borderLeftWidth: 4, opacity: 0.95 }]}>
-                <View style={[styles.callTime, { backgroundColor: '#999' }]}>
-                  <Text style={styles.callTimeText}>
+              <View key={booking.id} style={[styles.callCard, { borderLeftColor: UNIFIED_THEME.colors.text.disabled, borderLeftWidth: 4, opacity: 0.95 }]}>
+                <View style={[styles.callTime, { backgroundColor: UNIFIED_THEME.colors.text.disabled }]}>
+                  <ThemedText variant="body" size="xs" color="accent.primary" weight="700">
                     {booking.meeting_ended_at
                       ? new Date(booking.meeting_ended_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                       : new Date(booking.booked_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </Text>
+                  </ThemedText>
                 </View>
                 <View style={styles.callContent}>
-                  <Text style={styles.callStudent}>{booking.student?.full_name || 'Student'}</Text>
-                  <Text style={styles.callSubject}>{booking.subject}</Text>
+                  <ThemedText variant="body" size="sm" color="primary" weight="600">{booking.student?.full_name || 'Student'}</ThemedText>
+                  <ThemedText variant="body" size="xs" color="muted" style={{ marginTop: 2 }}>{booking.subject}</ThemedText>
                   <View style={styles.callMeta}>
-                    <Clock width={12} height={12} fill="#b0b0b0" style={{ marginRight: 4 }} />
-                    <Text style={styles.callDuration}>{booking.duration_minutes || 60} min</Text>
+                    <Clock width={12} height={12} fill={UNIFIED_THEME.colors.text.muted} style={{ marginRight: 4 }} />
+                    <ThemedText variant="body" size="xs" color="secondary">{booking.duration_minutes || 60} min</ThemedText>
                   </View>
-                  <Text style={{ fontSize: 11, color: '#2ECC71', marginTop: 4 }}>✓ Completed</Text>
+                  <ThemedText variant="body" size="xs" color="approved" weight="700" style={{ marginTop: 4 }}>✓ Completed</ThemedText>
                 </View>
               </View>
             ))
@@ -844,32 +846,32 @@ export default function TeacherDashboard({ navigation }) {
             style={styles.navItem}
             onPress={() => setActiveTab('home')}
           >
-            <Home width={22} height={22} fill={activeTab === 'home' ? '#ff006e' : '#b0b0b0'} />
-            <Text style={styles.navLabel}>Home</Text>
+            <Home width={22} height={22} fill={activeTab === 'home' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <ThemedText variant="body" size="xs" color={activeTab === 'home' ? 'secondary' : 'muted'} style={{ marginTop: 4 }}>Home</ThemedText>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.navItem}
             onPress={() => setActiveTab('earnings')}
           >
-            <DollarSign width={22} height={22} fill={activeTab === 'earnings' ? '#ff006e' : '#b0b0b0'} />
-            <Text style={styles.navLabel}>Earnings</Text>
+            <DollarSign width={22} height={22} fill={activeTab === 'earnings' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <ThemedText variant="body" size="xs" color={activeTab === 'earnings' ? 'secondary' : 'muted'} style={{ marginTop: 4 }}>Earnings</ThemedText>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.navItem]}
             onPress={() => setActiveTab('calls')}
           >
-            <Phone width={22} height={22} fill={activeTab === 'calls' ? '#ff006e' : '#b0b0b0'} />
-            <Text style={styles.navLabel}>Calls</Text>
+            <Phone width={22} height={22} fill={activeTab === 'calls' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <ThemedText variant="body" size="xs" color={activeTab === 'calls' ? 'secondary' : 'muted'} style={{ marginTop: 4 }}>Calls</ThemedText>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.navItem}
             onPress={() => setActiveTab('settings')}
           >
-            <Settings width={22} height={22} fill={activeTab === 'settings' ? '#ff006e' : '#b0b0b0'} />
-            <Text style={styles.navLabel}>Settings</Text>
+            <Settings width={22} height={22} fill={activeTab === 'settings' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <ThemedText variant="body" size="xs" color={activeTab === 'settings' ? 'secondary' : 'muted'} style={{ marginTop: 4 }}>Settings</ThemedText>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -883,8 +885,8 @@ export default function TeacherDashboard({ navigation }) {
         <ScrollView>
           <View style={styles.header}>
             <View style={styles.settingsHeaderContainer}>
-              <Text style={styles.welcome}>Settings</Text>
-              {/* <Settings width={24} height={24} fill="#ff006e" /> */}
+              <ThemedText variant="heading" size="sm" color="primary" weight="700">Settings</ThemedText>
+              {/* <Settings width={24} height={24} fill={UNIFIED_THEME.colors.accent.primary} /> */}
             </View>
           </View>
 
@@ -892,13 +894,13 @@ export default function TeacherDashboard({ navigation }) {
           <View style={styles.profileSettingsCard}>
             <TouchableOpacity onPress={handleStatusPress} style={styles.profileImageWrapperSettings} activeOpacity={0.8}>
               <View style={[styles.profileImageContainer, styles.profileImageContainerSettings]}>
-                <User width={64} height={64} fill="#ff006e" />
+                <User width={64} height={64} fill={UNIFIED_THEME.colors.accent.primary} />
               </View>
               <View style={[styles.statusDot, styles.statusDotSettings, { backgroundColor: statusColor[teacherStatus] }]} />
             </TouchableOpacity>
-            <Text style={styles.settingName}>{teacherName}</Text>
-            <Text style={styles.settingSubtitle}>{specializations || 'Tutor'}</Text>
-            <Text style={styles.settingStatusLabel}>{statusLabel[teacherStatus]}</Text>
+            <ThemedText variant="heading" size="sm" color="primary" weight="700" style={{ marginTop: 10 }}>{teacherName}</ThemedText>
+            <ThemedText variant="body" size="sm" color="secondary" style={{ marginTop: 3 }}>{specializations || 'Tutor'}</ThemedText>
+            <ThemedText variant="body" size="xs" color="muted" style={{ marginTop: 4, textAlign: 'center' }}>{statusLabel[teacherStatus]}</ThemedText>
           </View>
 
           {/* Profile Settings */}
@@ -908,18 +910,18 @@ export default function TeacherDashboard({ navigation }) {
               onPress={() => navigation.navigate(SCREEN_NAMES.EditTeacherProfile)}
             >
               <View style={styles.settingIconContainer}>
-                <User width={20} height={20} fill="#ff006e" />
+                <User width={20} height={20} fill={UNIFIED_THEME.colors.accent.primary} />
               </View>
-              <Text style={styles.settingText}>Edit Profile</Text>
-              <ChevronRight width={16} height={16} fill="#b0b0b0" />
+              <ThemedText variant="body" size="sm" color="primary" weight="500" style={{ flex: 1 }}>Edit Profile</ThemedText>
+              <ChevronRight width={16} height={16} fill={UNIFIED_THEME.colors.text.muted} />
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.settingItem} onPress={() => Alert.alert('Set Price', `Current: ₹${pricePerCall}/call`)}>
               <View style={styles.settingIconContainer}>
-                <DollarSign width={20} height={20} fill="#ff006e" />
+                <DollarSign width={20} height={20} fill={UNIFIED_THEME.colors.accent.primary} />
               </View>
-              <Text style={styles.settingText}>Set Hourly Rate</Text>
-              <Text style={styles.settingValue}>₹{pricePerCall}</Text>
+              <ThemedText variant="body" size="sm" color="primary" weight="500" style={{ flex: 1 }}>Set Hourly Rate</ThemedText>
+              <ThemedText variant="body" size="sm" color="primary">₹{pricePerCall}</ThemedText>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -927,18 +929,18 @@ export default function TeacherDashboard({ navigation }) {
               onPress={() => navigation.navigate(SCREEN_NAMES.BankAccountSettings)}
             >
               <View style={styles.settingIconContainer}>
-                <User width={20} height={20} fill="#ff006e" />
+                <User width={20} height={20} fill={UNIFIED_THEME.colors.accent.primary} />
               </View>
-              <Text style={styles.settingText}>Bank Account</Text>
-              <ChevronRight width={16} height={16} fill="#b0b0b0" />
+              <ThemedText variant="body" size="sm" color="primary" weight="500" style={{ flex: 1 }}>Bank Account</ThemedText>
+              <ChevronRight width={16} height={16} fill={UNIFIED_THEME.colors.text.muted} />
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.settingItem} onPress={() => navigation.navigate(SCREEN_NAMES.Notifications)}>
               <View style={styles.settingIconContainer}>
-                <Clock width={20} height={20} fill="#ff006e" />
+                <Clock width={20} height={20} fill={UNIFIED_THEME.colors.accent.primary} />
               </View>
-              <Text style={styles.settingText}>Notifications</Text>
-              <ChevronRight width={16} height={16} fill="#b0b0b0" />
+              <ThemedText variant="body" size="sm" color="primary" weight="500" style={{ flex: 1 }}>Notifications</ThemedText>
+              <ChevronRight width={16} height={16} fill={UNIFIED_THEME.colors.text.muted} />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -967,10 +969,10 @@ export default function TeacherDashboard({ navigation }) {
               }}
             >
               <View style={styles.settingIconContainer}>
-                <Text style={{ fontSize: 18 }}>🔒</Text>
+                <ThemedText style={{ fontSize: 18 }}>🔒</ThemedText>
               </View>
-              <Text style={styles.settingText}>Reset Password</Text>
-              <ChevronRight width={16} height={16} fill="#b0b0b0" />
+              <ThemedText variant="body" size="sm" color="primary" weight="500" style={{ flex: 1 }}>Reset Password</ThemedText>
+              <ChevronRight width={16} height={16} fill={UNIFIED_THEME.colors.text.muted} />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -978,24 +980,24 @@ export default function TeacherDashboard({ navigation }) {
               onPress={() => navigation.navigate(SCREEN_NAMES.TeacherAvailability)}
             >
               <View style={styles.settingIconContainer}>
-                <Calendar width={20} height={20} fill="#ff006e" />
+                <Calendar width={20} height={20} fill={UNIFIED_THEME.colors.accent.primary} />
               </View>
-              <Text style={styles.settingText}>Set Availability</Text>
-              <ChevronRight width={16} height={16} fill="#b0b0b0" />
+              <ThemedText variant="body" size="sm" color="primary" weight="500" style={{ flex: 1 }}>Set Availability</ThemedText>
+              <ChevronRight width={16} height={16} fill={UNIFIED_THEME.colors.text.muted} />
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.settingItem} onPress={() => Alert.alert('Privacy')}>
               <View style={styles.settingIconContainer}>
-                <User width={20} height={20} fill="#ff006e" />
+                <User width={20} height={20} fill={UNIFIED_THEME.colors.accent.primary} />
               </View>
-              <Text style={styles.settingText}>Privacy & Security</Text>
-              <ChevronRight width={16} height={16} fill="#b0b0b0" />
+              <ThemedText variant="body" size="sm" color="primary" weight="500" style={{ flex: 1 }}>Privacy & Security</ThemedText>
+              <ChevronRight width={16} height={16} fill={UNIFIED_THEME.colors.text.muted} />
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.settingItem} onPress={() => Alert.alert('Help')}>
-              <Text style={styles.settingIcon}>❓</Text>
-              <Text style={styles.settingText}>Help & Support</Text>
-              <Text style={styles.settingArrow}>→</Text>
+              <ThemedText style={{ fontSize: 20, marginRight: 12 }}>❓</ThemedText>
+              <ThemedText variant="body" size="sm" color="primary" weight="500" style={{ flex: 1 }}>Help & Support</ThemedText>
+              <ThemedText variant="body" size="lg" color="muted">→</ThemedText>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -1003,10 +1005,10 @@ export default function TeacherDashboard({ navigation }) {
               onPress={() => navigation.navigate(SCREEN_NAMES.TeacherEarnings)}
             >
               <View style={styles.settingIconContainer}>
-                <MoneyBag width={20} height={20} fill="#ff006e" />
+                <MoneyBag width={20} height={20} fill={UNIFIED_THEME.colors.accent.primary} />
               </View>
-              <Text style={styles.settingText}>My Earnings & Withdrawals</Text>
-              <ChevronRight width={16} height={16} fill="#b0b0b0" />
+              <ThemedText variant="body" size="sm" color="primary" weight="500" style={{ flex: 1 }}>My Earnings & Withdrawals</ThemedText>
+              <ChevronRight width={16} height={16} fill={UNIFIED_THEME.colors.text.muted} />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -1022,9 +1024,9 @@ export default function TeacherDashboard({ navigation }) {
                 )
               }
             >
-              <Text style={styles.settingIcon}>🚪</Text>
-              <Text style={styles.settingText}>Logout</Text>
-              <Text style={styles.settingArrow}>→</Text>
+              <ThemedText style={{ fontSize: 20, marginRight: 12 }}>🚪</ThemedText>
+              <ThemedText variant="body" size="sm" color="primary" weight="500" style={{ flex: 1 }}>Logout</ThemedText>
+              <ThemedText variant="body" size="lg" color="muted">→</ThemedText>
             </TouchableOpacity>
           </View>
 
@@ -1036,32 +1038,32 @@ export default function TeacherDashboard({ navigation }) {
             style={styles.navItem}
             onPress={() => setActiveTab('home')}
           >
-            <Home width={22} height={22} fill={activeTab === 'home' ? '#ff006e' : '#b0b0b0'} />
-            <Text style={styles.navLabel}>Home</Text>
+            <Home width={22} height={22} fill={activeTab === 'home' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <ThemedText variant="body" size="xs" color={activeTab === 'home' ? 'secondary' : 'muted'} style={{ marginTop: 4 }}>Home</ThemedText>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.navItem}
             onPress={() => setActiveTab('earnings')}
           >
-            <DollarSign width={22} height={22} fill={activeTab === 'earnings' ? '#ff006e' : '#b0b0b0'} />
-            <Text style={styles.navLabel}>Earnings</Text>
+            <DollarSign width={22} height={22} fill={activeTab === 'earnings' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <ThemedText variant="body" size="xs" color={activeTab === 'earnings' ? 'secondary' : 'muted'} style={{ marginTop: 4 }}>Earnings</ThemedText>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.navItem}
             onPress={() => setActiveTab('calls')}
           >
-            <Phone width={22} height={22} fill={activeTab === 'calls' ? '#ff006e' : '#b0b0b0'} />
-            <Text style={styles.navLabel}>Calls</Text>
+            <Phone width={22} height={22} fill={activeTab === 'calls' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <ThemedText variant="body" size="xs" color={activeTab === 'calls' ? 'secondary' : 'muted'} style={{ marginTop: 4 }}>Calls</ThemedText>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.navItem]}
             onPress={() => setActiveTab('settings')}
           >
-            <Settings width={22} height={22} fill={activeTab === 'settings' ? '#ff006e' : '#b0b0b0'} />
-            <Text style={styles.navLabel}>Settings</Text>
+            <Settings width={22} height={22} fill={activeTab === 'settings' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <ThemedText variant="body" size="xs" color={activeTab === 'settings' ? 'secondary' : 'muted'} style={{ marginTop: 4 }}>Settings</ThemedText>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -1072,7 +1074,7 @@ export default function TeacherDashboard({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f1b3f',
+    backgroundColor: UNIFIED_THEME.colors.primary.light,
   },
   scrollView: {
     flex: 1,
@@ -1101,8 +1103,8 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderColor: UNIFIED_THEME.colors.border.light,
     borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
@@ -1118,13 +1120,13 @@ const styles = StyleSheet.create({
     minWidth: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: '#FF6B6B',
+    backgroundColor: UNIFIED_THEME.colors.status.rejected,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 4,
   },
   notificationBadgeText: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 10,
     fontWeight: '700',
   },
@@ -1134,7 +1136,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   welcome: {
-    color: '#ccc',
+    color: UNIFIED_THEME.colors.text.secondary,
     fontSize: 14,
     marginRight: 8,
   },
@@ -1142,7 +1144,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
   },
   teacherName: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 24,
     fontWeight: 'bold',
   },
@@ -1151,8 +1153,8 @@ const styles = StyleSheet.create({
   overviewCard: {
     marginHorizontal: 20,
     marginVertical: 15,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderColor: UNIFIED_THEME.colors.border.light,
     borderWidth: 1,
     borderRadius: 15,
     padding: 20,
@@ -1169,7 +1171,7 @@ const styles = StyleSheet.create({
   profileImageContainer: {
     width: 60,
     height: 60,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
     borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
@@ -1182,10 +1184,10 @@ const styles = StyleSheet.create({
     height: 16,
     borderRadius: 8,
     borderWidth: 3,
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    borderColor: UNIFIED_THEME.colors.border.light,
   },
   statusLabel: {
-    color: '#b0b0b0',
+    color: UNIFIED_THEME.colors.text.muted,
     fontSize: 12,
     marginTop: 2,
   },
@@ -1203,10 +1205,10 @@ const styles = StyleSheet.create({
     height: 18,
     borderRadius: 9,
     borderWidth: 3,
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    borderColor: UNIFIED_THEME.colors.border.light,
   },
   settingStatusLabel: {
-    color: '#b0b0b0',
+    color: UNIFIED_THEME.colors.text.muted,
     fontSize: 13,
     marginTop: 4,
     textAlign: 'center',
@@ -1219,12 +1221,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   profileName: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 16,
     fontWeight: 'bold',
   },
   profileSubtitle: {
-    color: '#6CA0FF',
+    color: UNIFIED_THEME.colors.text.secondary,
     fontSize: 13,
     marginTop: 3,
   },
@@ -1235,7 +1237,7 @@ const styles = StyleSheet.create({
   },
   statBox: {
     flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
     paddingVertical: 12,
     paddingHorizontal: 10,
     borderRadius: 10,
@@ -1243,13 +1245,13 @@ const styles = StyleSheet.create({
     marginHorizontal: 5,
   },
   statValue: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 3,
   },
   statLabel: {
-    color: '#b0b0b0',
+    color: UNIFIED_THEME.colors.text.muted,
     fontSize: 11,
   },
 
@@ -1260,7 +1262,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 18,
     fontWeight: 'bold',
   },
@@ -1284,12 +1286,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   actionTitle: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 15,
     fontWeight: 'bold',
   },
   actionSubtitle: {
-    color: '#ccc',
+    color: UNIFIED_THEME.colors.text.secondary,
     fontSize: 12,
     marginTop: 2,
   },
@@ -1298,41 +1300,41 @@ const styles = StyleSheet.create({
   earningsCard: {
     marginHorizontal: 20,
     marginVertical: 15,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderColor: UNIFIED_THEME.colors.border.light,
     borderWidth: 1,
     padding: 20,
     borderRadius: 15,
   },
   earningsAmount: {
-    color: '#2ECC71',
+    color: UNIFIED_THEME.colors.status.approved,
     fontSize: 28,
     fontWeight: 'bold',
     marginBottom: 5,
   },
   earningsText: {
-    color: '#ccc',
+    color: UNIFIED_THEME.colors.text.secondary,
     fontSize: 13,
     marginBottom: 12,
   },
   earningsPending: {
-    color: '#FF9800',
+    color: UNIFIED_THEME.colors.status.pending,
     fontSize: 12,
     marginBottom: 12,
   },
   earningsBar: {
     height: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
     borderRadius: 4,
     overflow: 'hidden',
     marginBottom: 10,
   },
   earningsBarFill: {
     height: '100%',
-    backgroundColor: '#2ECC71',
+    backgroundColor: UNIFIED_THEME.colors.status.approved,
   },
   earningsTarget: {
-    color: '#b0b0b0',
+    color: UNIFIED_THEME.colors.text.muted,
     fontSize: 12,
   },
 
@@ -1340,8 +1342,8 @@ const styles = StyleSheet.create({
   activityCard: {
     marginHorizontal: 20,
     marginVertical: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderColor: UNIFIED_THEME.colors.border.light,
     borderWidth: 1,
     padding: 15,
     borderRadius: 12,
@@ -1356,17 +1358,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   activityTitle: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 14,
     fontWeight: '600',
   },
   activityTime: {
-    color: '#b0b0b0',
+    color: UNIFIED_THEME.colors.text.muted,
     fontSize: 12,
     marginTop: 2,
   },
   activitySubtitle: {
-    color: '#b0b0b0',
+    color: UNIFIED_THEME.colors.text.muted,
     fontSize: 12,
     marginTop: 2,
   },
@@ -1376,13 +1378,13 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   meetingStartedBadge: {
-    color: '#2ECC71',
+    color: UNIFIED_THEME.colors.status.approved,
     fontSize: 11,
     marginLeft: 6,
     fontWeight: 'bold',
   },
   activityEarning: {
-    color: '#2ECC71',
+    color: UNIFIED_THEME.colors.status.approved,
     fontSize: 14,
     fontWeight: 'bold',
   },
@@ -1391,18 +1393,18 @@ const styles = StyleSheet.create({
   totalEarningsCard: {
     marginHorizontal: 20,
     marginVertical: 20,
-    backgroundColor: '#2E4053',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
     padding: 25,
     borderRadius: 15,
     alignItems: 'center',
   },
   totalEarningsLabel: {
-    color: '#ccc',
+    color: UNIFIED_THEME.colors.text.secondary,
     fontSize: 14,
     marginBottom: 8,
   },
   totalEarningsAmount: {
-    color: '#2ECC71',
+    color: UNIFIED_THEME.colors.status.approved,
     fontSize: 36,
     fontWeight: 'bold',
   },
@@ -1418,30 +1420,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 8,
     marginHorizontal: 5,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderColor: UNIFIED_THEME.colors.border.light,
     borderRadius: 20,
     borderWidth: 1,
   },
   filterBtnActive: {
-    backgroundColor: 'linear-gradient(135deg, #ff006e, #00d4ff)',
-    borderColor: '#ff006e',
+    backgroundColor: UNIFIED_THEME.colors.component.button,
+    borderColor: UNIFIED_THEME.colors.accent.primary,
   },
   filterText: {
-    color: '#ccc',
+    color: UNIFIED_THEME.colors.text.secondary,
     fontSize: 13,
     fontWeight: '500',
   },
   filterTextActive: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
   },
 
   // Chart Container
   chartContainer: {
     marginHorizontal: 20,
     marginVertical: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderColor: UNIFIED_THEME.colors.border.light,
     borderWidth: 1,
     padding: 15,
     borderRadius: 12,
@@ -1458,12 +1460,12 @@ const styles = StyleSheet.create({
   },
   bar: {
     width: 30,
-    backgroundColor: '#ff006e',
+    backgroundColor: UNIFIED_THEME.colors.accent.primary,
     borderRadius: 8,
     marginBottom: 8,
   },
   barLabel: {
-    color: '#b0b0b0',
+    color: UNIFIED_THEME.colors.text.muted,
     fontSize: 11,
   },
 
@@ -1471,14 +1473,14 @@ const styles = StyleSheet.create({
   breakdownContainer: {
     marginHorizontal: 20,
     marginVertical: 15,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderColor: UNIFIED_THEME.colors.border.light,
     borderWidth: 1,
     borderRadius: 12,
     padding: 15,
   },
   breakdownTitle: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 15,
     fontWeight: 'bold',
     marginBottom: 12,
@@ -1488,12 +1490,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 0, 110, 0.2)',
+    borderBottomColor: UNIFIED_THEME.colors.border.light,
   },
   breakdownItemLast: {
     borderBottomWidth: 0,
     paddingVertical: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
     marginHorizontal: -15,
     marginBottom: -15,
     paddingHorizontal: 15,
@@ -1501,16 +1503,16 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 12,
   },
   breakdownLabel: {
-    color: '#ccc',
+    color: UNIFIED_THEME.colors.text.secondary,
     fontSize: 13,
   },
   breakdownValue: {
-    color: '#2ECC71',
+    color: UNIFIED_THEME.colors.status.approved,
     fontSize: 13,
     fontWeight: 'bold',
   },
   breakdownValueNet: {
-    color: '#2ECC71',
+    color: UNIFIED_THEME.colors.status.approved,
     fontSize: 13,
     fontWeight: 'bold',
   },
@@ -1519,16 +1521,14 @@ const styles = StyleSheet.create({
   callCard: {
     marginHorizontal: 20,
     marginVertical: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderColor: UNIFIED_THEME.colors.border.light,
     borderWidth: 1,
     padding: 16,
     borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: '#2E3A5F',
   },
   callCardLeft: {
     flex: 1,
@@ -1536,14 +1536,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   callTime: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
     marginRight: 12,
   },
   callTimeText: {
-    color: '#ff006e',
+    color: UNIFIED_THEME.colors.accent.primary,
     fontSize: 12,
     fontWeight: 'bold',
   },
@@ -1551,12 +1551,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   callStudent: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 14,
     fontWeight: '600',
   },
   callSubject: {
-    color: '#b0b0b0',
+    color: UNIFIED_THEME.colors.text.muted,
     fontSize: 12,
     marginTop: 2,
   },
@@ -1565,17 +1565,17 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   callDuration: {
-    color: '#ccc',
+    color: UNIFIED_THEME.colors.text.secondary,
     fontSize: 11,
     marginRight: 12,
   },
   callPrice: {
-    color: '#2ECC71',
+    color: UNIFIED_THEME.colors.status.approved,
     fontSize: 11,
     fontWeight: 'bold',
   },
   callArrow: {
-    color: '#ff006e',
+    color: UNIFIED_THEME.colors.accent.primary,
     fontSize: 16,
   },
 
@@ -1590,7 +1590,7 @@ const styles = StyleSheet.create({
   },
 
   startCallBtnText: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -1599,8 +1599,8 @@ const styles = StyleSheet.create({
   historyCard: {
     marginHorizontal: 20,
     marginVertical: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderColor: UNIFIED_THEME.colors.border.light,
     borderWidth: 1,
     padding: 15,
     borderRadius: 12,
@@ -1611,11 +1611,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   historyDate: {
-    color: '#b0b0b0',
+    color: UNIFIED_THEME.colors.text.muted,
     fontSize: 11,
   },
   historyStudent: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 14,
     fontWeight: '600',
     marginTop: 3,
@@ -1624,11 +1624,11 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   historySubject: {
-    color: '#ccc',
+    color: UNIFIED_THEME.colors.text.secondary,
     fontSize: 12,
   },
   historyEarned: {
-    color: '#2ECC71',
+    color: UNIFIED_THEME.colors.status.approved,
     fontSize: 13,
     fontWeight: 'bold',
     marginTop: 3,
@@ -1638,21 +1638,21 @@ const styles = StyleSheet.create({
   profileSettingsCard: {
     marginHorizontal: 20,
     marginVertical: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderColor: UNIFIED_THEME.colors.border.light,
     borderWidth: 1,
     padding: 20,
     borderRadius: 15,
     alignItems: 'center',
   },
   settingName: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 18,
     fontWeight: 'bold',
     marginTop: 10,
   },
   settingSubtitle: {
-    color: '#6CA0FF',
+    color: UNIFIED_THEME.colors.text.secondary,
     fontSize: 13,
     marginTop: 3,
   },
@@ -1665,20 +1665,20 @@ const styles = StyleSheet.create({
   settingItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
     paddingVertical: 14,
     paddingHorizontal: 15,
     marginBottom: 10,
     borderRadius: 12,
   },
   logoutItem: {
-    backgroundColor: '#4A1C1C',
+    backgroundColor: 'rgba(239, 68, 68, 0.15)',
     marginTop: 15,
   },
   settingIconContainer: {
     width: 32,
     height: 32,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
@@ -1689,16 +1689,16 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   settingText: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 14,
     flex: 1,
     fontWeight: '500',
   },
   settingValue: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
   },
   settingArrow: {
-    color: '#b0b0b0',
+    color: UNIFIED_THEME.colors.text.muted,
     fontSize: 16,
   },
   settingsHeaderContainer: {
@@ -1713,19 +1713,19 @@ const styles = StyleSheet.create({
     marginVertical: 20,
   },
   priceCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderColor: UNIFIED_THEME.colors.border.light,
     borderWidth: 1,
     padding: 20,
     borderRadius: 12,
     marginTop: 15,
   },
   priceLabel: {
-    color: '#ccc',
+    color: UNIFIED_THEME.colors.text.secondary,
     fontSize: 13,
   },
   priceValue: {
-    color: '#2ECC71',
+    color: UNIFIED_THEME.colors.status.approved,
     fontSize: 32,
     fontWeight: 'bold',
     marginVertical: 10,
@@ -1736,7 +1736,7 @@ const styles = StyleSheet.create({
   },
   priceBtn: {
     flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
     paddingVertical: 10,
     borderRadius: 8,
     marginHorizontal: 5,
@@ -1746,11 +1746,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',   // Use LinearGradient wrapper for gradient
   },
   priceBtnText: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontWeight: 'bold',
   },
   priceSuggestion: {
-    color: '#b0b0b0',
+    color: UNIFIED_THEME.colors.text.muted,
     fontSize: 12,
     marginTop: 12,
   },
@@ -1766,13 +1766,11 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderTopColor: 'rgba(255, 0, 110, 0.3)',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderTopColor: UNIFIED_THEME.colors.border.light,
     borderTopWidth: 1,
     flexDirection: 'row',
     justifyContent: 'space-around',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 0, 110, 0.2)',
     paddingVertical: 10,
   },
   navItem: {
@@ -1785,10 +1783,10 @@ const styles = StyleSheet.create({
   },
   navItemActive: {
     borderTopWidth: 3,
-    borderTopColor: '#ff006e',
+    borderTopColor: UNIFIED_THEME.colors.accent.primary,
   },
   navLabel: {
-    color: '#ccc',
+    color: UNIFIED_THEME.colors.text.secondary,
     fontSize: 11,
     marginTop: 4,
   },
@@ -1798,11 +1796,11 @@ const styles = StyleSheet.create({
     marginVertical: 40,
     paddingHorizontal: 24,
     paddingVertical: 40,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
     borderRadius: 12,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    borderColor: UNIFIED_THEME.colors.border.light,
   },
 
   emptyStateIcon: {
@@ -1813,14 +1811,14 @@ const styles = StyleSheet.create({
   },
 
   emptyText: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 8,
   },
 
   emptySubtext: {
-    color: '#b0b0b0',
+    color: UNIFIED_THEME.colors.text.muted,
     fontSize: 13,
     textAlign: 'center',
     lineHeight: 18,
@@ -1831,7 +1829,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    color: '#ccc',
+    color: UNIFIED_THEME.colors.text.secondary,
     marginTop: 10,
   },
 
@@ -1839,14 +1837,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#B45309',
+    backgroundColor: UNIFIED_THEME.colors.status.pending,
     paddingVertical: 12,
     paddingHorizontal: 16,
     gap: 12,
   },
   snackbarText: {
     flex: 1,
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 13,
   },
   snackbarBtn: {
@@ -1856,7 +1854,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   snackbarBtnText: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 13,
     fontWeight: '600',
   },
@@ -1865,9 +1863,9 @@ const styles = StyleSheet.create({
   pendingBookingCard: {
     marginHorizontal: 20,
     marginVertical: 12,
-    backgroundColor: '#2a2d4a',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
     borderLeftWidth: 4,
-    borderLeftColor: '#FF9800',
+    borderLeftColor: UNIFIED_THEME.colors.status.pending,
     padding: 15,
     borderRadius: 10,
   },
@@ -1875,23 +1873,23 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   studentName: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 14,
     fontWeight: '600',
     marginBottom: 6,
   },
   bookingDate: {
-    color: '#aaa',
+    color: UNIFIED_THEME.colors.text.secondary,
     fontSize: 12,
     marginBottom: 4,
   },
   bookingSubject: {
-    color: '#ccc',
+    color: UNIFIED_THEME.colors.text.secondary,
     fontSize: 12,
     marginBottom: 4,
   },
   bookingDuration: {
-    color: '#b0b0b0',
+    color: UNIFIED_THEME.colors.text.muted,
     fontSize: 11,
   },
   actionButtons: {
@@ -1900,36 +1898,36 @@ const styles = StyleSheet.create({
   },
   confirmBtn: {
     flex: 1,
-    backgroundColor: '#4CAF50',
+    backgroundColor: UNIFIED_THEME.colors.status.approved,
     paddingVertical: 10,
     borderRadius: 8,
   },
   confirmBtnText: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 12,
     fontWeight: '600',
     textAlign: 'center',
   },
   declineBtn: {
     flex: 1,
-    backgroundColor: '#f44336',
+    backgroundColor: UNIFIED_THEME.colors.status.rejected,
     paddingVertical: 10,
     borderRadius: 8,
   },
   declineBtnText: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 12,
     fontWeight: '600',
     textAlign: 'center',
   },
   badge: {
-    backgroundColor: '#FF9800',
+    backgroundColor: UNIFIED_THEME.colors.status.pending,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
   },
   badgeText: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 12,
     fontWeight: 'bold',
   },

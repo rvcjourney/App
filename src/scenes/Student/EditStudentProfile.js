@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   TouchableOpacity,
   TextInput,
@@ -12,6 +11,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-simple-toast';
 import { supabase } from '../../../supabase';
+import UNIFIED_THEME from '../../constants/unifiedTheme';
+import ThemedText from '../../components/ThemedText';
 import User from '../../assets/icons/User';
 import ChevronRight from '../../assets/icons/ChevronRight';
 
@@ -132,7 +133,7 @@ export default function EditStudentProfile({ navigation, onSaveSuccess }) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#ff006e" />
+          <ActivityIndicator size="large" color={UNIFIED_THEME.colors.accent.primary} />
         </View>
       </SafeAreaView>
     );
@@ -147,9 +148,9 @@ export default function EditStudentProfile({ navigation, onSaveSuccess }) {
             style={styles.backButtonContainer}
             onPress={() => navigation.goBack()}
           >
-            <ChevronRight width={24} height={24} fill="#ff006e" style={{ transform: [{ rotate: '180deg' }] }} />
+            <ChevronRight width={24} height={24} fill={UNIFIED_THEME.colors.accent.primary} style={{ transform: [{ rotate: '180deg' }] }} />
           </TouchableOpacity>
-          <Text style={styles.title}>Edit Profile</Text>
+          <ThemedText variant="heading" size="md">Edit Profile</ThemedText>
           <View style={{ width: 0 }} />
         </View>
 
@@ -157,23 +158,23 @@ export default function EditStudentProfile({ navigation, onSaveSuccess }) {
           {/* Profile Avatar */}
           <View style={styles.avatarSection}>
             <View style={styles.avatarContainer}>
-              <User width={56} height={56} fill="#ff006e" />
+              <User width={56} height={56} fill={UNIFIED_THEME.colors.accent.primary} />
             </View>
-            <Text style={styles.profileHint}>Profile Information</Text>
+            <ThemedText variant="body" size="sm" color="muted">Profile Information</ThemedText>
           </View>
 
           {/* Full Name */}
           <View style={styles.fieldSection}>
             <View style={styles.labelContainer}>
-              <Text style={styles.label}>Full Name</Text>
-              <Text style={styles.required}>*</Text>
+              <ThemedText variant="label" size="md" color="primary">Full Name</ThemedText>
+              <ThemedText variant="label" size="md" color="primary" style={{ marginLeft: 4 }}>*</ThemedText>
             </View>
             <View style={styles.inputContainer}>
-              <User width={18} height={18} fill="#ff006e" style={{ marginRight: 10 }} />
+              <User width={18} height={18} fill={UNIFIED_THEME.colors.accent.primary} style={{ marginRight: 10 }} />
               <TextInput
                 style={styles.input}
                 placeholder="Enter your full name"
-                placeholderTextColor="#666"
+                placeholderTextColor={UNIFIED_THEME.colors.text.muted}
                 value={fullName}
                 onChangeText={setFullName}
               />
@@ -183,24 +184,24 @@ export default function EditStudentProfile({ navigation, onSaveSuccess }) {
           {/* Email */}
           <View style={styles.fieldSection}>
             <View style={styles.labelContainer}>
-              <Text style={styles.label}>Email Address</Text>
+              <ThemedText variant="label" size="md" color="primary">Email Address</ThemedText>
             </View>
             <View style={[styles.inputContainer, styles.disabledInput]}>
-              <Text style={styles.readonlyText}>{email}</Text>
-              <Text style={styles.emailHint}>(Cannot be changed)</Text>
+              <ThemedText variant="body" size="md" color="muted">{email}</ThemedText>
+              <ThemedText variant="body" size="xs" color="muted" style={{ marginLeft: 8 }}>(Cannot be changed)</ThemedText>
             </View>
           </View>
 
           {/* Grade Level */}
           <View style={styles.fieldSection}>
             <View style={styles.labelContainer}>
-              <Text style={styles.label}>Grade Level</Text>
+              <ThemedText variant="label" size="md" color="primary">Grade Level</ThemedText>
             </View>
             <View style={styles.inputContainer}>
               <TextInput
                 style={styles.input}
                 placeholder="e.g., Class 10, Grade 8"
-                placeholderTextColor="#666"
+                placeholderTextColor={UNIFIED_THEME.colors.text.muted}
                 value={gradeLevel}
                 onChangeText={setGradeLevel}
               />
@@ -210,13 +211,13 @@ export default function EditStudentProfile({ navigation, onSaveSuccess }) {
           {/* Subjects Interested */}
           <View style={styles.fieldSection}>
             <View style={styles.labelContainer}>
-              <Text style={styles.label}>Subjects Interested</Text>
+              <ThemedText variant="label" size="md" color="primary">Subjects Interested</ThemedText>
             </View>
             <View style={[styles.inputContainer, styles.multilineContainer]}>
               <TextInput
                 style={styles.multilineInput}
                 placeholder="e.g., Math, Physics, Chemistry (comma separated)"
-                placeholderTextColor="#666"
+                placeholderTextColor={UNIFIED_THEME.colors.text.muted}
                 value={subjectsInterested}
                 onChangeText={setSubjectsInterested}
                 multiline
@@ -228,7 +229,7 @@ export default function EditStudentProfile({ navigation, onSaveSuccess }) {
           {/* Preferred Language */}
           <View style={styles.fieldSection}>
             <View style={styles.labelContainer}>
-              <Text style={styles.label}>Preferred Language</Text>
+              <ThemedText variant="label" size="md" color="primary">Preferred Language</ThemedText>
             </View>
             <View style={styles.languageButtons}>
               {['English', 'Hindi', 'Marathi'].map(lang => (
@@ -240,14 +241,13 @@ export default function EditStudentProfile({ navigation, onSaveSuccess }) {
                   ]}
                   onPress={() => setPreferredLanguage(lang)}
                 >
-                  <Text
-                    style={[
-                      styles.langBtnText,
-                      preferredLanguage === lang && styles.langBtnTextActive,
-                    ]}
+                  <ThemedText
+                    variant="label"
+                    size="sm"
+                    color={preferredLanguage === lang ? 'onAccent' : 'muted'}
                   >
                     {lang}
-                  </Text>
+                  </ThemedText>
                 </TouchableOpacity>
               ))}
             </View>
@@ -261,7 +261,7 @@ export default function EditStudentProfile({ navigation, onSaveSuccess }) {
             onPress={() => navigation.goBack()}
             disabled={saving}
           >
-            <Text style={styles.cancelButtonText}>Cancel</Text>
+            <ThemedText variant="label" size="md" color="primary">Cancel</ThemedText>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -269,9 +269,9 @@ export default function EditStudentProfile({ navigation, onSaveSuccess }) {
             onPress={handleSave}
             disabled={saving}
           >
-            <Text style={styles.saveButtonText}>
+            <ThemedText variant="label" size="md" color="onAccent">
               {saving ? 'Saving...' : 'Save Changes'}
-            </Text>
+            </ThemedText>
           </TouchableOpacity>
         </View>
 
@@ -284,7 +284,7 @@ export default function EditStudentProfile({ navigation, onSaveSuccess }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f1b3f',
+    backgroundColor: UNIFIED_THEME.colors.primary.light,
   },
 
   loadingContainer: {
@@ -296,116 +296,77 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 18,
-    borderBottomColor: 'rgba(255, 0, 110, 0.2)',
+    paddingHorizontal: UNIFIED_THEME.spacing.md,
+    paddingVertical: UNIFIED_THEME.spacing.lg,
+    borderBottomColor: UNIFIED_THEME.colors.border.light,
     borderBottomWidth: 1,
   },
 
   backButtonContainer: {
     width: 40,
     height: 40,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: UNIFIED_THEME.borderRadius.md,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
     borderWidth: 1,
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    borderColor: UNIFIED_THEME.colors.border.default,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: '10',
-  },
-
-  title: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: 'bold',
+    marginRight: UNIFIED_THEME.spacing.md,
   },
 
   content: {
-    paddingHorizontal: 20,
-    paddingVertical: 24,
+    paddingHorizontal: UNIFIED_THEME.spacing.lg,
+    paddingVertical: UNIFIED_THEME.spacing.xl,
   },
 
   avatarSection: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: UNIFIED_THEME.spacing.xxxl,
   },
 
   avatarContainer: {
     width: 80,
     height: 80,
     backgroundColor: 'rgba(255, 0, 110, 0.15)',
-    borderRadius: 20,
+    borderRadius: UNIFIED_THEME.borderRadius.lg,
     borderWidth: 2,
-    borderColor: '#ff006e',
+    borderColor: UNIFIED_THEME.colors.accent.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
-    shadowColor: 'rgba(255, 0, 110, 0.6)',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 15,
-  },
-
-  profileHint: {
-    color: '#b0b0b0',
-    fontSize: 13,
-    fontWeight: '500',
+    marginBottom: UNIFIED_THEME.spacing.md,
+    ...UNIFIED_THEME.shadows.glow,
   },
 
   fieldSection: {
-    marginBottom: 22,
+    marginBottom: UNIFIED_THEME.spacing.xl,
   },
 
   labelContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
-  },
-
-  label: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-
-  required: {
-    color: '#ff006e',
-    marginLeft: 4,
-    fontWeight: 'bold',
+    marginBottom: UNIFIED_THEME.spacing.md,
   },
 
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    backgroundColor: UNIFIED_THEME.colors.component.input,
+    borderColor: UNIFIED_THEME.colors.border.default,
     borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 4,
+    borderRadius: UNIFIED_THEME.borderRadius.lg,
+    paddingHorizontal: UNIFIED_THEME.spacing.md,
+    paddingVertical: UNIFIED_THEME.spacing.xs,
   },
 
   input: {
     flex: 1,
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 14,
-    paddingVertical: 12,
+    paddingVertical: UNIFIED_THEME.spacing.md,
   },
 
   disabledInput: {
     opacity: 0.6,
-  },
-
-  readonlyText: {
-    color: '#b0b0b0',
-    fontSize: 14,
-    flex: 1,
-  },
-
-  emailHint: {
-    color: '#808080',
-    fontSize: 11,
-    marginLeft: 8,
   },
 
   multilineContainer: {
@@ -416,94 +377,64 @@ const styles = StyleSheet.create({
 
   multilineInput: {
     flex: 1,
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 14,
-    paddingVertical: 12,
-    paddingRight: 8,
+    paddingVertical: UNIFIED_THEME.spacing.md,
+    paddingRight: UNIFIED_THEME.spacing.sm,
     maxHeight: 100,
   },
 
   languageButtons: {
     flexDirection: 'row',
-    gap: 10,
+    gap: UNIFIED_THEME.spacing.md,
   },
 
   langBtn: {
     flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderColor: UNIFIED_THEME.colors.border.default,
     borderWidth: 1.5,
-    borderRadius: 12,
-    paddingVertical: 12,
+    borderRadius: UNIFIED_THEME.borderRadius.lg,
+    paddingVertical: UNIFIED_THEME.spacing.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   langBtnActive: {
-    background: 'linear-gradient(135deg, #ff006e, #00d4ff)',
-    borderColor: '#ff006e',
-    shadowColor: 'rgba(255, 0, 110, 0.6)',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 10,
-  },
-
-  langBtnText: {
-    color: '#b0b0b0',
-    fontSize: 13,
-    fontWeight: '500',
-  },
-
-  langBtnTextActive: {
-    color: '#fff',
-    fontWeight: '600',
+    backgroundColor: UNIFIED_THEME.colors.accent.primary,
+    borderColor: UNIFIED_THEME.colors.accent.primary,
+    ...UNIFIED_THEME.shadows.glow,
   },
 
   buttonContainer: {
     flexDirection: 'row',
-    gap: 12,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    gap: UNIFIED_THEME.spacing.md,
+    paddingHorizontal: UNIFIED_THEME.spacing.lg,
+    paddingVertical: UNIFIED_THEME.spacing.md,
   },
 
   cancelButton: {
     flex: 1,
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    borderColor: UNIFIED_THEME.colors.border.default,
     borderWidth: 1.5,
-    borderRadius: 20,
-    paddingVertical: 14,
+    borderRadius: UNIFIED_THEME.borderRadius.round,
+    paddingVertical: UNIFIED_THEME.spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-  },
-
-  cancelButtonText: {
-    color: '#ff006e',
-    fontSize: 15,
-    fontWeight: '600',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
   },
 
   saveButton: {
     flex: 1,
-    background: 'linear-gradient(135deg, #ff006e, #00d4ff)',
-    borderRadius: 20,
-    paddingVertical: 14,
+    backgroundColor: UNIFIED_THEME.colors.accent.primary,
+    borderRadius: UNIFIED_THEME.borderRadius.round,
+    paddingVertical: UNIFIED_THEME.spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#ff006e',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.6,
-    shadowRadius: 15,
-    elevation: 6,
+    ...UNIFIED_THEME.shadows.glow,
   },
 
   saveButtonDisabled: {
     opacity: 0.5,
-  },
-
-  saveButtonText: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '600',
   },
 });

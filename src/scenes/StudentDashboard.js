@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   TouchableOpacity,
   TextInput,
@@ -16,21 +15,9 @@ import Toast from 'react-native-simple-toast';
 import { SCREEN_NAMES } from '../navigators/screenNames';
 import { supabase } from '../../supabase';
 import { getAllTeachers, createBooking, getStudentBookings, getTeacherSlotsByDateRange, bookAvailabilitySlot, isProfileComplete, getUnreadNotificationCount, getTeachersGroupedByProfession } from '../database/database';
-import Home from '../assets/icons/Home';
-import Calendar from '../assets/icons/Calendar';
-import BookOpen from '../assets/icons/BookOpen';
-import User from '../assets/icons/User';
-import Heart from '../assets/icons/Heart';
-import HeartFilled from '../assets/icons/HeartFilled';
-import HeartOutline from '../assets/icons/HeartOutline';
-import Star from '../assets/icons/Star';
-import Video from '../assets/icons/Video';
-import Clock from '../assets/icons/Clock';
-import ChevronRight from '../assets/icons/ChevronRight';
-import Phone from '../assets/icons/Phone';
-import Users from '../assets/icons/Users';
-import CheckCircle from '../assets/icons/CheckCircle';
-import SearchIcon from '../assets/icons/SearchIcon';
+import UNIFIED_THEME from '../constants/unifiedTheme';
+import ThemedText from '../components/ThemedText';
+import Icon from '../components/Icon';
 
 const categories = ['All', 'Math', 'Physics', 'Chemistry', 'English', 'Science'];
 
@@ -491,9 +478,9 @@ export default function StudentDashboard({ navigation }) {
   // Teacher status colors (online / away / offline) – same as teacher dashboard
   const teacherStatusColor = (status) => {
     const s = (status || 'offline').toLowerCase();
-    if (s === 'online') return '#22c55e';
-    if (s === 'away') return '#eab308';
-    return '#6b7280';
+    if (s === 'online') return UNIFIED_THEME.colors.accent.success;
+    if (s === 'away') return UNIFIED_THEME.colors.status.pending;
+    return UNIFIED_THEME.colors.text.muted;
   };
 
   const renderTeacherCard = ({ item }) => {
@@ -517,28 +504,28 @@ export default function StudentDashboard({ navigation }) {
         <View style={styles.teacherCardContent}>
           {/* Profile Photo */}
           <View style={styles.teacherAvatarWrapper}>
-            <User width={48} height={48} fill="#ff006e" style={{ marginBottom: 8 }} />
+            <User width={48} height={48} fill={UNIFIED_THEME.colors.accent.primary} style={{ marginBottom: UNIFIED_THEME.spacing.sm }} />
             <View style={[styles.teacherStatusDot, { backgroundColor: teacherStatusColor(status) }]} />
           </View>
 
           {/* Name */}
-          <Text style={styles.teacherName}>{item.profile?.full_name || 'Teacher'}</Text>
+          <ThemedText style={styles.teacherName}>{item.profile?.full_name || 'Teacher'}</ThemedText>
 
           {/* Specialization */}
-          <Text style={styles.teacherCategory}>{(item.specializations)}</Text>
+          <ThemedText style={styles.teacherCategory}>{(item.specializations)}</ThemedText>
 
           {/* Rating, Followers, Favorite - Bottom Row */}
           <View style={styles.cardBottomRow}>
             {/* Rating */}
             <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 8 }}>
-              <Star width={16} height={16} fill="#FFD700" />
-              <Text style={styles.rating}>{(item.rating || 5.0).toFixed(1)}</Text>
+              <Star width={16} height={16} fill={UNIFIED_THEME.colors.accent.primary} />
+              <ThemedText style={styles.rating}>{(item.rating || 5.0).toFixed(1)}</ThemedText>
             </View>
 
             {/* Followers */}
             <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 8 }}>
-              <Users width={16} height={16} fill="#666" style={{ marginRight: 4 }} />
-              <Text style={styles.followers}>{item.followers || 0}</Text>
+              <Users width={16} height={16} fill={UNIFIED_THEME.colors.text.muted} style={{ marginRight: 4 }} />
+              <ThemedText style={styles.followers}>{item.followers || 0}</ThemedText>
             </View>
 
             {/* Favorite */}
@@ -547,9 +534,9 @@ export default function StudentDashboard({ navigation }) {
               onPress={() => toggleFavorite(item)}
             >
               {isFavorite ? (
-                <HeartFilled width={20} height={20} fill="#FF6B6B" />
+                <HeartFilled width={20} height={20} fill={UNIFIED_THEME.colors.accent.error} />
               ) : (
-                <HeartOutline width={20} height={20} stroke="#FF6B6B" />
+                <HeartOutline width={20} height={20} stroke="UNIFIED_THEME.colors.accent.error" />
               )}
             </TouchableOpacity>
           </View>
@@ -563,8 +550,8 @@ export default function StudentDashboard({ navigation }) {
     return (
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#ff006e" />
-          <Text style={styles.loadingText}>Loading your info...</Text>
+          <ActivityIndicator size="large" color={UNIFIED_THEME.colors.accent.primary} />
+          <ThemedText style={styles.loadingText}>Loading your info...</ThemedText>
         </View>
       </SafeAreaView>
     );
@@ -587,44 +574,44 @@ export default function StudentDashboard({ navigation }) {
               setAvailableSlots([]);
               setSelectedSlot(null);
             }}>
-              {/* <Text style={styles.backButton}>← Back</Text> */}
+              {/* <ThemedText style={styles.backButton}>← Back</ThemedText> */}
               
               <View style={styles.backButton}>
-                <ChevronRight width={24} height={24} color="#ff006e" style={{ transform: [{ rotate: '180deg' }] }} />
+                <ChevronRight width={24} height={24} color={UNIFIED_THEME.colors.accent.primary} style={{ transform: [{ rotate: '180deg' }] }} />
               </View>
             </TouchableOpacity>
-            <Text style={styles.modalTitle}>Select Available Slot</Text>
+            <ThemedText style={styles.modalTitle}>Select Available Slot</ThemedText>
           </View>
 
           {/* Teacher Info */}
           <View style={styles.teacherInfoCard}>
             <View style={styles.teacherModalAvatarWrapper}>
-              <User width={56} height={56} fill="#ff006e" style={{ marginBottom: 12 }} />
+              <User width={56} height={56} fill={UNIFIED_THEME.colors.accent.primary} style={{ marginBottom: UNIFIED_THEME.spacing.md }} />
               <View style={[styles.teacherStatusDotModal, { backgroundColor: teacherStatusColor(selectedTeacher.availability_status) }]} />
             </View>
-            <Text style={styles.teacherName}>{selectedTeacher.profile?.full_name}</Text>
-            <Text style={styles.teacherSpec}>{selectedTeacher.specializations}</Text>
-            <Text style={styles.teacherSpec}>{selectedTeacher.bio}</Text>
+            <ThemedText style={styles.teacherName}>{selectedTeacher.profile?.full_name}</ThemedText>
+            <ThemedText style={styles.teacherSpec}>{selectedTeacher.specializations}</ThemedText>
+            <ThemedText style={styles.teacherSpec}>{selectedTeacher.bio}</ThemedText>
             
             <View style={styles.priceRow}>
-              <Text style={styles.priceLabel}>Price: </Text>
-              <Text style={styles.priceValue}>₹{selectedTeacher.price_per_call || 500}/60 min</Text>
+              <ThemedText style={styles.priceLabel}>Price: </ThemedText>
+              <ThemedText style={styles.priceValue}>₹{selectedTeacher.price_per_call || 500}/60 min</ThemedText>
             </View>
-            {/* <Text style={styles.teacherStatusLabel}>
+            {/* <ThemedText style={styles.teacherStatusLabel}>
               {((selectedTeacher.availability_status || 'offline') === 'online' && 'Online') ||
                 ((selectedTeacher.availability_status || 'offline') === 'away' && 'Away') ||
                 'Offline'}
-            </Text> */}
+            </ThemedText> */}
           </View>
 
           {/* Subject/Topic - show first so it's always visible before selecting slot */}
           {availableSlots.length > 0 && (
             <View style={styles.fieldSection}>
-              <Text style={styles.label}>Subject/Topic *</Text>
+              <ThemedText style={styles.label}>Subject/Topic *</ThemedText>
               <TextInput
                 style={styles.subjectInput}
                 placeholder="e.g., Algebra, Physics Problem Solving"
-                placeholderTextColor="#b0b0b0"
+                placeholderTextColor={UNIFIED_THEME.colors.text.muted}
                 value={bookingSubject}
                 onChangeText={setBookingSubject}
               />
@@ -633,17 +620,17 @@ export default function StudentDashboard({ navigation }) {
 
           {/* Available Slots */}
           <View style={styles.fieldSection}>
-            <Text style={styles.label}>Available Slots (Next 30 Days)</Text>
+            <ThemedText style={styles.label}>Available Slots (Next 30 Days)</ThemedText>
 
             {slotsLoading ? (
-              <View style={{ paddingVertical: 20, alignItems: 'center' }}>
-                <ActivityIndicator size="large" color="#ff006e" />
-                <Text style={styles.loadingText}>Loading available slots...</Text>
+              <View style={{ paddingVertical: UNIFIED_THEME.spacing.xl, alignItems: 'center' }}>
+                <ActivityIndicator size="large" color={UNIFIED_THEME.colors.accent.primary} />
+                <ThemedText style={styles.loadingText}>Loading available slots...</ThemedText>
               </View>
             ) : availableSlots.length === 0 ? (
               <View style={styles.noSlotsContainer}>
-                <Text style={styles.noSlotsText}>😔 No available slots found</Text>
-                <Text style={styles.noSlotsSubtext}>Teacher hasn't set their availability yet</Text>
+                <ThemedText style={styles.noSlotsText}>😔 No available slots found</ThemedText>
+                <ThemedText style={styles.noSlotsSubtext}>Teacher hasn't set their availability yet</ThemedText>
               </View>
             ) : (
               <View style={styles.slotsList}>
@@ -667,17 +654,17 @@ export default function StudentDashboard({ navigation }) {
                       disabled={isBooked}
                     >
                       <View style={styles.slotContent}>
-                        <Text style={[styles.slotDateTime, isBooked && styles.slotDateTimeBooked]}>
+                        <ThemedText style={[styles.slotDateTime, isBooked && styles.slotDateTimeBooked]}>
                           {dayStr}, {dateStr} • {timeStr}
-                        </Text>
-                        <Text style={[styles.slotDuration, isBooked && styles.slotDurationBooked]}>
+                        </ThemedText>
+                        <ThemedText style={[styles.slotDuration, isBooked && styles.slotDurationBooked]}>
                           {isBooked ? 'Already booked' : '60 minutes session'}
-                        </Text>
+                        </ThemedText>
                       </View>
                       {isBooked ? (
-                        <Text style={styles.slotBookedBadge}>🔒 Booked</Text>
+                        <ThemedText style={styles.slotBookedBadge}>🔒 Booked</ThemedText>
                       ) : (
-                        isSelected && <Text style={styles.slotCheckmark}>✓</Text>
+                        isSelected && <ThemedText style={styles.slotCheckmark}>✓</ThemedText>
                       )}
                     </TouchableOpacity>
                   );
@@ -689,26 +676,26 @@ export default function StudentDashboard({ navigation }) {
           {/* Summary */}
           {selectedSlot && (
             <View style={styles.summaryCard}>
-              <Text style={styles.summaryTitle}>Booking Summary</Text>
+              <ThemedText style={styles.summaryTitle}>Booking Summary</ThemedText>
               <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Teacher:</Text>
-                <Text style={styles.summaryValue}>{selectedTeacher.profile?.full_name}</Text>
+                <ThemedText style={styles.summaryLabel}>Teacher:</ThemedText>
+                <ThemedText style={styles.summaryValue}>{selectedTeacher.profile?.full_name}</ThemedText>
               </View>
               <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Subject/Topic:</Text>
-                <Text style={styles.summaryValue}>{bookingSubject || '— Not entered —'}</Text>
+                <ThemedText style={styles.summaryLabel}>Subject/Topic:</ThemedText>
+                <ThemedText style={styles.summaryValue}>{bookingSubject || '— Not entered —'}</ThemedText>
               </View>
               <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Date & Time:</Text>
-                <Text style={styles.summaryValue}>{new Date(selectedSlot.start_time).toLocaleString()}</Text>
+                <ThemedText style={styles.summaryLabel}>Date & Time:</ThemedText>
+                <ThemedText style={styles.summaryValue}>{new Date(selectedSlot.start_time).toLocaleString()}</ThemedText>
               </View>
               <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Duration:</Text>
-                <Text style={styles.summaryValue}>60 minutes</Text>
+                <ThemedText style={styles.summaryLabel}>Duration:</ThemedText>
+                <ThemedText style={styles.summaryValue}>60 minutes</ThemedText>
               </View>
               <View style={[styles.summaryRow, styles.summaryRowTotal]}>
-                <Text style={styles.summaryLabel}>Total:</Text>
-                <Text style={styles.summaryValueTotal}>₹{selectedTeacher.price_per_call || 500}</Text>
+                <ThemedText style={styles.summaryLabel}>Total:</ThemedText>
+                <ThemedText style={styles.summaryValueTotal}>₹{selectedTeacher.price_per_call || 500}</ThemedText>
               </View>
             </View>
           )}
@@ -728,7 +715,7 @@ export default function StudentDashboard({ navigation }) {
             }}
             disabled={bookingInProgress}
           >
-            <Text style={styles.cancelBtnText}>Cancel</Text>
+            <ThemedText style={styles.cancelBtnText}>Cancel</ThemedText>
           </TouchableOpacity>
           {/* <TouchableOpacity
             style={[styles.confirmBtn, (bookingInProgress || !selectedSlot) && styles.confirmBtnDisabled]}
@@ -747,9 +734,9 @@ export default function StudentDashboard({ navigation }) {
             }}
             disabled={bookingInProgress || !selectedSlot}
           >
-            <Text style={styles.confirmBtnText}>
+            <ThemedText style={styles.confirmBtnText}>
               {bookingInProgress ? 'Booking...' : '✅ Confirm Booking'}
-            </Text>
+            </ThemedText>
           </TouchableOpacity> */}
           <TouchableOpacity
             style={[
@@ -775,9 +762,9 @@ export default function StudentDashboard({ navigation }) {
             }}
             disabled={bookingInProgress || !selectedSlot}
           >
-            <Text style={styles.confirmBtnText}>
+            <ThemedText style={styles.confirmBtnText}>
               {bookingInProgress ? 'Booking...' : 'Book Now'}
-            </Text>
+            </ThemedText>
           </TouchableOpacity>
 
         </View>
@@ -791,7 +778,7 @@ export default function StudentDashboard({ navigation }) {
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         {profileIncomplete && (
           <View style={styles.snackbar}>
-            <Text style={styles.snackbarText}>Complete your profile for a better experience.</Text>
+            <ThemedText style={styles.snackbarText}>Complete your profile for a better experience.</ThemedText>
             <TouchableOpacity
               style={styles.snackbarBtn}
               onPress={() => {
@@ -799,7 +786,7 @@ export default function StudentDashboard({ navigation }) {
                 navigation.navigate(SCREEN_NAMES.EditStudentProfile);
               }}
             >
-              <Text style={styles.snackbarBtnText}>Go to edit profile</Text>
+              <ThemedText style={styles.snackbarBtnText}>Go to edit profile</ThemedText>
             </TouchableOpacity>
           </View>
         )}
@@ -807,14 +794,14 @@ export default function StudentDashboard({ navigation }) {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 60 }}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefreshHome} colors={['#ff006e']} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefreshHome} colors={[UNIFIED_THEME.colors.accent.primary]} />
           }
         >
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.headerLeft}>
-              <Text style={styles.welcome}>Welcome 👋</Text>
-              <Text style={styles.studentName}>{studentName}</Text>
+              <ThemedText style={styles.welcome}>Welcome 👋</ThemedText>
+              <ThemedText style={styles.studentName}>{studentName}</ThemedText>
             </View>
             <TouchableOpacity
               style={styles.notificationBellWrap}
@@ -822,12 +809,12 @@ export default function StudentDashboard({ navigation }) {
               activeOpacity={0.7}
             >
               <View style={styles.notificationBell}>
-                <Text style={styles.notificationBellIcon}>🔔</Text>
+                <ThemedText style={styles.notificationBellIcon}>🔔</ThemedText>
                 {unreadNotificationCount > 0 && (
                   <View style={styles.notificationBadge}>
-                    <Text style={styles.notificationBadgeText}>
+                    <ThemedText style={styles.notificationBadgeText}>
                       {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
-                    </Text>
+                    </ThemedText>
                   </View>
                 )}
               </View>
@@ -839,19 +826,19 @@ export default function StudentDashboard({ navigation }) {
             <TextInput
               style={styles.searchInput}
               placeholder="Search teachers..."
-              placeholderTextColor="#b0b0b0"
+              placeholderTextColor={UNIFIED_THEME.colors.text.muted}
               value={searchQuery}
               onChangeText={setSearchQuery}
             />
-            {/* <Text style={styles.searchIcon}>🔍</Text> */}
+            {/* <ThemedText style={styles.searchIcon}>🔍</ThemedText> */}
             <View style={styles.searchIcon}>
-              <SearchIcon width={25} height={25} fill="#f5f1f1" />
+              <SearchIcon width={25} height={25} fill={UNIFIED_THEME.colors.text.secondary} />
             </View>
 
           </View>
 
           {/* Categories */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }} style={styles.categoryScroll}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: UNIFIED_THEME.spacing.xl }} style={styles.categoryScroll}>
             {categories.map(category => (
               <TouchableOpacity
                 key={category}
@@ -861,14 +848,14 @@ export default function StudentDashboard({ navigation }) {
                 ]}
                 onPress={() => setSelectedCategory(category)}
               >
-                <Text
+                <ThemedText
                   style={[
                     styles.categoryText,
                     selectedCategory === category && styles.categoryTextActive,
                   ]}
                 >
                   {category}
-                </Text>
+                </ThemedText>
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -876,9 +863,9 @@ export default function StudentDashboard({ navigation }) {
           {/* Teachers Grouped by Profession */}
           {Object.keys(groupedTeachers).length === 0 ? (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyIcon}>🔍</Text>
-              <Text style={styles.emptyText}>No teachers found</Text>
-              <Text style={styles.emptySubtext}>Try searching with different keywords</Text>
+              <ThemedText style={styles.emptyIcon}>🔍</ThemedText>
+              <ThemedText style={styles.emptyText}>No teachers found</ThemedText>
+              <ThemedText style={styles.emptySubtext}>Try searching with different keywords</ThemedText>
             </View>
           ) : (
             Object.entries(groupedTeachers).map(([profession, teacherList]) => {
@@ -900,10 +887,10 @@ export default function StudentDashboard({ navigation }) {
               return (
                 <View key={profession} style={styles.professionSection}>
                   <View style={styles.professionHeader}>
-                    <Text style={styles.professionTitle}>{profession}</Text>
-                    <Text style={styles.professionCount}>
+                    <ThemedText style={styles.professionTitle}>{profession}</ThemedText>
+                    <ThemedText style={styles.professionCount}>
                       {filteredProfessionTeachers.length}
-                    </Text>
+                    </ThemedText>
                   </View>
                   <ScrollView
                     horizontal
@@ -928,16 +915,16 @@ export default function StudentDashboard({ navigation }) {
             style={[styles.navItem, activeTab === 'home' && styles.navItemActive]}
             onPress={() => setActiveTab('home')}
           >
-            <Home width={24} height={24} fill={activeTab === 'home' ? '#ff006e' : '#b0b0b0'} />
-            <Text style={styles.navLabel}>Home</Text>
+            <Home width={24} height={24} fill={activeTab === 'home' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <ThemedText style={styles.navLabel}>Home</ThemedText>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.navItem, activeTab === 'bookings' && styles.navItemActive]}
             onPress={() => setActiveTab('bookings')}
           >
-            <Calendar width={24} height={24} fill={activeTab === 'bookings' ? '#ff006e' : '#b0b0b0'} />
-            <Text style={styles.navLabel}>Bookings</Text>
+            <Calendar width={24} height={24} fill={activeTab === 'bookings' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <ThemedText style={styles.navLabel}>Bookings</ThemedText>
           </TouchableOpacity>
 
           {/* Lectures tab hidden for students
@@ -945,8 +932,8 @@ export default function StudentDashboard({ navigation }) {
             style={[styles.navItem, activeTab === 'lectures' && styles.navItemActive]}
             onPress={() => setActiveTab('lectures')}
           >
-            <BookOpen width={24} height={24} fill={activeTab === 'lectures' ? '#ff006e' : '#b0b0b0'} />
-            <Text style={styles.navLabel}>Lectures</Text>
+            <BookOpen width={24} height={24} fill={activeTab === 'lectures' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <ThemedText style={styles.navLabel}>Lectures</ThemedText>
           </TouchableOpacity>
           */}
 
@@ -954,8 +941,8 @@ export default function StudentDashboard({ navigation }) {
             style={[styles.navItem, activeTab === 'profile' && styles.navItemActive]}
             onPress={() => setActiveTab('profile')}
           >
-            <User width={24} height={24} fill={activeTab === 'profile' ? '#ff006e' : '#b0b0b0'} />
-            <Text style={styles.navLabel}>Profile</Text>
+            <User width={24} height={24} fill={activeTab === 'profile' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <ThemedText style={styles.navLabel}>Profile</ThemedText>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -974,17 +961,17 @@ export default function StudentDashboard({ navigation }) {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 80 }}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefreshBookings} colors={['#ff006e']} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefreshBookings} colors={[UNIFIED_THEME.colors.accent.primary]} />
           }
         >
           <View style={styles.bookingsHeader}>
             <View style={styles.headerContent}>
               <View style={styles.headerIconContainer}>
-                <Calendar width={20} height={20} fill="#fff" />
+                <Calendar width={20} height={20} fill={UNIFIED_THEME.colors.text.primary} />
               </View>
               <View>
-                <Text style={styles.headerTitle}>My Bookings</Text>
-                <Text style={styles.headerSubtitle}>{myBookings.length} total sessions</Text>
+                <ThemedText style={styles.headerTitle}>My Bookings</ThemedText>
+                <ThemedText style={styles.headerSubtitle}>{myBookings.length} total sessions</ThemedText>
               </View>
             </View>
           </View>
@@ -992,15 +979,15 @@ export default function StudentDashboard({ navigation }) {
           {myBookings.length === 0 ? (
             <View style={styles.emptyState}>
               <View style={styles.emptyIconContainer}>
-                <Calendar width={56} height={56} fill="#ff006e" />
+                <Calendar width={56} height={56} fill={UNIFIED_THEME.colors.accent.primary} />
               </View>
-              <Text style={styles.emptyText}>No bookings yet</Text>
-              <Text style={styles.emptySubtext}>Browse teachers and book your first session</Text>
+              <ThemedText style={styles.emptyText}>No bookings yet</ThemedText>
+              <ThemedText style={styles.emptySubtext}>Browse teachers and book your first session</ThemedText>
               <TouchableOpacity
                 style={styles.browseBtn}
                 onPress={() => setActiveTab('home')}
               >
-                <Text style={styles.browseBtnText}>Browse Teachers</Text>
+                <ThemedText style={styles.browseBtnText}>Browse Teachers</ThemedText>
               </TouchableOpacity>
             </View>
           ) : (
@@ -1010,10 +997,10 @@ export default function StudentDashboard({ navigation }) {
                 <>
                   <View style={styles.bookingSectionHeader}>
                     <View style={styles.sectionBadge}>
-                      <Clock width={16} height={16} fill="#FF6B6B" />
-                      <Text style={styles.sectionBadgeText}>Payment Pending</Text>
+                      <Clock width={16} height={16} fill={UNIFIED_THEME.colors.accent.error} />
+                      <ThemedText style={styles.sectionBadgeText}>Payment Pending</ThemedText>
                     </View>
-                    <Text style={styles.sectionCount}>{pendingBookings.length}</Text>
+                    <ThemedText style={styles.sectionCount}>{pendingBookings.length}</ThemedText>
                   </View>
                   {pendingBookings.map(booking => (
                     <TouchableOpacity
@@ -1034,19 +1021,19 @@ export default function StudentDashboard({ navigation }) {
                     >
                       <View style={styles.bookingCardLeft}>
                         <View style={styles.bookingTeacherIcon}>
-                          <User width={24} height={24} fill="#FF6B6B" />
+                          <User width={24} height={24} fill={UNIFIED_THEME.colors.accent.error} />
                         </View>
                         <View style={styles.bookingInfo}>
-                          <Text style={styles.bookingTeacher}>{booking.teacher_profile?.full_name || 'Teacher'}</Text>
-                          <Text style={styles.bookingSubject}>{booking.subject}</Text>
+                          <ThemedText style={styles.bookingTeacher}>{booking.teacher_profile?.full_name || 'Teacher'}</ThemedText>
+                          <ThemedText style={styles.bookingSubject}>{booking.subject}</ThemedText>
                           <View style={styles.bookingMeta}>
-                            <Calendar width={12} height={12} fill="#b0b0b0" style={{ marginRight: 4 }} />
-                            <Text style={styles.bookingDate}>{new Date(booking.booked_date).toLocaleDateString()}</Text>
-                            <Clock width={12} height={12} fill="#b0b0b0" style={{ marginLeft: 12, marginRight: 4 }} />
-                            <Text style={styles.bookingDate}>{new Date(booking.booked_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
+                            <Calendar width={12} height={12} fill={UNIFIED_THEME.colors.text.muted} style={{ marginRight: 4 }} />
+                            <ThemedText style={styles.bookingDate}>{new Date(booking.booked_date).toLocaleDateString()}</ThemedText>
+                            <Clock width={12} height={12} fill={UNIFIED_THEME.colors.text.muted} style={{ marginLeft: 12, marginRight: 4 }} />
+                            <ThemedText style={styles.bookingDate}>{new Date(booking.booked_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</ThemedText>
                           </View>
-                          <View style={[styles.statusBadge, { backgroundColor: '#FFE5E5', borderColor: '#FF6B6B' }]}>
-                            <Text style={{ color: '#FF6B6B', fontSize: 12, fontWeight: '600' }}>💳 Payment Pending - Tap to Pay</Text>
+                          <View style={[styles.statusBadge, { backgroundColor: 'rgba(239, 68, 68, 0.1)', borderColor: UNIFIED_THEME.colors.accent.error }]}>
+                            <ThemedText style={{ color: UNIFIED_THEME.colors.accent.error, fontSize: 12, fontWeight: '600' }}>💳 Payment Pending - Tap to Pay</ThemedText>
                           </View>
                         </View>
                       </View>
@@ -1060,10 +1047,10 @@ export default function StudentDashboard({ navigation }) {
                 <>
                   <View style={styles.bookingSectionHeader}>
                     <View style={styles.sectionBadge}>
-                      <CheckCircle width={16} height={16} fill="#2ECC71" />
-                      <Text style={styles.sectionBadgeText}>Confirmed</Text>
+                      <CheckCircle width={16} height={16} fill={UNIFIED_THEME.colors.accent.success} />
+                      <ThemedText style={styles.sectionBadgeText}>Confirmed</ThemedText>
                     </View>
-                    <Text style={styles.sectionCount}>{confirmedBookings.length}</Text>
+                    <ThemedText style={styles.sectionCount}>{confirmedBookings.length}</ThemedText>
                   </View>
                   {confirmedBookings.map(booking => {
                     const CardWrapper = booking.meeting_id ? TouchableOpacity : View;
@@ -1072,37 +1059,37 @@ export default function StudentDashboard({ navigation }) {
                       <CardWrapper key={booking.id} style={[styles.bookingCard, styles.confirmedCard]} {...cardProps}>
                         <View style={styles.bookingCardLeft}>
                           <View style={styles.bookingTeacherIcon}>
-                            <User width={24} height={24} fill="#2ECC71" />
+                            <User width={24} height={24} fill={UNIFIED_THEME.colors.accent.success} />
                           </View>
                           <View style={styles.bookingInfo}>
-                            <Text style={styles.bookingTeacher}>{booking.teacher_profile?.full_name || 'Teacher'}</Text>
-                            <Text style={styles.bookingSubject}>{booking.subject}</Text>
+                            <ThemedText style={styles.bookingTeacher}>{booking.teacher_profile?.full_name || 'Teacher'}</ThemedText>
+                            <ThemedText style={styles.bookingSubject}>{booking.subject}</ThemedText>
                             <View style={styles.bookingMeta}>
-                              <Calendar width={12} height={12} fill="#b0b0b0" style={{ marginRight: 4 }} />
-                              <Text style={styles.bookingDate}>{new Date(booking.booked_date).toLocaleDateString()}</Text>
-                              <Clock width={12} height={12} fill="#b0b0b0" style={{ marginLeft: 12, marginRight: 4 }} />
-                              <Text style={styles.bookingDate}>{new Date(booking.booked_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
+                              <Calendar width={12} height={12} fill={UNIFIED_THEME.colors.text.muted} style={{ marginRight: 4 }} />
+                              <ThemedText style={styles.bookingDate}>{new Date(booking.booked_date).toLocaleDateString()}</ThemedText>
+                              <Clock width={12} height={12} fill={UNIFIED_THEME.colors.text.muted} style={{ marginLeft: 12, marginRight: 4 }} />
+                              <ThemedText style={styles.bookingDate}>{new Date(booking.booked_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</ThemedText>
                             </View>
                             {booking.meeting_id && (
                               <TouchableOpacity
                                 style={styles.meetingIdContainer}
                                 onPress={(e) => { e?.stopPropagation?.(); copyMeetingIdToClipboard(booking.meeting_id); }}
                               >
-                                <Video width={12} height={12} fill="#f9fafb" style={{ marginRight: 6 }} />
-                                <Text style={styles.meetingIdLabel}>Meeting ID: {booking.meeting_id}</Text>
-                                <Text style={styles.meetingIdCopy}>Copy</Text>
+                                <Video width={12} height={12} fill={UNIFIED_THEME.colors.text.primary} style={{ marginRight: 6 }} />
+                                <ThemedText style={styles.meetingIdLabel}>Meeting ID: {booking.meeting_id}</ThemedText>
+                                <ThemedText style={styles.meetingIdCopy}>Copy</ThemedText>
                               </TouchableOpacity>
                             )}
                           </View>
                         </View>
                         {booking.meeting_id ? (
                           <View style={styles.joinBtn}>
-                            <Video width={16} height={16} fill="#fff" />
-                            <Text style={styles.joinBtnText}>Join</Text>
+                            <Video width={16} height={16} fill={UNIFIED_THEME.colors.text.primary} />
+                            <ThemedText style={styles.joinBtnText}>Join</ThemedText>
                           </View>
                         ) : (
                           <View style={styles.waitingBadge}>
-                            <Text style={styles.waitingText}>Booked</Text>
+                            <ThemedText style={styles.waitingText}>Booked</ThemedText>
                           </View>
                         )}
                       </CardWrapper>
@@ -1116,28 +1103,28 @@ export default function StudentDashboard({ navigation }) {
                 <>
                   <View style={styles.bookingSectionHeader}>
                     <View style={styles.sectionBadge}>
-                      <CheckCircle width={16} height={16} fill="#b0b0b0" />
-                      <Text style={styles.sectionBadgeText}>Completed</Text>
+                      <CheckCircle width={16} height={16} fill={UNIFIED_THEME.colors.text.muted} />
+                      <ThemedText style={styles.sectionBadgeText}>Completed</ThemedText>
                     </View>
-                    <Text style={styles.sectionCount}>{completedBookings.length}</Text>
+                    <ThemedText style={styles.sectionCount}>{completedBookings.length}</ThemedText>
                   </View>
                   {completedBookings.map(booking => (
                     <View key={booking.id} style={[styles.bookingCard, styles.completedCard]}>
                       <View style={styles.bookingCardLeft}>
                         <View style={styles.bookingTeacherIcon}>
-                          <CheckCircle width={24} height={24} fill="#b0b0b0" />
+                          <CheckCircle width={24} height={24} fill={UNIFIED_THEME.colors.text.muted} />
                         </View>
                         <View style={styles.bookingInfo}>
-                          <Text style={styles.bookingTeacher}>{booking.teacher_profile?.full_name || 'Teacher'}</Text>
-                          <Text style={styles.bookingSubject}>Topics:{booking.subject}</Text>
+                          <ThemedText style={styles.bookingTeacher}>{booking.teacher_profile?.full_name || 'Teacher'}</ThemedText>
+                          <ThemedText style={styles.bookingSubject}>Topics:{booking.subject}</ThemedText>
                           <View style={styles.bookingMeta}>
-                            <Calendar width={12} height={12} fill="#b0b0b0" style={{ marginRight: 4 }} />
-                            <Text style={styles.bookingDate}>{new Date(booking.booked_date).toLocaleDateString()}</Text>
+                            <Calendar width={12} height={12} fill={UNIFIED_THEME.colors.text.muted} style={{ marginRight: 4 }} />
+                            <ThemedText style={styles.bookingDate}>{new Date(booking.booked_date).toLocaleDateString()}</ThemedText>
                           </View>
                         </View>
                       </View>
                       <View style={styles.completedBadge}>
-                        <CheckCircle width={20} height={20} fill="#b0b0b0" />
+                        <CheckCircle width={20} height={20} fill={UNIFIED_THEME.colors.text.muted} />
                       </View>
                     </View>
                   ))}
@@ -1152,31 +1139,31 @@ export default function StudentDashboard({ navigation }) {
             style={styles.navItem}
             onPress={() => setActiveTab('home')}
           >
-            <Home width={22} height={22} fill={activeTab === 'home' ? '#ff006e' : '#b0b0b0'} />
-            <Text style={styles.navLabel}>Home</Text>
+            <Home width={22} height={22} fill={activeTab === 'home' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <ThemedText style={styles.navLabel}>Home</ThemedText>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.navItem, styles.navItemActive]}
             onPress={() => setActiveTab('bookings')}
           >
-            <Calendar width={22} height={22} fill={activeTab === 'bookings' ? '#ff006e' : '#b0b0b0'} />
-            <Text style={styles.navLabel}>Bookings</Text>
+            <Calendar width={22} height={22} fill={activeTab === 'bookings' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <ThemedText style={styles.navLabel}>Bookings</ThemedText>
           </TouchableOpacity>
           {/* Lectures tab hidden for students
           <TouchableOpacity
             style={styles.navItem}
             onPress={() => setActiveTab('lectures')}
           >
-            <BookOpen width={22} height={22} fill={activeTab === 'lectures' ? '#ff006e' : '#b0b0b0'} />
-            <Text style={styles.navLabel}>Lectures</Text>
+            <BookOpen width={22} height={22} fill={activeTab === 'lectures' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <ThemedText style={styles.navLabel}>Lectures</ThemedText>
           </TouchableOpacity>
           */}
           <TouchableOpacity
             style={styles.navItem}
             onPress={() => setActiveTab('profile')}
           >
-            <User width={22} height={22} fill={activeTab === 'profile' ? '#ff006e' : '#b0b0b0'} />
-            <Text style={styles.navLabel}>Profile</Text>
+            <User width={22} height={22} fill={activeTab === 'profile' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <ThemedText style={styles.navLabel}>Profile</ThemedText>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -1187,49 +1174,49 @@ export default function StudentDashboard({ navigation }) {
   if (activeTab === 'profile') {
     return (
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-        <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
+        <ScrollView contentContainerStyle={{ paddingBottom: UNIFIED_THEME.spacing.xl }}>
           <View style={styles.header}>
             <View style={styles.welcomeContainer}>
               <View style={styles.headerContent}>
                 <View style={styles.headerIconContainer}>
-                  <User width={20} height={20} fill="#ffffff" />
+                  <User width={20} height={20} fill={UNIFIED_THEME.colors.text.primary} />
                 </View>
-                <Text style={styles.welcometab}>My Profile</Text>
+                <ThemedText style={styles.welcometab}>My Profile</ThemedText>
               </View>
             </View>
           </View>
 
           <View style={styles.profileCard}>
             <View style={styles.profileImageContainer}>
-              <User width={56} height={56} fill="#ff006e" />
+              <User width={56} height={56} fill={UNIFIED_THEME.colors.accent.primary} />
             </View>
-            <Text style={styles.profileName}>{studentName}</Text>
-            <Text style={styles.profileEmail}>Student ID: {studentId?.substring(0, 8)}...</Text>
+            <ThemedText style={styles.profileName}>{studentName}</ThemedText>
+            <ThemedText style={styles.profileEmail}>Student ID: {studentId?.substring(0, 8)}...</ThemedText>
           </View>
 
           {/* Favorite Teachers */}
           {favoriteTeachers.length > 0 && (
             <>
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>My Favorite Teachers</Text>
-                <Heart width={18} height={18} fill="#FF6B6B" />
+                <ThemedText style={styles.sectionTitle}>My Favorite Teachers</ThemedText>
+                <Heart width={18} height={18} fill={UNIFIED_THEME.colors.accent.error} />
               </View>
               {favoriteTeachers.map(teacher => (
                 <View key={teacher.id} style={styles.favTeacherCard}>
                   <View style={styles.favTeacherImageContainer}>
                     <View style={styles.favTeacherAvatarWrapper}>
-                      <User width={40} height={40} fill="#ff006e" />
+                      <User width={40} height={40} fill={UNIFIED_THEME.colors.accent.primary} />
                       <View style={[styles.favTeacherStatusDot, { backgroundColor: teacherStatusColor(teacher.availability_status) }]} />
                     </View>
                   </View>
                   <View style={styles.favTeacherInfo}>
-                    <Text style={styles.favTeacherName}>{teacher.profile?.full_name || 'Teacher'}</Text>
-                    <Text style={styles.favTeacherCategory}>
+                    <ThemedText style={styles.favTeacherName}>{teacher.profile?.full_name || 'Teacher'}</ThemedText>
+                    <ThemedText style={styles.favTeacherCategory}>
                       {typeof teacher.specializations === 'string'
                         ? teacher.specializations.split(',')[0].trim()
                         : 'Subject'}
-                    </Text>
-                    <Text style={styles.favTeacherPrice}>₹{teacher.price_per_call || 500}/call</Text>
+                    </ThemedText>
+                    <ThemedText style={styles.favTeacherPrice}>₹{teacher.price_per_call || 500}/call</ThemedText>
                   </View>
                   <View style={styles.favTeacherActions}>
                     <TouchableOpacity
@@ -1238,10 +1225,10 @@ export default function StudentDashboard({ navigation }) {
                         setShowBookingModal(true);
                       }}
                     >
-                      <Calendar width={20} height={20} fill="#ff006e" />
+                      <Calendar width={20} height={20} fill={UNIFIED_THEME.colors.accent.primary} />
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => toggleFavorite(teacher)} style={{ marginLeft: 12 }}>
-                      <HeartFilled width={20} height={20} fill="#FF6B6B" />
+                      <HeartFilled width={20} height={20} fill={UNIFIED_THEME.colors.accent.error} />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -1256,16 +1243,16 @@ export default function StudentDashboard({ navigation }) {
               onPress={() => navigation.navigate(SCREEN_NAMES.EditStudentProfile)}
             >
               <View style={styles.settingIconContainer}>
-                <User width={18} height={18} fill="#ff006e" />
+                <User width={18} height={18} fill={UNIFIED_THEME.colors.accent.primary} />
               </View>
-              <Text style={styles.settingText}>Edit Profile</Text>
+              <ThemedText style={styles.settingText}>Edit Profile</ThemedText>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.settingItem} onPress={() => navigation.navigate(SCREEN_NAMES.Notifications)}>
               <View style={styles.settingIconContainer}>
-                <Clock width={18} height={18} fill="#ff006e" />
+                <Clock width={18} height={18} fill={UNIFIED_THEME.colors.accent.primary} />
               </View>
-              <Text style={styles.settingText}>Notifications</Text>
+              <ThemedText style={styles.settingText}>Notifications</ThemedText>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -1294,30 +1281,30 @@ export default function StudentDashboard({ navigation }) {
               }}
             >
               <View style={styles.settingIconContainer}>
-                <Text style={{ fontSize: 16 }}>🔒</Text>
+                <ThemedText style={{ fontSize: 16 }}>🔒</ThemedText>
               </View>
-              <Text style={styles.settingText}>Reset Password</Text>
+              <ThemedText style={styles.settingText}>Reset Password</ThemedText>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.settingItem} onPress={() => Alert.alert('Payment History')}>
               <View style={styles.settingIconContainer}>
-                <User width={18} height={18} fill="#ff006e" />
+                <User width={18} height={18} fill={UNIFIED_THEME.colors.accent.primary} />
               </View>
-              <Text style={styles.settingText}>Payment History</Text>
+              <ThemedText style={styles.settingText}>Payment History</ThemedText>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.settingItem} onPress={() => Alert.alert('Privacy & Security')}>
               <View style={styles.settingIconContainer}>
-                <User width={18} height={18} fill="#ff006e" />
+                <User width={18} height={18} fill={UNIFIED_THEME.colors.accent.primary} />
               </View>
-              <Text style={styles.settingText}>Privacy & Security</Text>
+              <ThemedText style={styles.settingText}>Privacy & Security</ThemedText>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.settingItem} onPress={() => Alert.alert('Help & Support')}>
               <View style={styles.settingIconContainer}>
-                <Phone width={18} height={18} fill="#ff006e" />
+                <Phone width={18} height={18} fill={UNIFIED_THEME.colors.accent.primary} />
               </View>
-              <Text style={styles.settingText}>Help & Support</Text>
+              <ThemedText style={styles.settingText}>Help & Support</ThemedText>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -1334,9 +1321,9 @@ export default function StudentDashboard({ navigation }) {
               }
             >
               <View style={styles.settingIconContainer}>
-                <User width={18} height={18} fill="#FF6B6B" />
+                <User width={18} height={18} fill={UNIFIED_THEME.colors.accent.error} />
               </View>
-              <Text style={styles.settingText}>Logout</Text>
+              <ThemedText style={styles.settingText}>Logout</ThemedText>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -1346,31 +1333,31 @@ export default function StudentDashboard({ navigation }) {
             style={styles.navItem}
             onPress={() => setActiveTab('home')}
           >
-            <Home width={22} height={22} fill={activeTab === 'home' ? '#ff006e' : '#b0b0b0'} />
-            <Text style={styles.navLabel}>Home</Text>
+            <Home width={22} height={22} fill={activeTab === 'home' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <ThemedText style={styles.navLabel}>Home</ThemedText>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.navItem}
             onPress={() => setActiveTab('bookings')}
           >
-            <Calendar width={22} height={22} fill={activeTab === 'bookings' ? '#ff006e' : '#b0b0b0'} />
-            <Text style={styles.navLabel}>Bookings</Text>
+            <Calendar width={22} height={22} fill={activeTab === 'bookings' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <ThemedText style={styles.navLabel}>Bookings</ThemedText>
           </TouchableOpacity>
           {/* Lectures tab hidden for students
           <TouchableOpacity
             style={styles.navItem}
             onPress={() => setActiveTab('lectures')}
           >
-            <BookOpen width={22} height={22} fill={activeTab === 'lectures' ? '#ff006e' : '#b0b0b0'} />
-            <Text style={styles.navLabel}>Lectures</Text>
+            <BookOpen width={22} height={22} fill={activeTab === 'lectures' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <ThemedText style={styles.navLabel}>Lectures</ThemedText>
           </TouchableOpacity>
           */}
           <TouchableOpacity
             style={[styles.navItem, styles.navItemActive]}
             onPress={() => setActiveTab('profile')}
           >
-            <User width={22} height={22} fill={activeTab === 'profile' ? '#ff006e' : '#b0b0b0'} />
-            <Text style={styles.navLabel}>Profile</Text>
+            <User width={22} height={22} fill={activeTab === 'profile' ? UNIFIED_THEME.colors.accent.primary : UNIFIED_THEME.colors.text.muted} />
+            <ThemedText style={styles.navLabel}>Profile</ThemedText>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -1381,16 +1368,16 @@ export default function StudentDashboard({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f1b3f',
+    backgroundColor: UNIFIED_THEME.colors.primary.light,
   },
 
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    marginBottom: 10,
+    paddingHorizontal: UNIFIED_THEME.spacing.xl,
+    paddingVertical: UNIFIED_THEME.spacing.xl,
+    marginBottom: UNIFIED_THEME.spacing.md,
   },
   headerLeft: {
     flex: 1,
@@ -1401,9 +1388,9 @@ const styles = StyleSheet.create({
   notificationBell: {
     width: 44,
     height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    borderRadius: UNIFIED_THEME.borderRadius.lg,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderColor: UNIFIED_THEME.colors.border.default,
     borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
@@ -1418,14 +1405,14 @@ const styles = StyleSheet.create({
     right: -2,
     minWidth: 18,
     height: 18,
-    borderRadius: 9,
-    backgroundColor: '#FF6B6B',
+    borderRadius: UNIFIED_THEME.borderRadius.sm,
+    backgroundColor: UNIFIED_THEME.colors.accent.error,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 4,
+    paddingHorizontal: UNIFIED_THEME.spacing.xs,
   },
   notificationBadgeText: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 10,
     fontWeight: '700',
   },
@@ -1433,42 +1420,42 @@ const styles = StyleSheet.create({
   welcomeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: UNIFIED_THEME.spacing.sm,
   },
 
   welcome: {
-    color: '#ccc',
+    color: UNIFIED_THEME.colors.text.secondary,
     fontSize: 14,
   },
 
   welcometab: {
-    color: '#ffffff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 20,
     fontWeight: 'bold',
   },
 
   studentName: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 24,
     fontWeight: 'bold',
   },
 
   searchContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    marginBottom: 15,
+    paddingHorizontal: UNIFIED_THEME.spacing.xl,
+    paddingVertical: UNIFIED_THEME.spacing.md,
+    marginBottom: UNIFIED_THEME.spacing.lg,
     position: 'relative',
   },
 
   searchInput: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderColor: UNIFIED_THEME.colors.border.default,
     borderWidth: 1,
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 14,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 10,
+    paddingVertical: UNIFIED_THEME.spacing.md,
+    paddingHorizontal: UNIFIED_THEME.spacing.lg,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
     paddingRight: 45,
   },
 
@@ -1479,56 +1466,56 @@ const styles = StyleSheet.create({
   },
 
   categoryScroll: {
-    paddingHorizontal: 20,
-    marginBottom: 20,
+    paddingHorizontal: UNIFIED_THEME.spacing.xl,
+    marginBottom: UNIFIED_THEME.spacing.xl,
     maxHeight: 45,
-    marginLeft: -20,
+    marginLeft: -UNIFIED_THEME.spacing.xl,
   },
 
   categoryBtn: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderColor: UNIFIED_THEME.colors.border.default,
     borderWidth: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-    marginRight: 10,
+    paddingHorizontal: UNIFIED_THEME.spacing.lg,
+    paddingVertical: UNIFIED_THEME.spacing.md,
+    borderRadius: UNIFIED_THEME.borderRadius.lg,
+    marginRight: UNIFIED_THEME.spacing.md,
     minWidth: 70,
     alignItems: 'center',
   },
 
   categoryBtnActive: {
-    backgroundColor: '#1E90FF',
+    backgroundColor: UNIFIED_THEME.colors.info,
   },
 
   categoryText: {
-    color: '#b0b0b0',
+    color: UNIFIED_THEME.colors.text.muted,
     fontSize: 13,
     fontWeight: '500',
   },
 
   categoryTextActive: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
   },
 
   sectionHeader: {
-    paddingHorizontal: 20,
+    paddingHorizontal: UNIFIED_THEME.spacing.xl,
     marginVertical: 15,
   },
 
   sectionTitle: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 16,
     fontWeight: 'bold',
   },
 
   teacherGrid: {
-    paddingHorizontal: 20,
-    marginBottom: 100,
+    paddingHorizontal: UNIFIED_THEME.spacing.xl,
+    marginBottom: UNIFIED_THEME.spacing.md0,
   },
 
   gridItem: {
-    marginBottom: 15,
+    marginBottom: UNIFIED_THEME.spacing.lg,
   },
 
   professionSection: {
@@ -1539,29 +1526,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    marginBottom: 12,
+    paddingHorizontal: UNIFIED_THEME.spacing.xl,
+    marginBottom: UNIFIED_THEME.spacing.md,
   },
 
   professionTitle: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 18,
     fontWeight: '700',
   },
 
   professionCount: {
-    color: '#b0b0b0',
+    color: UNIFIED_THEME.colors.text.muted,
     fontSize: 14,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderColor: UNIFIED_THEME.colors.border.default,
     borderWidth: 1,
-    paddingHorizontal: 8,
+    paddingHorizontal: UNIFIED_THEME.spacing.sm,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
   },
 
   professionTeachersList: {
-    paddingHorizontal: 20,
+    paddingHorizontal: UNIFIED_THEME.spacing.xl,
     gap: 12,
   },
 
@@ -1572,21 +1559,21 @@ const styles = StyleSheet.create({
 
   // teacherCard: {
   //   backgroundColor: '#1C1F4A',
-  //   borderRadius: 12,
+  //   borderRadius: UNIFIED_THEME.borderRadius.md,
   //   padding: 15,
   //   flexDirection: 'row',
   //   alignItems: 'center',
   // },
 
   teacherCard: {
-  backgroundColor: 'rgba(255, 255, 255, 0.08)',
-  borderColor: 'rgba(255, 0, 110, 0.3)',
+  backgroundColor: UNIFIED_THEME.colors.component.card,
+  borderColor: UNIFIED_THEME.colors.border.default,
   borderWidth: 1,
-  borderRadius: 16,  // softer corners
+  borderRadius: UNIFIED_THEME.borderRadius.lg,  // softer corners
   padding: 16,
   flexDirection: 'row',
   alignItems: 'center',
-  shadowColor: '#000',
+  shadowColor: UNIFIED_THEME.shadows.medium.shadowColor,
   shadowOffset: { width: 0, height: 4 },
   shadowOpacity: 0.2,
   shadowRadius: 6,
@@ -1610,9 +1597,9 @@ const styles = StyleSheet.create({
     right: 0,
     width: 14,
     height: 14,
-    borderRadius: 7,
+    borderRadius: UNIFIED_THEME.borderRadius.sm,
     borderWidth: 2,
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    borderColor: UNIFIED_THEME.colors.border.default,
   },
 
   teacherModalAvatarWrapper: {
@@ -1627,15 +1614,15 @@ const styles = StyleSheet.create({
     right: 0,
     width: 16,
     height: 16,
-    borderRadius: 8,
+    borderRadius: UNIFIED_THEME.borderRadius.sm,
     borderWidth: 2,
-    borderColor: '#0f1b3f',
+    borderColor: UNIFIED_THEME.colors.primary.light,
   },
 
   teacherStatusLabel: {
-    color: '#b0b0b0',
+    color: UNIFIED_THEME.colors.text.muted,
     fontSize: 12,
-    marginBottom: 8,
+    marginBottom: UNIFIED_THEME.spacing.sm,
     textAlign: 'center',
   },
 
@@ -1649,9 +1636,9 @@ const styles = StyleSheet.create({
     right: 0,
     width: 12,
     height: 12,
-    borderRadius: 6,
+    borderRadius: UNIFIED_THEME.borderRadius.sm,
     borderWidth: 2,
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    borderColor: UNIFIED_THEME.colors.border.default,
   },
 
   favTeacherActions: {
@@ -1660,14 +1647,14 @@ const styles = StyleSheet.create({
   },
 
   teacherName: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 15,
     fontWeight: '600',
     marginBottom: 4,
   },
 
   teacherCategory: {
-    color: '#b0b0b0',
+    color: UNIFIED_THEME.colors.text.muted,
     fontSize: 12,
     marginBottom: 4,
   },
@@ -1678,15 +1665,15 @@ const styles = StyleSheet.create({
   },
 
   stat: {
-    color: '#6CA0FF',
+    color: UNIFIED_THEME.colors.info,
     fontSize: 12,
     fontWeight: '600',
-    marginRight: 12,
+    marginRight: UNIFIED_THEME.spacing.md,
   },
 
   statSeparator: {
-    color: '#b0b0b0',
-    marginRight: 12,
+    color: UNIFIED_THEME.colors.text.muted,
+    marginRight: UNIFIED_THEME.spacing.md,
   },
 
   favoriteBtn: {
@@ -1695,25 +1682,25 @@ const styles = StyleSheet.create({
   },
 
   emptyState: {
-    paddingHorizontal: 20,
+    paddingHorizontal: UNIFIED_THEME.spacing.xl,
     paddingVertical: 40,
     alignItems: 'center',
   },
 
   emptyIcon: {
     fontSize: 48,
-    marginBottom: 12,
+    marginBottom: UNIFIED_THEME.spacing.md,
   },
 
   emptyText: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 4,
   },
 
   emptySubtext: {
-    color: '#b0b0b0',
+    color: UNIFIED_THEME.colors.text.muted,
     fontSize: 13,
   },
 
@@ -1723,7 +1710,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     flexDirection: 'row',
-    backgroundColor: '#0f1b3f',
+    backgroundColor: UNIFIED_THEME.colors.primary.light,
     borderTopColor: 'rgba(255, 0, 110, 0.2)',
     borderTopWidth: 1,
     justifyContent: 'space-around',
@@ -1733,7 +1720,7 @@ const styles = StyleSheet.create({
 
   navItem: {
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: UNIFIED_THEME.spacing.sm,
     flex: 1,
     justifyContent: 'center',
   },
@@ -1743,100 +1730,100 @@ const styles = StyleSheet.create({
   },
 
   navLabel: {
-    color: '#b0b0b0',
+    color: UNIFIED_THEME.colors.text.muted,
     fontSize: 11,
     fontWeight: '500',
     marginTop: 4,
   },
 
   card: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderColor: UNIFIED_THEME.colors.border.default,
     borderWidth: 1,
     padding: 18,
-    borderRadius: 14,
-    marginBottom: 15,
+    borderRadius: UNIFIED_THEME.borderRadius.lg,
+    marginBottom: UNIFIED_THEME.spacing.lg,
     marginHorizontal: 20,
   },
 
   primaryCard: {
-    backgroundColor: '#1E90FF',
+    backgroundColor: UNIFIED_THEME.colors.info,
   },
 
   logoutCard: {
-    backgroundColor: '#E74C3C',
+    backgroundColor: UNIFIED_THEME.colors.accent.error,
   },
 
   cardText: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 18,
     fontWeight: '600',
     textAlign: 'center',
   },
 
   profileCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderColor: UNIFIED_THEME.colors.border.default,
     borderWidth: 1,
-    borderRadius: 14,
+    borderRadius: UNIFIED_THEME.borderRadius.lg,
     padding: 20,
     alignItems: 'center',
     marginHorizontal: 20,
-    marginBottom: 20,
+    marginBottom: UNIFIED_THEME.spacing.xl,
   },
 
   profileImageContainer: {
     width: 70,
     height: 70,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: 35,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderRadius: UNIFIED_THEME.borderRadius.round,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: UNIFIED_THEME.spacing.md,
   },
 
   profileImage: {
     fontSize: 48,
-    marginBottom: 12,
+    marginBottom: UNIFIED_THEME.spacing.md,
   },
 
   profileName: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 4,
   },
 
   profileEmail: {
-    color: '#b0b0b0',
+    color: UNIFIED_THEME.colors.text.muted,
     fontSize: 13,
   },
 
   favTeacherCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderColor: UNIFIED_THEME.colors.border.default,
     borderWidth: 1,
-    borderRadius: 10,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
     padding: 12,
     flexDirection: 'row',
     alignItems: 'center',
     marginHorizontal: 20,
-    marginBottom: 12,
+    marginBottom: UNIFIED_THEME.spacing.md,
   },
 
   favTeacherImageContainer: {
     width: 48,
     height: 48,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: 24,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderRadius: UNIFIED_THEME.borderRadius.lg,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: UNIFIED_THEME.spacing.md,
   },
 
   favTeacherImage: {
     fontSize: 32,
-    marginRight: 12,
+    marginRight: UNIFIED_THEME.spacing.md,
   },
 
   favTeacherInfo: {
@@ -1844,20 +1831,20 @@ const styles = StyleSheet.create({
   },
 
   favTeacherName: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 14,
     fontWeight: '600',
     marginBottom: 2,
   },
 
   favTeacherCategory: {
-    color: '#b0b0b0',
+    color: UNIFIED_THEME.colors.text.muted,
     fontSize: 11,
     marginBottom: 4,
   },
 
   favTeacherPrice: {
-    color: '#1E90FF',
+    color: UNIFIED_THEME.colors.info,
     fontSize: 12,
     fontWeight: '600',
   },
@@ -1870,50 +1857,50 @@ const styles = StyleSheet.create({
   settingsSection: {
     marginHorizontal: 20,
     marginTop: 20,
-    marginBottom: 100,
+    marginBottom: UNIFIED_THEME.spacing.md0,
   },
 
   settingItem: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderColor: UNIFIED_THEME.colors.border.default,
     borderWidth: 1,
-    borderRadius: 10,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
     padding: 15,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: UNIFIED_THEME.spacing.md,
   },
 
   settingIconContainer: {
     width: 36,
     height: 36,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: 8,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderRadius: UNIFIED_THEME.borderRadius.sm,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: UNIFIED_THEME.spacing.md,
   },
 
   settingIcon: {
     fontSize: 20,
-    marginRight: 12,
+    marginRight: UNIFIED_THEME.spacing.md,
   },
 
   settingText: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 15,
     fontWeight: '500',
   },
 
   logoutItem: {
-    backgroundColor: '#E74C3C',
+    backgroundColor: UNIFIED_THEME.colors.accent.error,
     marginTop: 10,
   },
 
   // TEACHER CARD STYLES
   teacherImage: {
     fontSize: 32,
-    marginBottom: 8,
+    marginBottom: UNIFIED_THEME.spacing.sm,
   },
 
   cardBottomRow: {
@@ -1922,18 +1909,18 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#333',
+    borderTopColor: UNIFIED_THEME.colors.border.default,
   },
 
   rating: {
-    color: '#FFD700',
+    color: UNIFIED_THEME.colors.accent.primary,
     fontSize: 12,
     fontWeight: '600',
-    marginLeft: 4,
+    marginLeft: UNIFIED_THEME.spacing.xs,
   },
 
   followers: {
-    color: '#b0b0b0',
+    color: UNIFIED_THEME.colors.text.muted,
     fontSize: 12,
     marginLeft: 2,
   },
@@ -1944,37 +1931,37 @@ const styles = StyleSheet.create({
 
   // BOOKING MODAL STYLES
   modalTitle: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 18,
     fontWeight: 'bold',
   },
 
   // backButton: {
-  //   color: '#1E90FF',
+  //   color: UNIFIED_THEME.colors.info,
   //   fontSize: 16,
   //   fontWeight: '600',
   // },
 
   teacherInfoCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderColor: UNIFIED_THEME.colors.border.default,
     borderWidth: 1,
     marginHorizontal: 20,
     marginVertical: 15,
     padding: 15,
-    borderRadius: 12,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
     alignItems: 'center',
   },
 
   teacherAvatar: {
     fontSize: 40,
-    marginBottom: 10,
+    marginBottom: UNIFIED_THEME.spacing.md,
   },
 
   teacherSpec: {
-    color: '#b0b0b0',
+    color: UNIFIED_THEME.colors.text.muted,
     fontSize: 13,
-    marginBottom: 10,
+    marginBottom: UNIFIED_THEME.spacing.md,
   },
 
   priceRow: {
@@ -1983,12 +1970,12 @@ const styles = StyleSheet.create({
   },
 
   priceLabel: {
-    color: '#b0b0b0',
+    color: UNIFIED_THEME.colors.text.muted,
     fontSize: 12,
   },
 
   priceValue: {
-    color: '#FFD700',
+    color: UNIFIED_THEME.colors.accent.primary,
     fontSize: 14,
     fontWeight: 'bold',
   },
@@ -1999,23 +1986,23 @@ const styles = StyleSheet.create({
   },
 
   label: {
-    color: '#ccc',
+    color: UNIFIED_THEME.colors.text.secondary,
     fontSize: 13,
     fontWeight: '600',
-    marginBottom: 10,
+    marginBottom: UNIFIED_THEME.spacing.md,
   },
 
   dateInput: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderColor: UNIFIED_THEME.colors.border.default,
     borderWidth: 1,
-    paddingVertical: 12,
+    paddingVertical: UNIFIED_THEME.spacing.md,
     paddingHorizontal: 15,
-    borderRadius: 10,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
   },
 
   dateText: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 14,
   },
 
@@ -2026,38 +2013,38 @@ const styles = StyleSheet.create({
   },
 
   timeBtn: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderColor: UNIFIED_THEME.colors.border.default,
     borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 8,
+    paddingHorizontal: UNIFIED_THEME.spacing.md,
+    paddingVertical: UNIFIED_THEME.spacing.md,
+    borderRadius: UNIFIED_THEME.borderRadius.sm,
     flex: 0.31,
   },
 
   timeBtnActive: {
-    backgroundColor: '#1E90FF',
+    backgroundColor: UNIFIED_THEME.colors.info,
   },
 
   timeBtnText: {
-    color: '#b0b0b0',
+    color: UNIFIED_THEME.colors.text.muted,
     fontSize: 12,
     fontWeight: '600',
     textAlign: 'center',
   },
 
   timeBtnTextActive: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
   },
 
   subjectInput: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderColor: UNIFIED_THEME.colors.border.default,
     borderWidth: 1,
-    color: '#fff',
-    paddingVertical: 12,
+    color: UNIFIED_THEME.colors.text.primary,
+    paddingVertical: UNIFIED_THEME.spacing.md,
     paddingHorizontal: 15,
-    borderRadius: 10,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
     fontSize: 14,
   },
 
@@ -2067,12 +2054,12 @@ const styles = StyleSheet.create({
   },
 
   slotCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderColor: UNIFIED_THEME.colors.border.default,
     borderWidth: 1,
-    borderRadius: 10,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
     padding: 15,
-    marginBottom: 10,
+    marginBottom: UNIFIED_THEME.spacing.md,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -2081,20 +2068,20 @@ const styles = StyleSheet.create({
   },
 
   // slotCardSelected: {
-  //   borderColor: '#1E90FF',
+  //   borderColor: UNIFIED_THEME.colors.info,
   //   backgroundColor: '#252965',
   // },
 
   slotCardSelected: {
-  borderColor: '#ff006e',
-  backgroundColor: 'rgba(255, 0, 110, 0.15)',
+  borderColor: UNIFIED_THEME.colors.accent.primary,
+  backgroundColor: UNIFIED_THEME.colors.border.light,
   transform: [{ scale: 1.02 }],
 },
 
 
   slotCardBooked: {
-    backgroundColor: '#3A3A3A',
-    borderColor: '#5A5A5A',
+    backgroundColor: UNIFIED_THEME.colors.component.disabled,
+    borderColor: UNIFIED_THEME.colors.border.strong,
     opacity: 0.7,
   },
 
@@ -2103,87 +2090,87 @@ const styles = StyleSheet.create({
   },
 
   slotDateTime: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 14,
     fontWeight: '600',
     marginBottom: 4,
   },
 
   slotDateTimeBooked: {
-    color: '#b0b0b0',
+    color: UNIFIED_THEME.colors.text.muted,
   },
 
   slotDuration: {
-    color: '#b0b0b0',
+    color: UNIFIED_THEME.colors.text.muted,
     fontSize: 12,
   },
 
   slotDurationBooked: {
-    color: '#777',
+    color: UNIFIED_THEME.colors.text.muted,
   },
 
   slotBookedBadge: {
-    color: '#FF6B6B',
+    color: UNIFIED_THEME.colors.accent.error,
     fontSize: 12,
     fontWeight: '600',
   },
 
   slotCheckmark: {
-    color: '#1E90FF',
+    color: UNIFIED_THEME.colors.info,
     fontSize: 20,
     fontWeight: 'bold',
   },
 
   noSlotsContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderColor: UNIFIED_THEME.colors.border.default,
     borderWidth: 1,
-    borderRadius: 10,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
     padding: 30,
     alignItems: 'center',
     marginVertical: 10,
   },
 
   noSlotsText: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 16,
     fontWeight: '600',
-    marginBottom: 8,
+    marginBottom: UNIFIED_THEME.spacing.sm,
   },
 
   noSlotsSubtext: {
-    color: '#b0b0b0',
+    color: UNIFIED_THEME.colors.text.muted,
     fontSize: 13,
   },
 
   loadingText: {
-    color: '#b0b0b0',
+    color: UNIFIED_THEME.colors.text.muted,
     fontSize: 12,
     marginTop: 10,
   },
 
   summaryCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderColor: UNIFIED_THEME.colors.border.default,
     borderWidth: 1,
     marginHorizontal: 20,
     marginVertical: 15,
     padding: 15,
-    borderRadius: 12,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
   },
 
   summaryTitle: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 14,
     fontWeight: 'bold',
-    marginBottom: 12,
+    marginBottom: UNIFIED_THEME.spacing.md,
   },
 
   summaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 8,
-    borderBottomColor: '#0f1b3f',
+    paddingVertical: UNIFIED_THEME.spacing.sm,
+    borderBottomColor: UNIFIED_THEME.colors.primary.light,
     borderBottomWidth: 1,
   },
 
@@ -2194,18 +2181,18 @@ const styles = StyleSheet.create({
   },
 
   summaryLabel: {
-    color: '#b0b0b0',
+    color: UNIFIED_THEME.colors.text.muted,
     fontSize: 12,
   },
 
   summaryValue: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 12,
     fontWeight: '600',
   },
 
   summaryValueTotal: {
-    color: '#FFD700',
+    color: UNIFIED_THEME.colors.accent.primary,
     fontSize: 14,
     fontWeight: 'bold',
   },
@@ -2213,22 +2200,22 @@ const styles = StyleSheet.create({
   buttonContainer: {
     flexDirection: 'row',
     gap: 10,
-    paddingHorizontal: 20,
+    paddingHorizontal: UNIFIED_THEME.spacing.xl,
     paddingVertical: 15,
-    backgroundColor: '#0f1b3f',
+    backgroundColor: UNIFIED_THEME.colors.primary.light,
   },
 
   cancelBtn: {
     flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderColor: UNIFIED_THEME.colors.border.default,
     borderWidth: 1,
-    paddingVertical: 12,
-    borderRadius: 10,
+    paddingVertical: UNIFIED_THEME.spacing.md,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
   },
 
   cancelBtnText: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 14,
     fontWeight: '600',
     textAlign: 'center',
@@ -2236,16 +2223,16 @@ const styles = StyleSheet.create({
 
   // confirmBtn: {
   //   flex: 1,
-  //   backgroundColor: '#1E90FF',
-  //   paddingVertical: 12,
-  //   borderRadius: 10,
+  //   backgroundColor: UNIFIED_THEME.colors.info,
+  //   paddingVertical: UNIFIED_THEME.spacing.md,
+  //   borderRadius: UNIFIED_THEME.borderRadius.md,
   // },
 
 confirmBtn: {
   flex: 1,
   backgroundColor: 'transparent',   // Use LinearGradient wrapper for gradient
   paddingVertical: 14,
-  borderRadius: 12,
+  borderRadius: UNIFIED_THEME.borderRadius.md,
   alignItems: 'center',
   elevation: 5,                 // Android shadow
   shadowColor: 'rgba(255, 0, 110, 0.6)',        // iOS shadow
@@ -2260,7 +2247,7 @@ confirmBtn: {
   },
 
   confirmBtnText: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 14,
     fontWeight: '600',
     textAlign: 'center',
@@ -2268,12 +2255,12 @@ confirmBtn: {
 
   // BOOKINGS PAGE STYLES
   bookingsHeader: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderColor: UNIFIED_THEME.colors.border.default,
     borderWidth: 1,
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    marginBottom: 20,
+    paddingHorizontal: UNIFIED_THEME.spacing.xl,
+    paddingVertical: UNIFIED_THEME.spacing.xl,
+    marginBottom: UNIFIED_THEME.spacing.xl,
     borderBottomLeftRadius: 16,
     borderBottomRightRadius: 16,
   },
@@ -2287,22 +2274,22 @@ confirmBtn: {
     width: 30,
     height: 30,
     backgroundColor: 'rgba(255, 0, 110, 0.2)',
-    borderColor: 'rgba(255, 0, 110, 0.5)',
+    borderColor: UNIFIED_THEME.colors.border.strong,
     borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
   },
 
   headerTitle: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 20,
     fontWeight: 'bold',
   },
 
   headerSubtitle: {
-    color: '#b0b0b0',
+    color: UNIFIED_THEME.colors.text.muted,
     fontSize: 12,
     marginTop: 2,
   },
@@ -2311,68 +2298,68 @@ confirmBtn: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: UNIFIED_THEME.spacing.xl,
     marginTop: 24,
-    marginBottom: 12,
+    marginBottom: UNIFIED_THEME.spacing.md,
   },
 
   sectionBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderColor: UNIFIED_THEME.colors.border.default,
     borderWidth: 1,
-    paddingHorizontal: 12,
+    paddingHorizontal: UNIFIED_THEME.spacing.md,
     paddingVertical: 6,
-    borderRadius: 20,
+    borderRadius: UNIFIED_THEME.borderRadius.lg,
   },
 
   sectionBadgeText: {
-    color: '#b0b0b0',
+    color: UNIFIED_THEME.colors.text.muted,
     fontSize: 12,
     fontWeight: '600',
     marginLeft: 6,
   },
 
   sectionCount: {
-    color: '#ff006e',
+    color: UNIFIED_THEME.colors.accent.primary,
     fontSize: 14,
     fontWeight: 'bold',
     backgroundColor: 'rgba(255, 0, 110, 0.1)',
-    paddingHorizontal: 12,
+    paddingHorizontal: UNIFIED_THEME.spacing.md,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
   },
 
   // BOOKING CARD STYLES
   bookingCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderColor: UNIFIED_THEME.colors.border.default,
     borderWidth: 1,
     marginHorizontal: 20,
     marginVertical: 10,
     padding: 14,
-    borderRadius: 12,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     borderLeftWidth: 4,
-    borderLeftColor: '#ff006e',
+    borderLeftColor: UNIFIED_THEME.colors.accent.primary,
   },
 
   pendingCard: {
-    borderLeftColor: '#FF6B6B',
-    backgroundColor: '#2a1f1f',
+    borderLeftColor: UNIFIED_THEME.colors.accent.error,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
   },
 
   confirmedCard: {
-    borderLeftColor: '#2ECC71',
-    backgroundColor: '#1a2a1f',
+    borderLeftColor: UNIFIED_THEME.colors.accent.success,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
   },
 
   completedCard: {
-    borderLeftColor: '#999',
-    backgroundColor: '#1a1a1f',
+    borderLeftColor: UNIFIED_THEME.colors.border.default,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
   },
 
   bookingCardLeft: {
@@ -2384,11 +2371,11 @@ confirmBtn: {
   bookingTeacherIcon: {
     width: 44,
     height: 44,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: 10,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: UNIFIED_THEME.spacing.md,
     marginTop: 2,
   },
 
@@ -2401,14 +2388,14 @@ confirmBtn: {
   },
 
   bookingTeacher: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 15,
     fontWeight: '600',
     marginBottom: 4,
   },
 
   bookingSubject: {
-    color: '#b0b0b0',
+    color: UNIFIED_THEME.colors.text.muted,
     fontSize: 13,
     marginBottom: 6,
   },
@@ -2416,26 +2403,26 @@ confirmBtn: {
   bookingMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: UNIFIED_THEME.spacing.sm,
   },
 
   bookingDate: {
-    color: '#b0b0b0',
+    color: UNIFIED_THEME.colors.text.muted,
     fontSize: 11,
   },
 
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    paddingHorizontal: 8,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    paddingHorizontal: UNIFIED_THEME.spacing.sm,
     paddingVertical: 4,
-    borderRadius: 6,
+    borderRadius: UNIFIED_THEME.borderRadius.sm,
     alignSelf: 'flex-start',
   },
 
   statusText: {
-    color: '#FFA500',
+    color: UNIFIED_THEME.colors.status.pending,
     fontSize: 11,
     fontWeight: '500',
   },
@@ -2443,31 +2430,31 @@ confirmBtn: {
   // meetingIdContainer: {
   //   flexDirection: 'row',
   //   alignItems: 'center',
-  //   backgroundColor: '#2E2E5E',
-  //   paddingHorizontal: 10,
+  //   backgroundColor: UNIFIED_THEME.colors.component.card,
+  //   paddingHorizontal: UNIFIED_THEME.spacing.md,
   //   paddingVertical: 6,
-  //   borderRadius: 8,
+  //   borderRadius: UNIFIED_THEME.borderRadius.sm,
   //   marginTop: 6,
   // },
 
   // meetingIdLabel: {
-  //   color: '#5568FE',
+  //   color: UNIFIED_THEME.colors.info,
   //   fontSize: 11,
   //   fontWeight: '600',
   //   flex: 1,
   // },
 
   meetingIdCopy: {
-    color: '#6CA0FF',
+    color: UNIFIED_THEME.colors.info,
     fontSize: 10,
     marginLeft: 8,
   },
 
   joinBtn: {
-    backgroundColor: '#2ECC71',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
+    backgroundColor: UNIFIED_THEME.colors.accent.success,
+    paddingHorizontal: UNIFIED_THEME.spacing.md,
+    paddingVertical: UNIFIED_THEME.spacing.sm,
+    borderRadius: UNIFIED_THEME.borderRadius.sm,
     justifyContent: 'center',
     alignItems: 'center',
     minWidth: 56,
@@ -2476,7 +2463,7 @@ confirmBtn: {
   },
 
   joinBtnText: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 12,
     fontWeight: '600',
   },
@@ -2484,14 +2471,14 @@ confirmBtn: {
   waitingBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    paddingHorizontal: UNIFIED_THEME.spacing.md,
+    paddingVertical: UNIFIED_THEME.spacing.sm,
+    borderRadius: UNIFIED_THEME.borderRadius.sm,
   },
 
   waitingText: {
-    color: '#FFA500',
+    color: UNIFIED_THEME.colors.status.pending,
     fontSize: 12,
     fontWeight: '500',
   },
@@ -2505,134 +2492,134 @@ confirmBtn: {
   emptyIconContainer: {
     width: 80,
     height: 80,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: 20,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderRadius: UNIFIED_THEME.borderRadius.lg,
     justifyContent: 'center',
     alignItems: 'center',
     alignSelf: 'center',
-    marginBottom: 16,
+    marginBottom: UNIFIED_THEME.spacing.lg,
   },
 
   browseBtn: {
     backgroundColor: 'transparent',   // Use LinearGradient wrapper for gradient
     paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingVertical: UNIFIED_THEME.spacing.md,
+    borderRadius: UNIFIED_THEME.borderRadius.sm,
     marginTop: 16,
     alignSelf: 'center',
   },
 
   browseBtnText: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontWeight: '600',
     fontSize: 14,
   },
 
   // joinBtn: {
-  //   backgroundColor: '#2ECC71',
-  //   paddingHorizontal: 12,
-  //   paddingVertical: 8,
-  //   borderRadius: 8,
+  //   backgroundColor: UNIFIED_THEME.colors.accent.success,
+  //   paddingHorizontal: UNIFIED_THEME.spacing.md,
+  //   paddingVertical: UNIFIED_THEME.spacing.sm,
+  //   borderRadius: UNIFIED_THEME.borderRadius.sm,
   // },
 
   joinBtnText: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontWeight: '600',
     fontSize: 12,
   },
 
   meetingIdContainer: {
-    backgroundColor: '#2D5A3D',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
     // borderLeftWidth: 3,
-    borderLeftColor: '#4CAF50',
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 6,
+    borderLeftColor: UNIFIED_THEME.colors.accent.success,
+    paddingHorizontal: UNIFIED_THEME.spacing.md,
+    paddingVertical: UNIFIED_THEME.spacing.sm,
+    borderRadius: UNIFIED_THEME.borderRadius.sm,
     marginTop: 8,
-    marginLeft: -10,
+    marginLeft: -UNIFIED_THEME.spacing.md,
   },
 
   meetingIdLabel: {
-    color: '#fbfbfd',
+    color: UNIFIED_THEME.colors.text.primary,
     fontWeight: '400',
     fontSize: 12,
     fontFamily: 'Arial',
   },
 
   meetingIdCopy: {
-    color: '#f8f7fb',
+    color: UNIFIED_THEME.colors.text.secondary,
     fontSize: 9,
     marginTop: 4,
     fontStyle: 'italic',
   },
 
   waitingBadge: {
-    backgroundColor: '#0cb2ff92',
-    color: '#fff',
-    paddingHorizontal: 10,
+    backgroundColor: UNIFIED_THEME.colors.accent.secondary92,
+    color: UNIFIED_THEME.colors.text.primary,
+    paddingHorizontal: UNIFIED_THEME.spacing.md,
     paddingVertical: 4,
-    borderRadius: 6,
+    borderRadius: UNIFIED_THEME.borderRadius.sm,
     fontSize: 11,
     fontWeight: '600',
   },
 
   pendingBadge: {
-    backgroundColor: '#FFA500',
-    color: '#fff',
-    paddingHorizontal: 10,
+    backgroundColor: UNIFIED_THEME.colors.status.pending,
+    color: UNIFIED_THEME.colors.text.primary,
+    paddingHorizontal: UNIFIED_THEME.spacing.md,
     paddingVertical: 4,
-    borderRadius: 6,
+    borderRadius: UNIFIED_THEME.borderRadius.sm,
     fontSize: 11,
     fontWeight: '600',
   },
 
   completedBadge: {
-    backgroundColor: '#4c56af',
-    color: '#ffffff',
-    paddingHorizontal: 10,
+    backgroundColor: UNIFIED_THEME.colors.info,
+    color: UNIFIED_THEME.colors.text.primary,
+    paddingHorizontal: UNIFIED_THEME.spacing.md,
     paddingVertical: 4,
-    borderRadius: 6,
+    borderRadius: UNIFIED_THEME.borderRadius.sm,
     fontSize: 11,
     fontWeight: '600',
   },
 
   // LECTURE STYLES
   lecturesList: {
-    paddingHorizontal: 20,
-    marginBottom: 100,
+    paddingHorizontal: UNIFIED_THEME.spacing.xl,
+    marginBottom: UNIFIED_THEME.spacing.md0,
   },
 
   lectureCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderColor: UNIFIED_THEME.colors.border.default,
     borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
     padding: 15,
-    marginBottom: 12,
+    marginBottom: UNIFIED_THEME.spacing.md,
     borderLeftWidth: 4,
-    borderLeftColor: '#1E90FF',
+    borderLeftColor: UNIFIED_THEME.colors.info,
   },
 
   lectureHeader: {
-    marginBottom: 10,
+    marginBottom: UNIFIED_THEME.spacing.md,
   },
 
   lectureSubject: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 4,
   },
 
   lectureTeacher: {
-    color: '#b0b0b0',
+    color: UNIFIED_THEME.colors.text.muted,
     fontSize: 12,
   },
 
   lectureDescription: {
-    color: '#ccc',
+    color: UNIFIED_THEME.colors.text.secondary,
     fontSize: 13,
-    marginBottom: 10,
+    marginBottom: UNIFIED_THEME.spacing.md,
     lineHeight: 18,
   },
 
@@ -2640,38 +2627,38 @@ confirmBtn: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 12,
-    marginBottom: 12,
+    marginBottom: UNIFIED_THEME.spacing.md,
   },
 
   lectureDetail: {
-    color: '#6CA0FF',
+    color: UNIFIED_THEME.colors.info,
     fontSize: 12,
     fontWeight: '500',
   },
 
   enrollBtn: {
-    backgroundColor: '#1E90FF',
-    paddingVertical: 10,
-    borderRadius: 8,
+    backgroundColor: UNIFIED_THEME.colors.info,
+    paddingVertical: UNIFIED_THEME.spacing.md,
+    borderRadius: UNIFIED_THEME.borderRadius.sm,
     alignItems: 'center',
   },
 
   enrollBtnText: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontWeight: 'bold',
     fontSize: 14,
   },
 
   enrolledLectureCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderColor: UNIFIED_THEME.colors.border.default,
     borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
     padding: 15,
     marginHorizontal: 20,
-    marginBottom: 12,
+    marginBottom: UNIFIED_THEME.spacing.md,
     borderLeftWidth: 4,
-    borderLeftColor: '#4CAF50',
+    borderLeftColor: UNIFIED_THEME.colors.accent.success,
   },
 
   enrolledActions: {
@@ -2682,28 +2669,28 @@ confirmBtn: {
 
   joinLectureBtn: {
     flex: 1,
-    backgroundColor: '#1E90FF',
-    paddingVertical: 10,
-    borderRadius: 8,
+    backgroundColor: UNIFIED_THEME.colors.info,
+    paddingVertical: UNIFIED_THEME.spacing.md,
+    borderRadius: UNIFIED_THEME.borderRadius.sm,
     alignItems: 'center',
   },
 
   joinLectureBtnText: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontWeight: '600',
     fontSize: 12,
   },
 
   removeBtn: {
     flex: 1,
-    backgroundColor: '#E74C3C',
-    paddingVertical: 10,
-    borderRadius: 8,
+    backgroundColor: UNIFIED_THEME.colors.accent.error,
+    paddingVertical: UNIFIED_THEME.spacing.md,
+    borderRadius: UNIFIED_THEME.borderRadius.sm,
     alignItems: 'center',
   },
 
   removeBtnText: {
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontWeight: '600',
     fontSize: 12,
   },
@@ -2714,7 +2701,7 @@ confirmBtn: {
     alignItems: 'center',
   },
   loadingText: {
-    color: '#ccc',
+    color: UNIFIED_THEME.colors.text.secondary,
     marginTop: 10,
   },
 
@@ -2722,42 +2709,42 @@ confirmBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#B45309',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    backgroundColor: UNIFIED_THEME.colors.status.pending,
+    paddingVertical: UNIFIED_THEME.spacing.md,
+    paddingHorizontal: UNIFIED_THEME.spacing.lg,
     gap: 12,
   },
   snackbarText: {
     flex: 1,
-    color: '#fff',
+    color: UNIFIED_THEME.colors.text.primary,
     fontSize: 13,
   },
   snackbarBtn: {
     backgroundColor: 'rgba(255,255,255,0.25)',
-    paddingVertical: 8,
+    paddingVertical: UNIFIED_THEME.spacing.sm,
     paddingHorizontal: 14,
-    borderRadius: 8,
+    borderRadius: UNIFIED_THEME.borderRadius.sm,
   },
-  snackbarBtnText: { color: '#fff', fontSize: 13, fontWeight: '600', },
+  snackbarBtnText: { color: UNIFIED_THEME.colors.text.primary, fontSize: 13, fontWeight: '600', },
 
   backButton: {
     width: 40,
     height: 40,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    borderRadius: UNIFIED_THEME.borderRadius.md,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderColor: UNIFIED_THEME.colors.border.default,
     borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: UNIFIED_THEME.spacing.md,
   },
 
    headerTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    // marginBottom: 10,
+    paddingHorizontal: UNIFIED_THEME.spacing.xl,
+    paddingVertical: UNIFIED_THEME.spacing.xl,
+    // marginBottom: UNIFIED_THEME.spacing.md,
   },
 });
 
