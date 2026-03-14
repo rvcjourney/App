@@ -1,21 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   TouchableOpacity,
   Alert,
   ScrollView,
+  SafeAreaView,
 } from 'react-native';
 import { supabase } from '../../supabase';
-
-const PROFESSIONS = [
-  { id: 1, name: 'Yoga Profession', icon: '🧘' },
-  { id: 2, name: 'Gym Trainer', icon: '💪' },
-  { id: 3, name: 'Academic Teacher', icon: '📚' },
-  { id: 4, name: 'Business Consultant', icon: '💼' },
-  { id: 5, name: 'Astrologers', icon: '🔮' },
-];
+import logger from '../utils/logger';
+import { PROFESSIONS } from '../constants/professions';
+import UNIFIED_THEME from '../constants/unifiedTheme';
+import ThemedText from '../components/ThemedText';
+import Icon from '../components/Icon';
 
 export default function ProfessionSelectScreen({ navigation, route }) {
   // Get userId from route params (passed from OTP screen) or from auth session
@@ -55,7 +52,7 @@ export default function ProfessionSelectScreen({ navigation, route }) {
 
       if (error) throw error;
 
-      console.log('✅ Profession saved:', selectedProf.name);
+      logger.success('Profession saved:', selectedProf.name);
       Alert.alert('Success', `You selected ${selectedProf.name}`);
 
       // Navigate to TeacherDashboard
@@ -64,7 +61,7 @@ export default function ProfessionSelectScreen({ navigation, route }) {
         routes: [{ name: 'TeacherDashboard' }],
       });
     } catch (error) {
-      console.error('❌ Error saving profession:', error);
+      logger.error('Error saving profession:', error);
       Alert.alert('Error', 'Failed to save profession. Please try again.');
     } finally {
       setLoading(false);
@@ -72,128 +69,114 @@ export default function ProfessionSelectScreen({ navigation, route }) {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>Select Your Profession</Text>
-      <Text style={styles.subtitle}>
-        Help students find you by choosing your area of expertise
-      </Text>
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={styles.content}>
+        <ThemedText variant="heading" size="lg" style={styles.title}>Select Your Profession</ThemedText>
+        <ThemedText color="muted" size="sm" style={styles.subtitle}>
+          Help students find you by choosing your area of expertise
+        </ThemedText>
 
-      <View style={styles.professionGrid}>
-        {PROFESSIONS.map((profession) => (
-          <TouchableOpacity
-            key={profession.id}
-            style={[
-              styles.professionCard,
-              selectedProfession === profession.id && styles.professionCardSelected,
-            ]}
-            onPress={() => setSelectedProfession(profession.id)}
-            disabled={loading}
-          >
-            <Text style={styles.professionIcon}>{profession.icon}</Text>
-            <Text style={styles.professionName}>{profession.name}</Text>
-            {selectedProfession === profession.id && (
-              <Text style={styles.checkmark}>✓</Text>
-            )}
-          </TouchableOpacity>
-        ))}
-      </View>
+        <View style={styles.professionGrid}>
+          {PROFESSIONS.map((profession) => (
+            <TouchableOpacity
+              key={profession.id}
+              style={[
+                styles.professionCard,
+                selectedProfession === profession.id && styles.professionCardSelected,
+                UNIFIED_THEME.shadows.small,
+              ]}
+              onPress={() => setSelectedProfession(profession.id)}
+              disabled={loading}
+            >
+              {profession.iconName ? (
+                <Icon name={profession.iconName} size={40} color="accent.primary" />
+              ) : (
+                <ThemedText style={styles.professionIcon}>{profession.icon}</ThemedText>
+              )}
+              <ThemedText size="sm" weight="600" color="primary" style={styles.professionName}>{profession.name}</ThemedText>
+              {selectedProfession === profession.id && (
+                <Icon name="check" size={20} color="accent.primary" style={styles.checkmark} />
+              )}
+            </TouchableOpacity>
+          ))}
+        </View>
 
-      <TouchableOpacity
-        style={[styles.continueBtn, !selectedProfession && styles.continueDisabled]}
-        onPress={handleProfessionSelect}
-        disabled={!selectedProfession || loading}
-      >
-        <Text style={styles.continueBtnText}>
-          {loading ? 'Saving...' : 'Continue to Dashboard'}
-        </Text>
-      </TouchableOpacity>
-    </ScrollView>
+        <TouchableOpacity
+          style={[styles.continueBtn, !selectedProfession && styles.continueDisabled, !selectedProfession || loading ? {} : UNIFIED_THEME.shadows.medium]}
+          onPress={handleProfessionSelect}
+          disabled={!selectedProfession || loading}
+        >
+          <ThemedText weight="600" color="onAccent">
+            {loading ? 'Saving...' : 'Continue to Dashboard'}
+          </ThemedText>
+        </TouchableOpacity>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f1b3f',
+    backgroundColor: UNIFIED_THEME.colors.primary.light,
   },
   content: {
-    padding: 20,
-    paddingBottom: 40,
+    padding: UNIFIED_THEME.spacing.lg,
+    paddingBottom: UNIFIED_THEME.spacing.xxxl,
   },
   title: {
-    color: '#fff',
-    fontSize: 28,
-    fontWeight: '700',
     textAlign: 'center',
-    marginTop: 30,
-    marginBottom: 10,
+    marginTop: UNIFIED_THEME.spacing.xxxl,
+    marginBottom: UNIFIED_THEME.spacing.sm,
   },
   subtitle: {
-    color: '#b0b0b0',
-    fontSize: 14,
     textAlign: 'center',
-    marginBottom: 40,
+    marginBottom: UNIFIED_THEME.spacing.xxxl,
     lineHeight: 20,
   },
   professionGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    marginBottom: 30,
+    marginBottom: UNIFIED_THEME.spacing.xxxl,
   },
   professionCard: {
     width: '48%',
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: 15,
-    padding: 20,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
+    padding: UNIFIED_THEME.spacing.lg,
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: UNIFIED_THEME.spacing.md,
     borderWidth: 2,
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    borderColor: UNIFIED_THEME.colors.border.light,
   },
   professionCardSelected: {
-    borderColor: '#ff006e',
+    borderColor: UNIFIED_THEME.colors.accent.primary,
     backgroundColor: 'rgba(255, 0, 110, 0.15)',
   },
   professionIcon: {
     fontSize: 40,
-    marginBottom: 12,
+    marginBottom: UNIFIED_THEME.spacing.md,
   },
   professionName: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
     textAlign: 'center',
     lineHeight: 18,
   },
   checkmark: {
     position: 'absolute',
-    top: 8,
-    right: 8,
-    color: '#ff006e',
-    fontSize: 20,
-    fontWeight: 'bold',
+    top: UNIFIED_THEME.spacing.xs,
+    right: UNIFIED_THEME.spacing.xs,
   },
   continueBtn: {
-    backgroundColor: '#ff006e',
-    padding: 16,
-    borderRadius: 30,
+    backgroundColor: UNIFIED_THEME.colors.accent.primary,
+    padding: UNIFIED_THEME.spacing.md,
+    borderRadius: UNIFIED_THEME.borderRadius.round,
     alignItems: 'center',
-    marginTop: 20,
-    shadowColor: 'rgba(255, 0, 110, 0.6)',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.8,
-    shadowRadius: 16,
-    elevation: 8,
+    marginTop: UNIFIED_THEME.spacing.lg,
   },
   continueDisabled: {
     opacity: 0.5,
     shadowOpacity: 0,
     elevation: 0,
-  },
-  continueBtnText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '600',
   },
 });

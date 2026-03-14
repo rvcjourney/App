@@ -1,79 +1,98 @@
 import {
   View,
-  Text,
   StyleSheet,
   TouchableOpacity,
+  SafeAreaView,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import UNIFIED_THEME from '../constants/unifiedTheme';
+import Icon from '../components/Icon';
+import ThemedText from '../components/ThemedText';
 
 export default function WelcomeScreen({ navigation }) {
+  const colors = UNIFIED_THEME.colors.primary.gradient;
+  const spacing = UNIFIED_THEME.spacing;
+  const shadows = UNIFIED_THEME.shadows;
+
   return (
     <LinearGradient
-      colors={['#0f1b3f', '#1a0033', '#0d0015']}
+      colors={colors}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.background}
     >
       {/* Decorative stars background */}
       <View style={styles.starsContainer}>
-        <Text style={[styles.star, { left: '10%', top: '15%' }]}>✨</Text>
-        <Text style={[styles.star, { right: '15%', top: '20%' }]}>✨</Text>
-        <Text style={[styles.star, { left: '20%', bottom: '25%' }]}>✨</Text>
-        <Text style={[styles.star, { right: '10%', bottom: '30%' }]}>✨</Text>
-        <Text style={[styles.star, { left: '5%', top: '50%' }]}>✨</Text>
-        <Text style={[styles.star, { right: '5%', top: '40%' }]}>✨</Text>
+        <Icon name="sparkles" size={24} color="accent.primary" style={[styles.star, { left: '10%', top: '15%' }]} />
+        <Icon name="sparkles" size={24} color="accent.primary" style={[styles.star, { right: '15%', top: '20%' }]} />
+        <Icon name="sparkles" size={24} color="accent.primary" style={[styles.star, { left: '20%', bottom: '25%' }]} />
+        <Icon name="sparkles" size={24} color="accent.primary" style={[styles.star, { right: '25%', bottom: '40%' }]} />
+        <Icon name="sparkles" size={24} color="accent.primary" style={[styles.star, { left: '5%', top: '50%' }]} />
+        <Icon name="sparkles" size={24} color="accent.primary" style={[styles.star, { right: '5%', top: '40%' }]} />
       </View>
 
-      <View style={styles.overlay}>
+      <SafeAreaView style={styles.overlay}>
         {/* Logo/Icon placeholder */}
-        <View style={styles.logoContainer}>
-          <Text style={styles.logoEmoji}>🎥</Text>
+        <View style={[styles.logoContainer, shadows.glow]}>
+          <Icon name="videoCam" size={40} color="accent.primary" />
         </View>
 
-        <Text style={styles.title}>Connect with Your</Text>
+        <ThemedText variant="heading" size="md" color="secondary" style={styles.title}>
+          Connect with Your
+        </ThemedText>
 
         <View style={styles.appNameContainer}>
-          <Text style={styles.appName}>Favorite Celebrities</Text>
+          <ThemedText variant="heading" size="lg" color="primary" style={styles.appName}>
+            Favorite Celebrities
+          </ThemedText>
         </View>
 
-        <Text style={styles.subtitle}>
+        <ThemedText color="muted" style={styles.subtitle}>
           via Video Call{'\n'}
           Where Fans & Stars Meet
-        </Text>
+        </ThemedText>
 
         <TouchableOpacity
-          style={styles.button}
+          style={[styles.button, shadows.large]}
           onPress={() => navigation.navigate('RoleSelect')}
           activeOpacity={0.8}
         >
           <LinearGradient
-            colors={['#ff006e', '#00d4ff']}
+            colors={[UNIFIED_THEME.colors.accent.primary, UNIFIED_THEME.colors.accent.secondary]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.buttonGradient}
           >
-            <Text style={styles.buttonText}>Get Started →</Text>
+            <ThemedText color="onAccent" weight="700" style={styles.buttonText}>
+              Get Started →
+            </ThemedText>
           </LinearGradient>
         </TouchableOpacity>
 
         {/* Social proof text */}
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
-            <Text style={styles.statEmoji}>⭐</Text>
-            <Text style={styles.statText}>100K+ Celebrities</Text>
+            <Icon name="star" size={20} color="accent.primary" style={styles.statIconSpacing} />
+            <ThemedText size="sm" weight="600" color="secondary" style={styles.statText}>
+              100K+ Celebrities
+            </ThemedText>
           </View>
           <View style={styles.divider} />
           <View style={styles.statItem}>
-            <Text style={styles.statEmoji}>🔒</Text>
-            <Text style={styles.statText}>Secure Payment</Text>
+            <Icon name="lock" size={20} color="accent.primary" style={styles.statIconSpacing} />
+            <ThemedText size="sm" weight="600" color="secondary" style={styles.statText}>
+              Secure Payment
+            </ThemedText>
           </View>
           <View style={styles.divider} />
           <View style={styles.statItem}>
-            <Text style={styles.statEmoji}>📹</Text>
-            <Text style={styles.statText}>Instant Video Call</Text>
+            <Icon name="video" size={20} color="accent.primary" style={styles.statIconSpacing} />
+            <ThemedText size="sm" weight="600" color="secondary" style={styles.statText}>
+              Instant Video Call
+            </ThemedText>
           </View>
         </View>
-      </View>
+      </SafeAreaView>
     </LinearGradient>
   );
 }
@@ -92,93 +111,66 @@ const styles = StyleSheet.create({
 
   star: {
     position: 'absolute',
-    fontSize: 24,
-    opacity: 0.6,
+    opacity: 0.8,
   },
 
   overlay: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: UNIFIED_THEME.spacing.lg,
   },
 
   logoContainer: {
-    marginBottom: 30,
+    marginBottom: UNIFIED_THEME.spacing.xxxl,
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: 'rgba(255, 0, 110, 0.15)',
+    backgroundColor: UNIFIED_THEME.colors.border.light,
     borderWidth: 2,
-    borderColor: 'rgba(255, 0, 110, 0.4)',
+    borderColor: UNIFIED_THEME.colors.border.default,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#ff006e',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-
-  logoEmoji: {
-    fontSize: 40,
   },
 
   title: {
-    fontSize: 24,
-    color: '#e0e0e0',
-    fontWeight: '400',
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: UNIFIED_THEME.spacing.sm,
     letterSpacing: 0.5,
   },
 
   appNameContainer: {
-    marginBottom: 20,
+    marginBottom: UNIFIED_THEME.spacing.xl,
   },
 
   appName: {
-    fontSize: 44,
-    fontWeight: '700',
     textAlign: 'center',
-    color: '#ffffff',
     letterSpacing: -1,
     lineHeight: 52,
   },
 
   subtitle: {
-    color: '#b0b0b0',
-    fontSize: 16,
     textAlign: 'center',
-    marginBottom: 50,
-    fontWeight: '500',
+    marginBottom: UNIFIED_THEME.spacing.xxxl,
     lineHeight: 24,
   },
 
   button: {
     width: '100%',
-    marginBottom: 40,
-    borderRadius: 50,
+    marginBottom: UNIFIED_THEME.spacing.xxxl,
+    borderRadius: UNIFIED_THEME.borderRadius.round,
     overflow: 'hidden',
-    shadowColor: '#ff006e',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 25,
-    elevation: 15,
   },
 
   buttonGradient: {
-    paddingVertical: 16,
-    paddingHorizontal: 50,
+    paddingVertical: UNIFIED_THEME.spacing.md,
+    paddingHorizontal: UNIFIED_THEME.spacing.lg,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 50,
+    borderRadius: UNIFIED_THEME.borderRadius.round,
   },
 
   buttonText: {
-    color: '#ffffff',
-    fontSize: 18,
-    fontWeight: '700',
     letterSpacing: 0.5,
   },
 
@@ -187,12 +179,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     alignItems: 'center',
     width: '100%',
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 16,
+    paddingHorizontal: UNIFIED_THEME.spacing.lg,
+    paddingVertical: UNIFIED_THEME.spacing.lg,
+    backgroundColor: UNIFIED_THEME.colors.component.input,
+    borderRadius: UNIFIED_THEME.borderRadius.lg,
     borderWidth: 1,
-    borderColor: 'rgba(255, 0, 110, 0.2)',
+    borderColor: UNIFIED_THEME.colors.border.light,
   },
 
   statItem: {
@@ -201,22 +193,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  statEmoji: {
-    fontSize: 20,
-    marginBottom: 4,
+  statIconSpacing: {
+    marginBottom: UNIFIED_THEME.spacing.xs,
   },
 
   statText: {
-    color: '#e0e0e0',
-    fontSize: 12,
-    fontWeight: '600',
     textAlign: 'center',
   },
 
   divider: {
     width: 1,
     height: 30,
-    backgroundColor: 'rgba(255, 0, 110, 0.2)',
-    marginHorizontal: 8,
+    backgroundColor: UNIFIED_THEME.colors.border.light,
+    marginHorizontal: UNIFIED_THEME.spacing.sm,
   },
 });

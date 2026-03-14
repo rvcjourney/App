@@ -1,44 +1,45 @@
 import React from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   TouchableOpacity,
   ImageBackground,
+  SafeAreaView,
 } from 'react-native';
-import Briefcase from '../assets/icons/Briefcase';
-import GraduationCap from '../assets/icons/GraduationCap';
+import UNIFIED_THEME from '../constants/unifiedTheme';
+import ThemedText from '../components/ThemedText';
+import Icon from '../components/Icon';
 
 export default function RoleSelectScreen({ navigation }) {
   return (
     <ImageBackground
-      source={require('../assets/img/star.jpg')} // same or different image
+      source={require('../assets/img/star.jpg')}
       style={styles.background}
       resizeMode="cover"
     >
-      <View style={styles.overlay}>
-        <Text style={styles.title}>Select Your Role</Text>
+      <SafeAreaView style={styles.overlay}>
+        <ThemedText variant="heading" size="lg" color="primary" style={styles.title}>Select Your Role</ThemedText>
 
         <TouchableOpacity
-          style={styles.card}
+          style={[styles.card, UNIFIED_THEME.shadows.medium]}
           onPress={() => navigation.navigate('Login', { role: 'teacher' })}
         >
           <View style={styles.cardContent}>
-            <Briefcase width={40} height={40} fill="#ff006e" />
-            <Text style={styles.cardText}>Instructor</Text>
+            <Icon name="briefcase" size={40} color="accent.primary" />
+            <ThemedText weight="600" color="accent.primary" style={styles.cardText}>Instructor</ThemedText>
           </View>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.card}
+          style={[styles.card, UNIFIED_THEME.shadows.medium]}
           onPress={() => navigation.navigate('Login', { role: 'student' })}
         >
           <View style={styles.cardContent}>
-            <GraduationCap width={40} height={40} fill="#ff006e" />
-            <Text style={styles.cardText}>Learner</Text>
+            <Icon name="academicTeacher" size={40} color="accent.primary" />
+            <ThemedText weight="600" color="accent.primary" style={styles.cardText}>Learner</ThemedText>
           </View>
         </TouchableOpacity>
-      </View>
+      </SafeAreaView>
     </ImageBackground>
   );
 }
@@ -52,27 +53,22 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: UNIFIED_THEME.spacing.lg,
   },
 
   title: {
-    color: '#fff',
-    fontSize: 26,
-    marginBottom: 40,
+    marginBottom: UNIFIED_THEME.spacing.xxxl,
   },
 
   card: {
     width: '80%',
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderColor: UNIFIED_THEME.colors.border.light,
     borderWidth: 1,
-    padding: 20,
-    borderRadius: 16,
-    marginBottom: 20,
+    padding: UNIFIED_THEME.spacing.lg,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
+    marginBottom: UNIFIED_THEME.spacing.lg,
     alignItems: 'center',
-    shadowColor: 'rgba(255, 0, 110, 0.2)',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 20,
   },
 
   cardContent: {
@@ -81,9 +77,6 @@ const styles = StyleSheet.create({
   },
 
   cardText: {
-    color: '#ff006e',
-    fontSize: 20,
-    fontWeight: '600',
-    marginTop: 12,
+    marginTop: UNIFIED_THEME.spacing.md,
   },
 });

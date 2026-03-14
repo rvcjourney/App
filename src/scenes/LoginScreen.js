@@ -1,26 +1,16 @@
 import React, { useState } from 'react';
 import { supabase } from '../../supabase';
 import {
-  View,
-  Text,
   StyleSheet,
   TextInput,
   TouchableOpacity,
   Alert,
-  Modal,
-  TouchableWithoutFeedback,
+  SafeAreaView,
 } from 'react-native';
-
-const isNetworkError = (error) => {
-  if (!error) return false;
-  const errorMsg = (error.message || '').toLowerCase();
-  return errorMsg.includes('network') || 
-         errorMsg.includes('failed to fetch') || 
-         errorMsg.includes('enotfound') || 
-         errorMsg.includes('econnrefused') ||
-         errorMsg.includes('timeout') ||
-         errorMsg.includes('offline');
-};
+import { isNetworkError } from '../utils/networkUtils';
+import NetworkErrorModal from '../components/NetworkErrorModal';
+import UNIFIED_THEME from '../constants/unifiedTheme';
+import ThemedText from '../components/ThemedText';
 
 export default function LoginScreen({ navigation, route }) {
   const { role } = route.params;
@@ -90,7 +80,7 @@ export default function LoginScreen({ navigation, route }) {
       const selectedRole = (role || '').toLowerCase();
       if (profileRole !== 'super_admin' && profileRole !== selectedRole) {
         await supabase.auth.signOut();
-        const actualLabel = profileRole === 'teacher' ? 'Teacher' : 'Student';
+        // const actualLabel = profileRole === 'teacher' ? 'Teacher' : 'Student';
         Alert.alert(
           'Wrong login section',
           // `You are registered as a ${actualLabel}. Please go back and use the "${actualLabel}" login option.`
@@ -130,13 +120,13 @@ export default function LoginScreen({ navigation, route }) {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>
+    <SafeAreaView style={styles.container}>
+      <ThemedText variant="heading" size="lg" style={styles.title}>
         Logging as {role === 'teacher' ? 'Instructor' : 'Learner'}
-      </Text>
+      </ThemedText>
       <TextInput
         placeholder="Email"
-        placeholderTextColor="#b0b0b0"
+        placeholderTextColor={UNIFIED_THEME.colors.text.muted}
         style={styles.input}
         value={email}
         onChangeText={setEmail}
@@ -146,7 +136,7 @@ export default function LoginScreen({ navigation, route }) {
 
       <TextInput
         placeholder="Password"
-        placeholderTextColor="#b0b0b0"
+        placeholderTextColor={UNIFIED_THEME.colors.text.muted}
         secureTextEntry
         style={styles.input}
         value={password}
@@ -159,56 +149,33 @@ export default function LoginScreen({ navigation, route }) {
         disabled={loading}
         style={styles.forgotWrap}
       >
-        <Text style={styles.forgotText}>Forgot Password?</Text>
+        <ThemedText size="sm" color="accent.primary" style={styles.forgotText}>Forgot Password?</ThemedText>
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={styles.loginBtn}
+        style={[styles.loginBtn, UNIFIED_THEME.shadows.medium]}
         onPress={handleLogin}
         disabled={loading}
       >
-        <Text style={styles.loginText}>
+        <ThemedText weight="600" color="onAccent">
           {loading ? 'Logging in...' : 'Login'}
-        </Text>
+        </ThemedText>
       </TouchableOpacity>
 
       <TouchableOpacity
         onPress={() => navigation.navigate('Signup', { role })}
         disabled={loading}
       >
-        <Text style={styles.signupText}>
+        <ThemedText size="sm" color="accent.primary" style={styles.signupText}>
           Don't have an account? Sign Up
-        </Text>
+        </ThemedText>
       </TouchableOpacity>
 
-      {/* Network Error Modal */}
-      <Modal
+      <NetworkErrorModal
         visible={networkError}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={handleNetworkErrorDismiss}
-      >
-        <TouchableWithoutFeedback onPress={handleNetworkErrorDismiss}>
-          <View style={styles.networkErrorOverlay}>
-            <TouchableWithoutFeedback>
-              <View style={styles.networkErrorCard}>
-                <Text style={styles.networkErrorIcon}>📡</Text>
-                <Text style={styles.networkErrorTitle}>Network is Not Connected</Text>
-                <Text style={styles.networkErrorMessage}>
-                  Please check your internet connection and try again.
-                </Text>
-                <TouchableOpacity
-                  style={styles.networkErrorBtn}
-                  onPress={handleNetworkErrorDismiss}
-                >
-                  <Text style={styles.networkErrorBtnText}>OK</Text>
-                </TouchableOpacity>
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
-    </View>
+        onDismiss={handleNetworkErrorDismiss}
+      />
+    </SafeAreaView>
   );
 }
 
@@ -216,114 +183,43 @@ export default function LoginScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f1b3f',
+    backgroundColor: UNIFIED_THEME.colors.primary.light,
     justifyContent: 'center',
-    padding: 20,
+    padding: UNIFIED_THEME.spacing.lg,
   },
 
   title: {
-    color: '#fff',
-    fontSize: 26,
     textAlign: 'center',
-    marginBottom: 30,
+    marginBottom: UNIFIED_THEME.spacing.xxxl,
   },
 
   input: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    backgroundColor: UNIFIED_THEME.colors.component.input,
+    borderColor: UNIFIED_THEME.colors.border.default,
     borderWidth: 1,
-    color: '#fff',
-    padding: 15,
-    borderRadius: 12,
-    marginBottom: 15,
+    color: UNIFIED_THEME.colors.text.primary,
+    padding: UNIFIED_THEME.spacing.md,
+    borderRadius: UNIFIED_THEME.borderRadius.sm,
+    marginBottom: UNIFIED_THEME.spacing.md,
   },
 
   forgotWrap: {
     alignSelf: 'flex-end',
-    marginBottom: 4,
+    marginBottom: UNIFIED_THEME.spacing.sm,
   },
   forgotText: {
-    color: '#ff006e',
-    fontSize: 14,
+    marginRight: UNIFIED_THEME.spacing.sm,
   },
   loginBtn: {
-    background: 'linear-gradient(135deg, #ff006e, #00d4ff)',
-    padding: 15,
-    borderRadius: 30,
+    backgroundColor: UNIFIED_THEME.colors.accent.primary,
+    padding: UNIFIED_THEME.spacing.md,
+    borderRadius: UNIFIED_THEME.borderRadius.round,
     alignItems: 'center',
-    marginTop: 10,
-    shadowColor: 'rgba(255, 0, 110, 0.6)',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.6,
-    shadowRadius: 15,
-    elevation: 6,
-  },
-
-  loginText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '600',
+    marginTop: UNIFIED_THEME.spacing.lg,
   },
 
   signupText: {
-    color: '#ff006e',
     textAlign: 'center',
-    marginTop: 20,
-    fontSize: 16,
-  },
-
-  networkErrorOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-
-  networkErrorCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderColor: 'rgba(255, 0, 110, 0.3)',
-    borderWidth: 1,
-    borderRadius: 15,
-    padding: 25,
-    alignItems: 'center',
-    borderLeftWidth: 4,
-    borderLeftColor: '#ff006e',
-  },
-
-  networkErrorIcon: {
-    fontSize: 48,
-    marginBottom: 15,
-  },
-
-  networkErrorTitle: {
-    color: '#ff006e',
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-
-  networkErrorMessage: {
-    color: '#b0b0b0',
-    fontSize: 14,
-    marginBottom: 20,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-
-  networkErrorBtn: {
-    backgroundColor: '#ff006e',
-    paddingHorizontal: 30,
-    paddingVertical: 12,
-    borderRadius: 8,
-    minWidth: 100,
-  },
-
-  networkErrorBtnText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
+    marginTop: UNIFIED_THEME.spacing.lg,
   },
 });

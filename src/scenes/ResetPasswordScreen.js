@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   TextInput,
   TouchableOpacity,
@@ -11,6 +10,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { API_URL } from '../api/api';
+import UNIFIED_THEME from '../constants/unifiedTheme';
+import ThemedText from '../components/ThemedText';
 
 export default function ResetPasswordScreen({ navigation, route }) {
   const { role } = route?.params || {};
@@ -105,16 +106,16 @@ export default function ResetPasswordScreen({ navigation, route }) {
     return (
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <View style={styles.card}>
-          <Text style={styles.successIcon}>✓</Text>
-          <Text style={styles.successTitle}>Password reset</Text>
-          <Text style={styles.successMessage}>
+          <ThemedText style={styles.successIcon}>✓</ThemedText>
+          <ThemedText variant="heading" size="md" style={styles.successTitle}>Password reset</ThemedText>
+          <ThemedText color="muted" size="sm" style={styles.successMessage}>
             Your password has been reset. You can now log in with your new password.
-          </Text>
+          </ThemedText>
           <TouchableOpacity
-            style={styles.backBtn}
+            style={[styles.backBtn, UNIFIED_THEME.shadows.medium]}
             onPress={() => navigation.goBack()}
           >
-            <Text style={styles.backBtnText}>Back to Login</Text>
+            <ThemedText weight="600" color="onAccent">Back to Login</ThemedText>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -130,14 +131,14 @@ export default function ResetPasswordScreen({ navigation, route }) {
           keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
         >
           <View style={styles.card}>
-            <Text style={styles.title}>Reset Password</Text>
-            <Text style={styles.subtitle}>
+            <ThemedText variant="heading" size="md" style={styles.title}>Reset Password</ThemedText>
+            <ThemedText color="muted" size="sm" style={styles.subtitle}>
               Enter the email address for your account. We'll send you an OTP to reset your password.
-            </Text>
+            </ThemedText>
 
             <TextInput
               placeholder="Email"
-              placeholderTextColor="#999"
+              placeholderTextColor={UNIFIED_THEME.colors.text.muted}
               style={styles.input}
               value={email}
               onChangeText={setEmail}
@@ -148,13 +149,13 @@ export default function ResetPasswordScreen({ navigation, route }) {
             />
 
             <TouchableOpacity
-              style={[styles.submitBtn, loading && styles.submitBtnDisabled]}
+              style={[styles.submitBtn, loading && styles.submitBtnDisabled, !loading && UNIFIED_THEME.shadows.medium]}
               onPress={handleSendOTP}
               disabled={loading}
             >
-              <Text style={styles.submitBtnText}>
+              <ThemedText weight="600" color="onAccent">
                 {loading ? 'Sending...' : 'Send OTP'}
-              </Text>
+              </ThemedText>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -162,7 +163,7 @@ export default function ResetPasswordScreen({ navigation, route }) {
               onPress={() => navigation.goBack()}
               disabled={loading}
             >
-              <Text style={styles.linkText}>Back to Login</Text>
+              <ThemedText size="sm" color="accent.primary">Back to Login</ThemedText>
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
@@ -179,14 +180,14 @@ export default function ResetPasswordScreen({ navigation, route }) {
         keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
       >
         <View style={styles.card}>
-          <Text style={styles.title}>Enter OTP & new password</Text>
-          <Text style={styles.subtitle}>
+          <ThemedText variant="heading" size="md" style={styles.title}>Enter OTP & new password</ThemedText>
+          <ThemedText color="muted" size="sm" style={styles.subtitle}>
             We sent an OTP to {email}. Enter it below and choose a new password.
-          </Text>
+          </ThemedText>
 
           <TextInput
             placeholder="OTP"
-            placeholderTextColor="#999"
+            placeholderTextColor={UNIFIED_THEME.colors.text.muted}
             style={styles.input}
             value={otp}
             onChangeText={setOtp}
@@ -196,7 +197,7 @@ export default function ResetPasswordScreen({ navigation, route }) {
           />
           <TextInput
             placeholder="New password (min 6 characters)"
-            placeholderTextColor="#999"
+            placeholderTextColor={UNIFIED_THEME.colors.text.muted}
             style={styles.input}
             value={newPassword}
             onChangeText={setNewPassword}
@@ -206,7 +207,7 @@ export default function ResetPasswordScreen({ navigation, route }) {
           />
           <TextInput
             placeholder="Confirm new password"
-            placeholderTextColor="#999"
+            placeholderTextColor={UNIFIED_THEME.colors.text.muted}
             style={styles.input}
             value={confirmPassword}
             onChangeText={setConfirmPassword}
@@ -216,13 +217,13 @@ export default function ResetPasswordScreen({ navigation, route }) {
           />
 
           <TouchableOpacity
-            style={[styles.submitBtn, loading && styles.submitBtnDisabled]}
+            style={[styles.submitBtn, loading && styles.submitBtnDisabled, !loading && UNIFIED_THEME.shadows.medium]}
             onPress={handleResetPassword}
             disabled={loading}
           >
-            <Text style={styles.submitBtnText}>
+            <ThemedText weight="600" color="onAccent">
               {loading ? 'Resetting...' : 'Reset Password'}
-            </Text>
+            </ThemedText>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -230,14 +231,14 @@ export default function ResetPasswordScreen({ navigation, route }) {
             onPress={() => { setStep(1); setOtp(''); setNewPassword(''); setConfirmPassword(''); }}
             disabled={loading}
           >
-            <Text style={styles.linkText}>Use a different email</Text>
+            <ThemedText size="sm" color="accent.primary">Use a different email</ThemedText>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.linkWrap, { marginTop: 8 }]}
+            style={[styles.linkWrap, { marginTop: UNIFIED_THEME.spacing.xs }]}
             onPress={() => navigation.goBack()}
             disabled={loading}
           >
-            <Text style={styles.linkText}>Back to Login</Text>
+            <ThemedText size="sm" color="accent.primary">Back to Login</ThemedText>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -248,107 +249,73 @@ export default function ResetPasswordScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f1b3f',
+    backgroundColor: UNIFIED_THEME.colors.primary.light,
     justifyContent: 'center',
-    padding: 24,
+    padding: UNIFIED_THEME.spacing.lg,
   },
   keyboardView: {
     flex: 1,
     justifyContent: 'center',
   },
   card: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: 16,
-    padding: 24,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
+    padding: UNIFIED_THEME.spacing.lg,
     borderWidth: 1,
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    borderColor: UNIFIED_THEME.colors.border.light,
   },
   title: {
-    color: '#fff',
-    fontSize: 22,
-    fontWeight: '700',
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: UNIFIED_THEME.spacing.sm,
   },
   subtitle: {
-    color: '#b0b0b0',
-    fontSize: 14,
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: UNIFIED_THEME.spacing.lg,
     lineHeight: 20,
   },
   input: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    color: '#fff',
-    padding: 16,
-    borderRadius: 10,
-    marginBottom: 20,
+    backgroundColor: UNIFIED_THEME.colors.component.input,
+    color: UNIFIED_THEME.colors.text.primary,
+    padding: UNIFIED_THEME.spacing.md,
+    borderRadius: UNIFIED_THEME.borderRadius.sm,
+    marginBottom: UNIFIED_THEME.spacing.lg,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    borderColor: UNIFIED_THEME.colors.border.default,
   },
   submitBtn: {
-    backgroundColor: '#ff006e',
-    padding: 16,
-    borderRadius: 12,
+    backgroundColor: UNIFIED_THEME.colors.accent.primary,
+    padding: UNIFIED_THEME.spacing.md,
+    borderRadius: UNIFIED_THEME.borderRadius.sm,
     alignItems: 'center',
-    shadowColor: 'rgba(255, 0, 110, 0.6)',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.8,
-    shadowRadius: 16,
-    elevation: 8,
   },
   submitBtnDisabled: {
     opacity: 0.6,
     shadowOpacity: 0,
     elevation: 0,
   },
-  submitBtnText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
   linkWrap: {
     alignItems: 'center',
-    marginTop: 20,
-  },
-  linkText: {
-    color: '#ff006e',
-    fontSize: 15,
+    marginTop: UNIFIED_THEME.spacing.lg,
   },
   successIcon: {
     fontSize: 48,
     textAlign: 'center',
-    marginBottom: 16,
+    marginBottom: UNIFIED_THEME.spacing.md,
   },
   successTitle: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: '700',
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: UNIFIED_THEME.spacing.sm,
   },
   successMessage: {
-    color: '#b0b0b0',
-    fontSize: 14,
     textAlign: 'center',
     lineHeight: 22,
-    marginBottom: 24,
+    marginBottom: UNIFIED_THEME.spacing.lg,
   },
   backBtn: {
-    backgroundColor: '#ff006e',
-    padding: 14,
-    borderRadius: 12,
+    backgroundColor: UNIFIED_THEME.colors.accent.primary,
+    padding: UNIFIED_THEME.spacing.md,
+    borderRadius: UNIFIED_THEME.borderRadius.sm,
     alignItems: 'center',
-    shadowColor: 'rgba(255, 0, 110, 0.6)',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.8,
-    shadowRadius: 16,
-    elevation: 8,
-  },
-  backBtnText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
   },
 });

@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   TextInput,
   TouchableOpacity,
   Alert,
+  SafeAreaView,
 } from 'react-native';
 import { supabase } from '../../supabase';
+import UNIFIED_THEME from '../constants/unifiedTheme';
+import ThemedText from '../components/ThemedText';
+import { API_URL } from '../api/api';
 
-const BACKEND_URL = process.env.REACT_APP_AUTH_URL || 'http://192.168.1.19:3000';
+const BACKEND_URL = process.env.REACT_APP_AUTH_URL || API_URL;
 
 /**
  * Email Verification Screen
@@ -156,18 +159,18 @@ export default function EmailVerificationScreen({ route, onVerificationComplete 
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Verify Your Email</Text>
+    <SafeAreaView style={styles.container}>
+      <ThemedText variant="heading" size="lg" style={styles.title}>Verify Your Email</ThemedText>
 
-      <Text style={styles.subtitle}>
+      <ThemedText color="muted" size="sm" style={styles.subtitle}>
         We've sent a 6-digit OTP to:
-      </Text>
+      </ThemedText>
 
-      <Text style={styles.emailText}>{pageEmail}</Text>
+      <ThemedText weight="600" color="accent.primary" style={styles.emailText}>{pageEmail}</ThemedText>
 
       <TextInput
         placeholder="Enter 6-digit OTP"
-        placeholderTextColor="#999"
+        placeholderTextColor={UNIFIED_THEME.colors.text.muted}
         style={styles.otpInput}
         value={otp}
         onChangeText={setOtp}
@@ -177,123 +180,90 @@ export default function EmailVerificationScreen({ route, onVerificationComplete 
       />
 
       <TouchableOpacity
-        style={[styles.verifyBtn, loading && styles.disabledBtn]}
+        style={[styles.verifyBtn, loading && styles.disabledBtn, !loading && UNIFIED_THEME.shadows.medium]}
         onPress={handleVerifyOTP}
         disabled={loading}
       >
-        <Text style={styles.verifyText}>
+        <ThemedText weight="600" color="onAccent">
           {loading ? 'Verifying...' : 'Verify OTP'}
-        </Text>
+        </ThemedText>
       </TouchableOpacity>
 
       <View style={styles.resendContainer}>
-        <Text style={styles.resendText}>Didn't receive OTP?</Text>
+        <ThemedText size="sm" color="muted">Didn't receive OTP?</ThemedText>
         <TouchableOpacity
           onPress={sendOTP}
           disabled={timer > 0 || resending}
         >
-          <Text style={[
-            styles.resendLink,
-            (timer > 0 || resending) && styles.disabledLink
-          ]}>
+          <ThemedText size="sm" color={timer > 0 || resending ? "muted" : "accent.primary"} style={styles.resendLink}>
             {resending ? 'Sending...' : timer > 0 ? `Resend in ${timer}s` : 'Resend OTP'}
-          </Text>
+          </ThemedText>
         </TouchableOpacity>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f1b3f',
+    backgroundColor: UNIFIED_THEME.colors.primary.light,
     justifyContent: 'center',
-    padding: 20,
+    padding: UNIFIED_THEME.spacing.lg,
   },
 
   title: {
-    color: '#fff',
-    fontSize: 26,
-    fontWeight: '700',
     textAlign: 'center',
-    marginBottom: 15,
+    marginBottom: UNIFIED_THEME.spacing.md,
   },
 
   subtitle: {
-    color: '#b0b0b0',
-    fontSize: 14,
     textAlign: 'center',
-    marginBottom: 10,
+    marginBottom: UNIFIED_THEME.spacing.sm,
   },
 
   emailText: {
-    color: '#ff006e',
-    fontSize: 16,
-    fontWeight: '600',
     textAlign: 'center',
-    marginBottom: 30,
+    marginBottom: UNIFIED_THEME.spacing.xxxl,
   },
 
   otpInput: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    color: '#fff',
-    padding: 20,
-    borderRadius: 10,
-    marginBottom: 20,
+    backgroundColor: UNIFIED_THEME.colors.component.input,
+    color: UNIFIED_THEME.colors.text.primary,
+    padding: UNIFIED_THEME.spacing.lg,
+    borderRadius: UNIFIED_THEME.borderRadius.sm,
+    marginBottom: UNIFIED_THEME.spacing.lg,
     fontSize: 24,
     letterSpacing: 10,
     textAlign: 'center',
     fontWeight: '600',
     borderWidth: 1,
-    borderColor: 'rgba(255, 0, 110, 0.3)',
+    borderColor: UNIFIED_THEME.colors.border.default,
   },
 
   verifyBtn: {
-    backgroundColor: '#ff006e',
-    padding: 15,
-    borderRadius: 30,
+    backgroundColor: UNIFIED_THEME.colors.accent.primary,
+    padding: UNIFIED_THEME.spacing.md,
+    borderRadius: UNIFIED_THEME.borderRadius.round,
     alignItems: 'center',
-    marginTop: 10,
-    shadowColor: 'rgba(255, 0, 110, 0.6)',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.8,
-    shadowRadius: 16,
-    elevation: 8,
+    marginTop: UNIFIED_THEME.spacing.lg,
   },
 
   disabledBtn: {
-    backgroundColor: 'rgba(176, 176, 176, 0.3)',
+    backgroundColor: UNIFIED_THEME.colors.border.light,
     shadowOpacity: 0,
     elevation: 0,
-  },
-
-  verifyText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '600',
   },
 
   resendContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 20,
+    marginTop: UNIFIED_THEME.spacing.lg,
     alignItems: 'center',
-  },
-
-  resendText: {
-    color: '#b0b0b0',
-    fontSize: 14,
-    marginRight: 5,
+    gap: UNIFIED_THEME.spacing.xs,
   },
 
   resendLink: {
-    color: '#ff006e',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-
-  disabledLink: {
-    color: '#666',
+    marginLeft: UNIFIED_THEME.spacing.xs,
   },
 });
