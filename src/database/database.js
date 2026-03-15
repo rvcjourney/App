@@ -1,5 +1,6 @@
 import { supabase } from '../../supabase';
 import logger from '../utils/logger';
+import { API_URL } from '../api/api';
 
 // ==========================================
 // TEACHER QUERIES
@@ -494,11 +495,17 @@ export const getTeacherBookings = async (teacherId) => {
     }
 
     const studentIds = [...new Set(bookings.map(b => b.student_id).filter(Boolean))];
-    const studentNames = {};
-    for (const sid of studentIds) {
-      const { data: row } = await supabase.from('profiles').select('full_name').eq('id', sid).limit(1).maybeSingle();
-      const name = (Array.isArray(row) ? row[0] : row)?.full_name || 'Student';
-      studentNames[sid] = name;
+
+    let studentNames = {};
+    if (studentIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', studentIds);
+
+      profiles?.forEach(p => {
+        studentNames[p.id] = p.full_name || 'Student';
+      });
     }
 
     const result = bookings.map(b => ({
@@ -1314,10 +1321,9 @@ export const endMeeting = async (bookingId, meetingId, duration = 60) => {
     // 3. Change earnings status from 'pending' to 'completed'
     // 4. Update teacher's wallet with earned amount
     
-    const backendUrl = process.env.REACT_APP_AUTH_URL || 'http://192.168.1.19:3000';
-    logger.info('🌐 Backend URL:', backendUrl);
+    logger.info('🌐 Backend URL:', API_URL);
     
-    const response = await fetch(`${backendUrl}/api/meetings/end`, {
+    const response = await fetch(`${API_URL}/api/meetings/end`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1369,11 +1375,16 @@ export const getTeacherTodayCallHistory = async (teacherId) => {
     if (!bookings || bookings.length === 0) return [];
 
     const studentIds = [...new Set(bookings.map(b => b.student_id).filter(Boolean))];
-    const studentNames = {};
-    for (const sid of studentIds) {
-      const { data: row } = await supabase.from('profiles').select('full_name').eq('id', sid).limit(1).maybeSingle();
-      const name = (Array.isArray(row) ? row[0] : row)?.full_name || 'Student';
-      studentNames[sid] = name;
+    let studentNames = {};
+    if (studentIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', studentIds);
+
+      profiles?.forEach(p => {
+        studentNames[p.id] = p.full_name || 'Student';
+      });
     }
 
     return bookings.map(b => ({
