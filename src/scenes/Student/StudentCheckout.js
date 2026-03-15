@@ -15,21 +15,10 @@ import { supabase } from '../../../supabase';
 import { API_URL } from '../../api/api';
 import RazorpayCheckout from 'react-native-razorpay';
 import { releaseAvailabilitySlot } from '../../database/database';
+import { isNetworkError } from '../../utils/networkUtils';
 import UNIFIED_THEME from '../../constants/unifiedTheme';
 import ThemedText from '../../components/ThemedText';
 import Icon from '../../components/Icon';
-
-const isNetworkError = (error) => {
-  if (!error) return false;
-  const errorMsg = (error.message || error.toString() || '').toLowerCase();
-  return errorMsg.includes('network') || 
-         errorMsg.includes('failed to fetch') || 
-         errorMsg.includes('enotfound') || 
-         errorMsg.includes('econnrefused') ||
-         errorMsg.includes('timeout') ||
-         errorMsg.includes('offline') ||
-         errorMsg.includes('unable to reach');
-};
 
 /**
  * StudentCheckout Component
