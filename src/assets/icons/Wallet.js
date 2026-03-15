@@ -1,0 +1,12 @@
+import * as React from 'react';
+import Svg, { Path } from 'react-native-svg';
+
+function Wallet(props) {
+  return (
+    <Svg fill="currentColor" viewBox="0 0 24 24" {...props}>
+      <Path d="M18 6h-2c0-2.21-1.79-4-4-4s-4 1.79-4 4H6c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-6-2c1.1 0 2 .9 2 2h-4c0-1.1.9-2 2-2zm6 16H6V8h12v12zm-6-7c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3z" />
+    </Svg>
+  );
+}
+
+export default Wallet;
