@@ -1,4 +1,5 @@
 import { supabase } from '../../supabase';
+import logger from '../utils/logger';
 
 // ==========================================
 // TEACHER QUERIES
@@ -6,7 +7,7 @@ import { supabase } from '../../supabase';
 
 export const getTeacherProfile = async (teacherId) => {
   try {
-    console.log('🔵 Fetching teacher profile:', teacherId);
+    logger.info('🔵 Fetching teacher profile:', teacherId);
     
     const { data, error } = await supabase
       .from('teacher_profiles')
@@ -19,17 +20,17 @@ export const getTeacherProfile = async (teacherId) => {
 
     if (error) throw error;
     
-    console.log('✅ Teacher profile fetched:', data);
+    logger.info('✅ Teacher profile fetched:', data);
     return data;
   } catch (error) {
-    console.error('🔴 Error fetching teacher profile:', error);
+    logger.error('🔴 Error fetching teacher profile:', error);
     throw error;
   }
 };
 
 export const getAllTeachers = async () => {
   try {
-    console.log('🔵 Fetching all teachers...');
+    logger.info('🔵 Fetching all teachers...');
     
     const { data, error } = await supabase
       .from('teacher_profiles')
@@ -40,21 +41,21 @@ export const getAllTeachers = async () => {
       .order('rating', { ascending: false });
 
     if (error) {
-      console.error('🔴 Error fetching teachers:', error);
+      logger.error('🔴 Error fetching teachers:', error);
       throw error;
     }
     
-    console.log('✅ All teachers fetched:', data?.length);
+    logger.info('✅ All teachers fetched:', data?.length);
     return data || [];
   } catch (error) {
-    console.error('🔴 Error fetching teachers:', error);
+    logger.error('🔴 Error fetching teachers:', error);
     throw error;
   }
 };
 
 export const searchTeachers = async (query) => {
   try {
-    console.log('🔵 Searching teachers:', query);
+    logger.info('🔵 Searching teachers:', query);
     
     // Get all teachers and filter on client side for better search
     const { data, error } = await supabase
@@ -75,17 +76,17 @@ export const searchTeachers = async (query) => {
       return name.includes(q) || specs.includes(q);
     }) || [];
     
-    console.log('✅ Search results:', filtered.length);
+    logger.info('✅ Search results:', filtered.length);
     return filtered;
   } catch (error) {
-    console.error('🔴 Search error:', error);
+    logger.error('🔴 Search error:', error);
     throw error;
   }
 };
 
 export const updateTeacherProfile = async (teacherId, updates) => {
   try {
-    console.log('🔵 Updating teacher profile:', teacherId);
+    logger.info('🔵 Updating teacher profile:', teacherId);
     
     const { data, error } = await supabase
       .from('teacher_profiles')
@@ -98,17 +99,17 @@ export const updateTeacherProfile = async (teacherId, updates) => {
 
     if (error) throw error;
     
-    console.log('✅ Teacher profile updated');
+    logger.info('✅ Teacher profile updated');
     return data?.[0];
   } catch (error) {
-    console.error('🔴 Update error:', error);
+    logger.error('🔴 Update error:', error);
     throw error;
   }
 };
 
 export const getTeachersByProfession = async (profession) => {
   try {
-    console.log('🔵 Fetching teachers by profession:', profession);
+    logger.info('🔵 Fetching teachers by profession:', profession);
 
     const { data, error } = await supabase
       .from('teacher_profiles')
@@ -121,17 +122,17 @@ export const getTeachersByProfession = async (profession) => {
 
     if (error) throw error;
 
-    console.log('✅ Teachers by profession fetched:', data?.length);
+    logger.info('✅ Teachers by profession fetched:', data?.length);
     return data || [];
   } catch (error) {
-    console.error('🔴 Error fetching teachers by profession:', error);
+    logger.error('🔴 Error fetching teachers by profession:', error);
     throw error;
   }
 };
 
 export const getTeachersGroupedByProfession = async () => {
   try {
-    console.log('🔵 Fetching all teachers grouped by profession...');
+    logger.info('🔵 Fetching all teachers grouped by profession...');
 
     const { data, error } = await supabase
       .from('teacher_profiles')
@@ -154,10 +155,10 @@ export const getTeachersGroupedByProfession = async () => {
       grouped[profession].push(teacher);
     });
 
-    console.log('✅ Teachers grouped by profession');
+    logger.info('✅ Teachers grouped by profession');
     return grouped;
   } catch (error) {
-    console.error('🔴 Error grouping teachers:', error);
+    logger.error('🔴 Error grouping teachers:', error);
     throw error;
   }
 };
@@ -182,9 +183,9 @@ export const createTeacherProfile = async (userId, { full_name, email, role } = 
         updated_at: new Date(),
       }, { onConflict: 'id' });
     if (error) throw error;
-    console.log('✅ Teacher profile row created');
+    logger.info('✅ Teacher profile row created');
   } catch (error) {
-    console.error('🔴 createTeacherProfile error:', error);
+    logger.error('🔴 createTeacherProfile error:', error);
     throw error;
   }
 };
@@ -195,7 +196,7 @@ export const createTeacherProfile = async (userId, { full_name, email, role } = 
 
 export const getStudentProfile = async (studentId) => {
   try {
-    console.log('🔵 Fetching student profile:', studentId);
+    logger.info('🔵 Fetching student profile:', studentId);
     
     const { data, error } = await supabase
       .from('student_profiles')
@@ -208,17 +209,17 @@ export const getStudentProfile = async (studentId) => {
 
     if (error) throw error;
     
-    console.log('✅ Student profile fetched');
+    logger.info('✅ Student profile fetched');
     return data;
   } catch (error) {
-    console.error('🔴 Error fetching student profile:', error);
+    logger.error('🔴 Error fetching student profile:', error);
     throw error;
   }
 };
 
 export const updateStudentProfile = async (studentId, updates) => {
   try {
-    console.log('🔵 Updating student profile:', studentId);
+    logger.info('🔵 Updating student profile:', studentId);
     
     const { data, error } = await supabase
       .from('student_profiles')
@@ -231,10 +232,10 @@ export const updateStudentProfile = async (studentId, updates) => {
 
     if (error) throw error;
     
-    console.log('✅ Student profile updated');
+    logger.info('✅ Student profile updated');
     return data?.[0];
   } catch (error) {
-    console.error('🔴 Update error:', error);
+    logger.error('🔴 Update error:', error);
     throw error;
   }
 };
@@ -254,9 +255,9 @@ export const createStudentProfile = async (userId, { full_name, email } = {}) =>
         updated_at: new Date(),
       }, { onConflict: 'id' });
     if (error) throw error;
-    console.log('✅ Student profile row created');
+    logger.info('✅ Student profile row created');
   } catch (error) {
-    console.error('🔴 createStudentProfile error:', error);
+    logger.error('🔴 createStudentProfile error:', error);
     throw error;
   }
 };
@@ -283,7 +284,7 @@ export const isProfileComplete = async (role, userId) => {
     }
     return false;
   } catch (error) {
-    console.error('🔴 isProfileComplete error:', error);
+    logger.error('🔴 isProfileComplete error:', error);
     return false;
   }
 };
@@ -302,7 +303,7 @@ export const getAllUsersForAdmin = async () => {
     if (error) throw error;
     return data || [];
   } catch (error) {
-    console.error('🔴 getAllUsersForAdmin error:', error);
+    logger.error('🔴 getAllUsersForAdmin error:', error);
     throw error;
   }
 };
@@ -321,7 +322,7 @@ export const updateUserProfileForAdmin = async (userId, updates) => {
     if (error) throw error;
     return data?.[0];
   } catch (error) {
-    console.error('🔴 updateUserProfileForAdmin error:', error);
+    logger.error('🔴 updateUserProfileForAdmin error:', error);
     throw error;
   }
 };
@@ -346,7 +347,7 @@ export const getAllBookingsForAdmin = async () => {
       teacher_name: nameMap[b.teacher_id] || '—',
     }));
   } catch (error) {
-    console.error('🔴 getAllBookingsForAdmin error:', error);
+    logger.error('🔴 getAllBookingsForAdmin error:', error);
     throw error;
   }
 };
@@ -362,7 +363,7 @@ export const getTeacherProfileForAdmin = async (userId) => {
     if (error) throw error;
     return data;
   } catch (error) {
-    console.error('🔴 getTeacherProfileForAdmin error:', error);
+    logger.error('🔴 getTeacherProfileForAdmin error:', error);
     throw error;
   }
 };
@@ -381,7 +382,7 @@ export const updateTeacherProfileForAdmin = async (userId, updates) => {
     if (error) throw error;
     return data?.[0];
   } catch (error) {
-    console.error('🔴 updateTeacherProfileForAdmin error:', error);
+    logger.error('🔴 updateTeacherProfileForAdmin error:', error);
     throw error;
   }
 };
@@ -397,7 +398,7 @@ export const getStudentProfileForAdmin = async (userId) => {
     if (error) throw error;
     return data;
   } catch (error) {
-    console.error('🔴 getStudentProfileForAdmin error:', error);
+    logger.error('🔴 getStudentProfileForAdmin error:', error);
     throw error;
   }
 };
@@ -416,7 +417,7 @@ export const updateStudentProfileForAdmin = async (userId, updates) => {
     if (error) throw error;
     return data?.[0];
   } catch (error) {
-    console.error('🔴 updateStudentProfileForAdmin error:', error);
+    logger.error('🔴 updateStudentProfileForAdmin error:', error);
     throw error;
   }
 };
@@ -427,7 +428,7 @@ export const updateStudentProfileForAdmin = async (userId, updates) => {
 
 export const createBooking = async (studentId, teacherId, scheduledTime, subject = 'Tutoring Session') => {
   try {
-    console.log('🔵 Creating booking...');
+    logger.info('🔵 Creating booking...');
     
     const { data, error } = await supabase
       .from('bookings')
@@ -445,17 +446,17 @@ export const createBooking = async (studentId, teacherId, scheduledTime, subject
 
     if (error) throw error;
     
-    console.log('✅ Booking created:', data?.[0]?.id);
+    logger.info('✅ Booking created:', data?.[0]?.id);
     return data?.[0];
   } catch (error) {
-    console.error('🔴 Booking error:', error);
+    logger.error('🔴 Booking error:', error);
     throw error;
   }
 };
 
 export const getStudentBookings = async (studentId) => {
   try {
-    console.log('🔵 Fetching student bookings...');
+    logger.info('🔵 Fetching student bookings...');
     
     const { data, error } = await supabase
       .from('bookings')
@@ -468,17 +469,17 @@ export const getStudentBookings = async (studentId) => {
 
     if (error) throw error;
     
-    console.log('✅ Bookings fetched:', data?.length);
+    logger.info('✅ Bookings fetched:', data?.length);
     return data || [];
   } catch (error) {
-    console.error('🔴 Error fetching bookings:', error);
+    logger.error('🔴 Error fetching bookings:', error);
     throw error;
   }
 };
 
 export const getTeacherBookings = async (teacherId) => {
   try {
-    console.log('🔵 Fetching teacher bookings...');
+    logger.info('🔵 Fetching teacher bookings...');
     
     const { data: bookings, error } = await supabase
       .from('bookings')
@@ -488,7 +489,7 @@ export const getTeacherBookings = async (teacherId) => {
 
     if (error) throw error;
     if (!bookings || bookings.length === 0) {
-      console.log('✅ Teacher bookings fetched: 0');
+      logger.info('✅ Teacher bookings fetched: 0');
       return [];
     }
 
@@ -504,17 +505,17 @@ export const getTeacherBookings = async (teacherId) => {
       ...b,
       student: { full_name: studentNames[b.student_id] || 'Student' },
     }));
-    console.log('✅ Teacher bookings fetched:', result.length);
+    logger.info('✅ Teacher bookings fetched:', result.length);
     return result;
   } catch (err) {
-    console.error('🔴 Error fetching teacher bookings:', err);
+    logger.error('🔴 Error fetching teacher bookings:', err);
     throw err;
   }
 };
 
 export const updateBookingStatus = async (bookingId, status) => {
   try {
-    console.log('🔵 Updating booking status:', status);
+    logger.info('🔵 Updating booking status:', status);
     
     const { data, error } = await supabase
       .from('bookings')
@@ -524,10 +525,10 @@ export const updateBookingStatus = async (bookingId, status) => {
 
     if (error) throw error;
     
-    console.log('✅ Booking status updated');
+    logger.info('✅ Booking status updated');
     return data?.[0];
   } catch (error) {
-    console.error('🔴 Error updating booking:', error);
+    logger.error('🔴 Error updating booking:', error);
     throw error;
   }
 };
@@ -538,7 +539,7 @@ export const updateBookingStatus = async (bookingId, status) => {
 
 export const addToFavorites = async (studentId, teacherId) => {
   try {
-    console.log('🔵 Adding to favorites...');
+    logger.info('🔵 Adding to favorites...');
     
     const { data, error } = await supabase
       .from('favorites')
@@ -552,23 +553,23 @@ export const addToFavorites = async (studentId, teacherId) => {
 
     if (error) {
       if (error.code === '23505') { // Unique constraint violation
-        console.log('⚠️ Already in favorites');
+        logger.info('⚠️ Already in favorites');
         return null;
       }
       throw error;
     }
     
-    console.log('✅ Added to favorites');
+    logger.info('✅ Added to favorites');
     return data?.[0];
   } catch (error) {
-    console.error('🔴 Favorites error:', error);
+    logger.error('🔴 Favorites error:', error);
     throw error;
   }
 };
 
 export const removeFromFavorites = async (studentId, teacherId) => {
   try {
-    console.log('🔵 Removing from favorites...');
+    logger.info('🔵 Removing from favorites...');
     
     const { error } = await supabase
       .from('favorites')
@@ -578,17 +579,17 @@ export const removeFromFavorites = async (studentId, teacherId) => {
 
     if (error) throw error;
     
-    console.log('✅ Removed from favorites');
+    logger.info('✅ Removed from favorites');
     return true;
   } catch (error) {
-    console.error('🔴 Error removing favorite:', error);
+    logger.error('🔴 Error removing favorite:', error);
     throw error;
   }
 };
 
 export const getStudentFavorites = async (studentId) => {
   try {
-    console.log('🔵 Fetching favorites...');
+    logger.info('🔵 Fetching favorites...');
     
     const { data, error } = await supabase
       .from('favorites')
@@ -606,10 +607,10 @@ export const getStudentFavorites = async (studentId) => {
 
     if (error) throw error;
     
-    console.log('✅ Favorites fetched:', data?.length);
+    logger.info('✅ Favorites fetched:', data?.length);
     return data?.map(f => f.teacher) || [];
   } catch (error) {
-    console.error('🔴 Error fetching favorites:', error);
+    logger.error('🔴 Error fetching favorites:', error);
     throw error;
   }
 };
@@ -642,7 +643,7 @@ export const isFavorite = async (studentId, teacherId) => {
  */
 export const setTeacherWeeklyAvailability = async (teacherId, dayOfWeek, startTime, endTime, isActive = true) => {
   try {
-    console.log('🔵 Setting teacher weekly availability...');
+    logger.info('🔵 Setting teacher weekly availability...');
     
     // Check if already exists
     const { data: existing } = await supabase
@@ -682,10 +683,10 @@ export const setTeacherWeeklyAvailability = async (teacherId, dayOfWeek, startTi
 
     if (error) throw error;
     
-    console.log('✅ Availability set:', data?.[0]);
+    logger.info('✅ Availability set:', data?.[0]);
     return data?.[0];
   } catch (error) {
-    console.error('🔴 Error setting availability:', error);
+    logger.error('🔴 Error setting availability:', error);
     throw error;
   }
 };
@@ -695,7 +696,7 @@ export const setTeacherWeeklyAvailability = async (teacherId, dayOfWeek, startTi
  */
 export const getTeacherWeeklyAvailability = async (teacherId) => {
   try {
-    console.log('🔵 Fetching teacher weekly availability...');
+    logger.info('🔵 Fetching teacher weekly availability...');
     
     const { data, error } = await supabase
       .from('teacher_availability_schedule')
@@ -706,10 +707,10 @@ export const getTeacherWeeklyAvailability = async (teacherId) => {
 
     if (error) throw error;
     
-    console.log('✅ Availability fetched:', data?.length);
+    logger.info('✅ Availability fetched:', data?.length);
     return data || [];
   } catch (error) {
-    console.error('🔴 Error fetching availability:', error);
+    logger.error('🔴 Error fetching availability:', error);
     throw error;
   }
 };
@@ -720,7 +721,7 @@ export const getTeacherWeeklyAvailability = async (teacherId) => {
  */
 export const generateAvailabilitySlots = async (teacherId, startDate, endDate, slotDurationMinutes = 60) => {
   try {
-    console.log('🔵 Generating availability slots...');
+    logger.info('🔵 Generating availability slots...');
     
     // Get teacher's weekly schedule
     const schedule = await getTeacherWeeklyAvailability(teacherId);
@@ -791,13 +792,13 @@ export const generateAvailabilitySlots = async (teacherId, startDate, endDate, s
 
       if (error) throw error;
       
-      console.log('✅ Slots generated:', data?.length);
+      logger.info('✅ Slots generated:', data?.length);
       return data || [];
     }
 
     return [];
   } catch (error) {
-    console.error('🔴 Error generating slots:', error);
+    logger.error('🔴 Error generating slots:', error);
     throw error;
   }
 };
@@ -808,7 +809,7 @@ export const generateAvailabilitySlots = async (teacherId, startDate, endDate, s
  */
 export const getTeacherAvailableSlots = async (teacherId, date) => {
   try {
-    console.log('🔵 Fetching available slots for:', date);
+    logger.info('🔵 Fetching available slots for:', date);
     
     const { data, error } = await supabase
       .from('teacher_availability_slots')
@@ -820,10 +821,10 @@ export const getTeacherAvailableSlots = async (teacherId, date) => {
 
     if (error) throw error;
     
-    console.log('✅ Slots fetched:', data?.length);
+    logger.info('✅ Slots fetched:', data?.length);
     return data || [];
   } catch (error) {
-    console.error('🔴 Error fetching slots:', error);
+    logger.error('🔴 Error fetching slots:', error);
     throw error;
   }
 };
@@ -834,7 +835,7 @@ export const getTeacherAvailableSlots = async (teacherId, date) => {
  */
 export const getTeacherSlotsByDateRange = async (teacherId, startDate, endDate) => {
   try {
-    console.log('🔵 Fetching slots in date range...');
+    logger.info('🔵 Fetching slots in date range...');
     
     const { data, error } = await supabase
       .from('teacher_availability_slots')
@@ -847,10 +848,10 @@ export const getTeacherSlotsByDateRange = async (teacherId, startDate, endDate) 
 
     if (error) throw error;
     
-    console.log('✅ Slots fetched:', data?.length);
+    logger.info('✅ Slots fetched:', data?.length);
     return data || [];
   } catch (error) {
-    console.error('🔴 Error fetching slots:', error);
+    logger.error('🔴 Error fetching slots:', error);
     throw error;
   }
 };
@@ -864,7 +865,7 @@ export const getTeacherSlotsByDateRange = async (teacherId, startDate, endDate) 
  */
 export const bookAvailabilitySlot = async (studentId, teacherId, slotId, subject, hoursRequired = 1) => {
   try {
-    console.log('🔵 Booking availability slot...');
+    logger.info('🔵 Booking availability slot...');
     
     // Step 1: Get slot details with FOR UPDATE lock (if supported) or optimistic locking
     const { data: slot, error: slotError } = await supabase
@@ -931,7 +932,7 @@ export const bookAvailabilitySlot = async (studentId, teacherId, slotId, subject
 
     // Step 6: If booking creation fails, rollback slot update
     if (bookingError) {
-      console.error('🔴 Booking creation failed, rolling back slot update...');
+      logger.error('🔴 Booking creation failed, rolling back slot update...');
       // Rollback: decrement booked_count
       await supabase
         .from('teacher_availability_slots')
@@ -965,14 +966,14 @@ export const bookAvailabilitySlot = async (studentId, teacherId, slotId, subject
         bookingId
       );
     } catch (notifErr) {
-      console.warn('⚠️ Could not create booking notifications:', notifErr?.message);
+      logger.warn('⚠️ Could not create booking notifications:', notifErr?.message);
       // Don't fail the booking if notification fails
     }
 
-    console.log('✅ Slot booked successfully:', bookingId);
+    logger.info('✅ Slot booked successfully:', bookingId);
     return bookingRecord;
   } catch (error) {
-    console.error('🔴 Error booking slot:', error);
+    logger.error('🔴 Error booking slot:', error);
     throw error;
   }
 };
@@ -983,7 +984,7 @@ export const bookAvailabilitySlot = async (studentId, teacherId, slotId, subject
  */
 export const releaseAvailabilitySlot = async (slotId, bookingId = null) => {
   try {
-    console.log('🔵 Releasing availability slot:', slotId);
+    logger.info('🔵 Releasing availability slot:', slotId);
     
     // Get current slot status
     const { data: slot, error: slotError } = await supabase
@@ -993,7 +994,7 @@ export const releaseAvailabilitySlot = async (slotId, bookingId = null) => {
       .single();
 
     if (slotError) {
-      console.error('🔴 Error fetching slot for release:', slotError);
+      logger.error('🔴 Error fetching slot for release:', slotError);
       return;
     }
 
@@ -1013,12 +1014,12 @@ export const releaseAvailabilitySlot = async (slotId, bookingId = null) => {
       .eq('id', slotId);
 
     if (updateError) {
-      console.error('🔴 Error releasing slot:', updateError);
+      logger.error('🔴 Error releasing slot:', updateError);
     } else {
-      console.log('✅ Slot released successfully. New booked_count:', newBookedCount);
+      logger.info('✅ Slot released successfully. New booked_count:', newBookedCount);
     }
   } catch (error) {
-    console.error('🔴 Error in releaseAvailabilitySlot:', error);
+    logger.error('🔴 Error in releaseAvailabilitySlot:', error);
   }
 };
 
@@ -1031,7 +1032,7 @@ export const releaseAvailabilitySlot = async (slotId, bookingId = null) => {
  */
 export const createNotification = async (userId, notificationType, title, message, bookingId = null) => {
   try {
-    console.log('🔵 Creating notification...');
+    logger.info('🔵 Creating notification...');
     
     const { data, error } = await supabase
       .from('notifications')
@@ -1047,10 +1048,10 @@ export const createNotification = async (userId, notificationType, title, messag
 
     if (error) throw error;
     
-    console.log('✅ Notification created:', data?.[0]?.id);
+    logger.info('✅ Notification created:', data?.[0]?.id);
     return data?.[0];
   } catch (error) {
-    console.error('🔴 Error creating notification:', error);
+    logger.error('🔴 Error creating notification:', error);
     throw error;
   }
 };
@@ -1074,7 +1075,7 @@ export const getUnreadNotificationCount = async (userId) => {
     if (error) throw error;
     return count ?? 0;
   } catch (error) {
-    console.error('🔴 Error fetching unread notification count:', error);
+    logger.error('🔴 Error fetching unread notification count:', error);
     return 0;
   }
 };
@@ -1095,7 +1096,7 @@ export const getUnreadNotifications = async (userId, limit = 50) => {
     if (error) throw error;
     return data || [];
   } catch (error) {
-    console.error('🔴 Error fetching notifications:', error);
+    logger.error('🔴 Error fetching notifications:', error);
     throw error;
   }
 };
@@ -1126,7 +1127,7 @@ export const getNotificationsPage = async (userId, { limit = NOTIFICATION_PAGE_S
 
     return { items, nextCursor, hasMore };
   } catch (error) {
-    console.error('🔴 Error fetching notifications page:', error);
+    logger.error('🔴 Error fetching notifications page:', error);
     throw error;
   }
 };
@@ -1150,7 +1151,7 @@ export const getRecentNotifications = async (userId, days = 30, limit = 50) => {
     if (error) throw error;
     return data || [];
   } catch (error) {
-    console.error('🔴 Error fetching recent notifications:', error);
+    logger.error('🔴 Error fetching recent notifications:', error);
     throw error;
   }
 };
@@ -1177,7 +1178,7 @@ export const markNotificationAsRead = async (notificationId) => {
     if (error) throw error;
     return data?.[0];
   } catch (error) {
-    console.error('🔴 Error marking notification:', error);
+    logger.error('🔴 Error marking notification:', error);
     throw error;
   }
 };
@@ -1221,7 +1222,7 @@ export const archiveOldNotifications = async (retentionDays = NOTIFICATION_RECEN
 
     return { archived: ids.length };
   } catch (error) {
-    console.error('🔴 Error archiving notifications:', error);
+    logger.error('🔴 Error archiving notifications:', error);
     throw error;
   }
 };
@@ -1231,19 +1232,24 @@ export const archiveOldNotifications = async (retentionDays = NOTIFICATION_RECEN
  */
 export const subscribeToNotifications = (userId, callback) => {
   try {
-    console.log('🔵 Subscribing to notifications for:', userId);
-    
     const subscription = supabase
-      .from(`notifications:user_id=eq.${userId}`)
-      .on('INSERT', (payload) => {
-        console.log('📬 New notification:', payload.new);
-        callback(payload.new);
-      })
+      .channel(`notifications:user_id=eq.${userId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${userId}`,
+        },
+        (payload) => {
+          callback(payload.new);
+        }
+      )
       .subscribe();
 
     return subscription;
   } catch (error) {
-    console.error('🔴 Error subscribing to notifications:', error);
     throw error;
   }
 };
@@ -1257,7 +1263,7 @@ export const subscribeToNotifications = (userId, callback) => {
  */
 export const startMeeting = async (bookingId, meetingId) => {
   try {
-    console.log('🔵 Starting meeting...');
+    logger.info('🔵 Starting meeting...');
     
     // Update booking
     const { data: bookingData, error: bookingError } = await supabase
@@ -1286,10 +1292,10 @@ export const startMeeting = async (bookingId, meetingId) => {
 
     if (logError) throw logError;
 
-    console.log('✅ Meeting started:', meetingId);
+    logger.info('✅ Meeting started:', meetingId);
     return { booking: bookingData?.[0], log: logData?.[0] };
   } catch (error) {
-    console.error('🔴 Error starting meeting:', error);
+    logger.error('🔴 Error starting meeting:', error);
     throw error;
   }
 };
@@ -1299,7 +1305,7 @@ export const startMeeting = async (bookingId, meetingId) => {
  */
 export const endMeeting = async (bookingId, meetingId, duration = 60) => {
   try {
-    console.log('🔵 Ending meeting... BookingId:', bookingId);
+    logger.info('🔵 Ending meeting... BookingId:', bookingId);
     
     // Call backend endpoint to handle meeting completion
     // This will:
@@ -1309,7 +1315,7 @@ export const endMeeting = async (bookingId, meetingId, duration = 60) => {
     // 4. Update teacher's wallet with earned amount
     
     const backendUrl = process.env.REACT_APP_AUTH_URL || 'http://192.168.1.19:3000';
-    console.log('🌐 Backend URL:', backendUrl);
+    logger.info('🌐 Backend URL:', backendUrl);
     
     const response = await fetch(`${backendUrl}/api/meetings/end`, {
       method: 'POST',
@@ -1320,21 +1326,21 @@ export const endMeeting = async (bookingId, meetingId, duration = 60) => {
       })
     });
 
-    console.log('📤 Backend response status:', response.status);
+    logger.info('📤 Backend response status:', response.status);
     
     const data = await response.json();
-    console.log('📨 Backend response data:', JSON.stringify(data, null, 2));
+    logger.info('📨 Backend response data:', JSON.stringify(data, null, 2));
     
     if (data.success) {
-      console.log('✅ Meeting ended successfully:', data.bookingId);
-      console.log('💰 Teacher earnings updated and wallet credited');
+      logger.info('✅ Meeting ended successfully:', data.bookingId);
+      logger.info('💰 Teacher earnings updated and wallet credited');
       return { success: true, bookingId: data.bookingId };
     } else {
-      console.error('⚠️ Failed to end meeting - Error:', data.error);
+      logger.error('⚠️ Failed to end meeting - Error:', data.error);
       throw new Error(data.error || 'Failed to end meeting');
     }
   } catch (error) {
-    console.error('🔴 Error ending meeting:', error.message);
+    logger.error('🔴 Error ending meeting:', error.message);
     throw error;
   }
 };
@@ -1375,7 +1381,7 @@ export const getTeacherTodayCallHistory = async (teacherId) => {
       student: { full_name: studentNames[b.student_id] || 'Student' },
     }));
   } catch (err) {
-    console.error('🔴 Error fetching today call history:', err);
+    logger.error('🔴 Error fetching today call history:', err);
     return [];
   }
 };
@@ -1385,7 +1391,7 @@ export const getTeacherTodayCallHistory = async (teacherId) => {
  */
 export const getMeetingHistory = async (userId, isTeacher = false) => {
   try {
-    console.log('🔵 Fetching meeting history...');
+    logger.info('🔵 Fetching meeting history...');
     
     let query = supabase
       .from('meeting_logs')
@@ -1405,10 +1411,10 @@ export const getMeetingHistory = async (userId, isTeacher = false) => {
 
     if (error) throw error;
     
-    console.log('✅ Meeting history fetched:', data?.length);
+    logger.info('✅ Meeting history fetched:', data?.length);
     return data || [];
   } catch (error) {
-    console.error('🔴 Error fetching meeting history:', error);
+    logger.error('🔴 Error fetching meeting history:', error);
     throw error;
   }
 };
@@ -1419,7 +1425,7 @@ export const getMeetingHistory = async (userId, isTeacher = false) => {
  */
 export const getTeacherEarnings = async (teacherId) => {
   try {
-    console.log('🔵 Fetching teacher earnings...');
+    logger.info('🔵 Fetching teacher earnings...');
     
     // Get completed earnings only (not pending)
     const { data: earnings, error } = await supabase
@@ -1430,11 +1436,11 @@ export const getTeacherEarnings = async (teacherId) => {
       .order('created_at', { ascending: false }); // Use created_at as fallback
 
     if (error) {
-      console.error('🔴 Error querying earnings:', error);
+      logger.error('🔴 Error querying earnings:', error);
       throw error;
     }
 
-    console.log('✅ Earnings fetched from DB:', earnings?.length || 0, 'records');
+    logger.info('✅ Earnings fetched from DB:', earnings?.length || 0, 'records');
 
     // Transform earnings array to add teacher_earn calculation
     const earningsWithCalculation = (earnings || []).map(e => ({
@@ -1443,7 +1449,7 @@ export const getTeacherEarnings = async (teacherId) => {
     }));
 
     if (!earningsWithCalculation || earningsWithCalculation.length === 0) {
-      console.log('✅ No completed earnings found');
+      logger.info('✅ No completed earnings found');
       return { 
         weekly: [{ day: 'Mon', amount: 0 }, { day: 'Tue', amount: 0 }, { day: 'Wed', amount: 0 }, { day: 'Thu', amount: 0 }, { day: 'Fri', amount: 0 }, { day: 'Sat', amount: 0 }, { day: 'Sun', amount: 0 }],
         monthly: [{ month: 'Week 1', amount: 0 }, { month: 'Week 2', amount: 0 }, { month: 'Week 3', amount: 0 }, { month: 'Week 4', amount: 0 }, { month: 'Week 5', amount: 0 }],
@@ -1468,7 +1474,7 @@ export const getTeacherEarnings = async (teacherId) => {
       const earningDate = earning.completed_at ? new Date(earning.completed_at) : new Date(earning.created_at);
       const amount = parseFloat(earning.teacher_earn) || 0;
 
-      console.log('Processing earning:', { date: earningDate, amount, status: earning.status });
+      logger.info('Processing earning:', { date: earningDate, amount, status: earning.status });
 
       // Weekly: Last 7 days
       const daysDiff = Math.floor((now - earningDate) / (1000 * 60 * 60 * 24));
@@ -1523,7 +1529,7 @@ export const getTeacherEarnings = async (teacherId) => {
 
     const totalEarned = earningsWithCalculation.reduce((sum, e) => sum + (parseFloat(e.teacher_earn) || 0), 0);
 
-    console.log('✅ Earnings calculated:', { totalEarned, pendingCount });
+    logger.info('✅ Earnings calculated:', { totalEarned, pendingCount });
     return {
       weekly: formattedWeekly,
       monthly: formattedMonthly,
@@ -1532,7 +1538,7 @@ export const getTeacherEarnings = async (teacherId) => {
       pendingCount: pendingCount || 0
     };
   } catch (error) {
-    console.error('🔴 Error fetching earnings:', error);
+    logger.error('🔴 Error fetching earnings:', error);
     throw error;
   }
 };
@@ -1542,13 +1548,13 @@ export const getTeacherEarnings = async (teacherId) => {
  */
 export const getTeacherTodayEarnings = async (teacherId) => {
   try {
-    console.log('🔵 Fetching today earnings...');
+    logger.info('🔵 Fetching today earnings...');
     
     const now = new Date();
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
     const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
 
-    console.log('Date range:', startOfToday.toISOString(), '-', endOfToday.toISOString());
+    logger.info('Date range:', startOfToday.toISOString(), '-', endOfToday.toISOString());
 
     // Get completed earnings for today (check both completed_at and created_at)
     const { data: earnings, error } = await supabase
@@ -1558,7 +1564,7 @@ export const getTeacherTodayEarnings = async (teacherId) => {
       .eq('status', 'completed');
 
     if (error) {
-      console.error('🔴 Error querying today earnings:', error);
+      logger.error('🔴 Error querying today earnings:', error);
       throw error;
     }
 
@@ -1568,7 +1574,7 @@ export const getTeacherTodayEarnings = async (teacherId) => {
       return checkDate >= startOfToday && checkDate <= endOfToday;
     });
 
-    console.log('Today completed earnings:', todayCompletedEarnings.length);
+    logger.info('Today completed earnings:', todayCompletedEarnings.length);
 
     const totalAmount = todayCompletedEarnings.reduce((sum, e) => sum + (parseFloat(e.total_collected || 0) - parseFloat(e.admin_deduction || 0) - parseFloat(e.platform_fee || 0)), 0);
     const sessionsCount = todayCompletedEarnings.length;
@@ -1586,12 +1592,12 @@ export const getTeacherTodayEarnings = async (teacherId) => {
       return createdDate >= startOfToday && createdDate <= endOfToday;
     });
 
-    console.log('Today pending earnings:', todayPendingEarnings.length);
+    logger.info('Today pending earnings:', todayPendingEarnings.length);
 
     const pendingAmount = todayPendingEarnings.reduce((sum, e) => sum + (parseFloat(e.total_collected || 0) - parseFloat(e.admin_deduction || 0) - parseFloat(e.platform_fee || 0)), 0);
     const pendingCount = todayPendingEarnings.length;
 
-    console.log('✅ Today earnings:', { totalAmount, sessionsCount, pendingAmount, pendingCount });
+    logger.info('✅ Today earnings:', { totalAmount, sessionsCount, pendingAmount, pendingCount });
     return {
       totalAmount: Math.round(totalAmount * 100) / 100,
       sessionsCount,
@@ -1599,7 +1605,7 @@ export const getTeacherTodayEarnings = async (teacherId) => {
       pendingCount
     };
   } catch (error) {
-    console.error('🔴 Error fetching today earnings:', error);
+    logger.error('🔴 Error fetching today earnings:', error);
     return { totalAmount: 0, sessionsCount: 0, pendingAmount: 0, pendingCount: 0 };
   }
 };
