@@ -1508,13 +1508,21 @@ const styles = StyleSheet.create({
 
   navItem: {
     alignItems: 'center',
-    paddingVertical: UNIFIED_THEME.spacing.sm,
+    paddingVertical: UNIFIED_THEME.spacing.md,
+    paddingHorizontal: UNIFIED_THEME.spacing.md,
     flex: 1,
     justifyContent: 'center',
+    opacity: 0.6,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
   },
 
   navItemActive: {
     opacity: 1,
+    borderBottomColor: UNIFIED_THEME.colors.accent.primary,
+    backgroundColor: UNIFIED_THEME.colors.border.light,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
+    ...UNIFIED_THEME.shadows.small,
   },
 
   navLabel: {
@@ -2017,16 +2025,22 @@ const styles = StyleSheet.create({
   // },
 
 confirmBtn: {
+  // flex: 1,
+  // backgroundColor: 'transparent',  
+  // paddingVertical: 14,
+  // borderRadius: UNIFIED_THEME.borderRadius.md,
+  // alignItems: 'center',
+  // elevation: 5,               
+  // shadowColor: 'rgba(255, 0, 110, 0.6)',        
+  // shadowOffset: { width: 0, height: 4 },
+  // shadowOpacity: 0.3,
+  // shadowRadius: 15,
   flex: 1,
-  backgroundColor: 'transparent',   // Use LinearGradient wrapper for gradient
-  paddingVertical: 14,
-  borderRadius: UNIFIED_THEME.borderRadius.md,
-  alignItems: 'center',
-  elevation: 5,                 // Android shadow
-  shadowColor: 'rgba(255, 0, 110, 0.6)',        // iOS shadow
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.3,
-  shadowRadius: 15,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderColor: UNIFIED_THEME.colors.border.default,
+    borderWidth: 1,
+    paddingVertical: UNIFIED_THEME.spacing.md,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
 },
 
 
@@ -2061,13 +2075,14 @@ confirmBtn: {
   headerIconContainer: {
     width: 30,
     height: 30,
-    backgroundColor: 'rgba(255, 0, 110, 0.2)',
-    borderColor: UNIFIED_THEME.colors.border.strong,
+    backgroundColor: UNIFIED_THEME.colors.component.buttonSecondary,
+    borderColor: UNIFIED_THEME.colors.border.default,
     borderWidth: 1,
     borderRadius: UNIFIED_THEME.borderRadius.md,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
+    ...UNIFIED_THEME.shadows.small,
   },
 
   headerTitle: {
@@ -2113,10 +2128,12 @@ confirmBtn: {
     color: UNIFIED_THEME.colors.accent.primary,
     fontSize: 14,
     fontWeight: 'bold',
-    backgroundColor: 'rgba(255, 0, 110, 0.1)',
+    backgroundColor: UNIFIED_THEME.colors.component.buttonSecondary,
     paddingHorizontal: UNIFIED_THEME.spacing.md,
     paddingVertical: 4,
     borderRadius: UNIFIED_THEME.borderRadius.md,
+    borderWidth: 1,
+    borderColor: UNIFIED_THEME.colors.border.light,
   },
 
   // BOOKING CARD STYLES
@@ -2508,10 +2525,11 @@ confirmBtn: {
     fontSize: 13,
   },
   snackbarBtn: {
-    backgroundColor: 'rgba(255,255,255,0.25)',
+    backgroundColor: UNIFIED_THEME.colors.accent.primary,
     paddingVertical: UNIFIED_THEME.spacing.sm,
     paddingHorizontal: 14,
     borderRadius: UNIFIED_THEME.borderRadius.sm,
+    ...UNIFIED_THEME.shadows.medium,
   },
   snackbarBtnText: { color: UNIFIED_THEME.colors.text.primary, fontSize: 13, fontWeight: '600', },
 
