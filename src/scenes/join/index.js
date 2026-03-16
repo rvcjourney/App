@@ -40,11 +40,12 @@ import MenuItem from "../meeting/Components/MenuItem";
 import { ROBOTO_FONTS } from "../../styles/fonts";
 import Modal from "react-native-modal";
 import { supabase } from "../../../supabase";
+import logger from "../../utils/logger";
 
 export default function Join({ navigation, route }) {
-  console.log('Join component mounted');
+  logger.info('Join component mounted');
   const { booking, isTeacher, meetingId: routeMeetingId, bookingId, studentId, name: routeName } = route?.params || {};
-  console.log('Join route params:', { booking, isTeacher, routeMeetingId, bookingId, studentId, routeName });
+  logger.info('Join route params:', { booking, isTeacher, routeMeetingId, bookingId, studentId, routeName });
   
   const [tracks, setTrack] = useState(null);
   const [micOn, setMicon] = useState(true);
@@ -90,7 +91,7 @@ export default function Join({ navigation, route }) {
         }
         return true;
       } catch (err) {
-        console.warn(err);
+        logger.warn(err);
         return false;
       }
     }
@@ -136,12 +137,12 @@ export default function Join({ navigation, route }) {
               .single();
             
             if (profile?.full_name) {
-              console.log('✅ [Join] Teacher name fetched:', profile.full_name);
+              logger.info('✅ [Join] Teacher name fetched:', profile.full_name);
               setName(profile.full_name);
             }
           }
         } catch (error) {
-          console.error('🔴 [Join] Error fetching teacher name:', error);
+          logger.error('🔴 [Join] Error fetching teacher name:', error);
         } finally {
           setLoadingTeacherName(false);
         }
@@ -155,7 +156,7 @@ export default function Join({ navigation, route }) {
   useEffect(() => {
     const autoJoinMeeting = async () => {
       if (routeMeetingId && routeName && !isTeacher) {
-        console.log('📱 Auto-joining meeting for student...');
+        logger.info('📱 Auto-joining meeting for student...');
         
         // Slight delay to ensure UI is ready
         setTimeout(async () => {
@@ -163,25 +164,25 @@ export default function Join({ navigation, route }) {
             const hasPermission = await requestCameraAndMicPermissions();
             if (!hasPermission) return;
 
-            console.log('🟡 [Join] Getting token for student...');
+            logger.info('🟡 [Join] Getting token for student...');
             const token = await getToken();
             if (!token) {
               Toast.show("❌ Failed to get authentication token");
               return;
             }
-            console.log('✅ [Join] Token received');
+            logger.info('✅ [Join] Token received');
 
-            console.log('🟡 [Join] Validating meeting...');
+            logger.info('🟡 [Join] Validating meeting...');
             const valid = await validateMeeting({ token, meetingId: routeMeetingId.trim() });
             
             if (!valid) {
               Toast.show("❌ Invalid meeting code");
               return;
             }
-            console.log('✅ [Join] Meeting validated');
+            logger.info('✅ [Join] Meeting validated');
 
             disposeVideoTrack();
-            console.log('🟡 [Join] Navigating to meeting screen...');
+            logger.info('🟡 [Join] Navigating to meeting screen...');
             
             // Scheduled end for student join (if booking passed with slot info)
             const scheduledEndTime = route?.params?.booking?.booked_date != null && route?.params?.booking?.duration_minutes != null
@@ -202,9 +203,9 @@ export default function Join({ navigation, route }) {
               scheduledEndTime: scheduledEndTime || undefined,
             });
             
-            console.log('✅ [Join] Navigation complete');
+            logger.info('✅ [Join] Navigation complete');
           } catch (error) {
-            console.error('🔴 [Join] Error auto-joining meeting:', error);
+            logger.error('🔴 [Join] Error auto-joining meeting:', error);
             const msg = error?.message || 'Something went wrong';
             Toast.show(`❌ ${msg}`);
             if (msg.includes('Cannot reach') || msg.includes('network')) {
@@ -415,26 +416,26 @@ export default function Join({ navigation, route }) {
                     if (!hasPermission) return;
 
                     try {
-                      console.log('🟡 [Join] Starting meeting creation process...');
+                      logger.info('🟡 [Join] Starting meeting creation process...');
                       
-                      console.log('🟡 [Join] Getting token...');
+                      logger.info('🟡 [Join] Getting token...');
                       const token = await getToken();
                       if (!token) {
                         Toast.show("❌ Failed to get authentication token");
                         return;
                       }
-                      console.log('✅ [Join] Token received');
+                      logger.info('✅ [Join] Token received');
 
-                      console.log('🟡 [Join] Creating meeting with VideoSDK...');
+                      logger.info('🟡 [Join] Creating meeting with VideoSDK...');
                       const meetingId = await createMeeting({ token });
                       if (!meetingId) {
                         Toast.show("❌ Failed to create meeting");
                         return;
                       }
-                      console.log('✅ [Join] Meeting created:', meetingId);
+                      logger.info('✅ [Join] Meeting created:', meetingId);
 
                       disposeVideoTrack();
-                      console.log('🟡 [Join] Navigating to meeting screen...');
+                      logger.info('🟡 [Join] Navigating to meeting screen...');
                       // Scheduled end = booked_date + duration_minutes (for teacher end button & auto-end)
                       const scheduledEndTime = booking?.booked_date && (booking?.duration_minutes != null)
                         ? new Date(booking.booked_date).getTime() + (booking.duration_minutes || 60) * 60 * 1000
@@ -454,9 +455,9 @@ export default function Join({ navigation, route }) {
                         scheduledEndTime: scheduledEndTime || undefined,
                       });
                       
-                      console.log('✅ [Join] Navigation complete');
+                      logger.info('✅ [Join] Navigation complete');
                     } catch (error) {
-                      console.error('🔴 [Join] Error starting meeting:', error);
+                      logger.error('🔴 [Join] Error starting meeting:', error);
                       const msg = error?.message || 'Something went wrong';
                       Toast.show(`❌ ${msg}`);
                       if (msg.includes('Cannot reach') || msg.includes('network')) {
@@ -504,27 +505,27 @@ export default function Join({ navigation, route }) {
                     if (!hasPermission) return;
 
                     try {
-                      console.log('🟡 [Join] Starting meeting join process...');
+                      logger.info('🟡 [Join] Starting meeting join process...');
                       
-                      console.log('🟡 [Join] Getting token...');
+                      logger.info('🟡 [Join] Getting token...');
                       const token = await getToken();
                       if (!token) {
                         Toast.show("❌ Failed to get authentication token");
                         return;
                       }
-                      console.log('✅ [Join] Token received');
+                      logger.info('✅ [Join] Token received');
 
-                      console.log('🟡 [Join] Validating meeting...');
+                      logger.info('🟡 [Join] Validating meeting...');
                       const valid = await validateMeeting({ token, meetingId: meetingId.trim() });
                       
                       if (!valid) {
                         Toast.show("❌ Invalid meeting code");
                         return;
                       }
-                      console.log('✅ [Join] Meeting validated');
+                      logger.info('✅ [Join] Meeting validated');
 
                       disposeVideoTrack();
-                      console.log('🟡 [Join] Navigating to meeting screen...');
+                      logger.info('🟡 [Join] Navigating to meeting screen...');
                       
                       navigation.navigate(SCREEN_NAMES.Meeting, {
                         name: name.trim(),
@@ -536,9 +537,9 @@ export default function Join({ navigation, route }) {
                         defaultCamera: facingMode === "user" ? "front" : "back",
                       });
                       
-                      console.log('✅ [Join] Navigation complete');
+                      logger.info('✅ [Join] Navigation complete');
                     } catch (error) {
-                      console.error('🔴 [Join] Error joining meeting:', error);
+                      logger.error('🔴 [Join] Error joining meeting:', error);
                       const msg = error?.message || 'Something went wrong';
                       Toast.show(`❌ ${msg}`);
                       if (msg.includes('Cannot reach') || msg.includes('network')) {
