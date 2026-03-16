@@ -47,15 +47,7 @@ export default function TeacherDashboard({ navigation }) {
     unreadNotificationCount,
   } = dashboard;
 
-  // Initialize dashboard on mount (runs once)
-  useEffect(() => {
-    dashboard.refreshAll().catch(error => {
-      logger.error('Error initializing dashboard:', error);
-      Toast.show('Failed to load dashboard');
-    });
-  }, []);
-
-  // Refresh dashboard (used by pull-to-refresh)
+  // Refresh dashboard on pull-to-refresh
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
     try {
@@ -66,6 +58,16 @@ export default function TeacherDashboard({ navigation }) {
       setRefreshing(false);
     }
   }, []);
+
+  // Initialize on focus (runs on mount and when screen comes back into focus after navigation)
+  useFocusEffect(
+    React.useCallback(() => {
+      dashboard.refreshAll().catch(error => {
+        logger.error('Error loading dashboard:', error);
+        Toast.show('Failed to load dashboard');
+      });
+    }, [])
+  );
 
   // Change status (online / away / offline) – manual only
   const handleStatusPress = () => {
@@ -122,15 +124,6 @@ export default function TeacherDashboard({ navigation }) {
 
   const statusColor = { online: '#22c55e', away: '#eab308', offline: '#6b7280' };
   const statusLabel = { online: 'Online', away: 'Away', offline: 'Offline' };
-
-  // Refresh profile data when screen comes into focus (after edit)
-  useFocusEffect(
-    React.useCallback(() => {
-      dashboard.refreshAll().catch(error => {
-        logger.error('Error refreshing profile:', error);
-      });
-    }, [])
-  );
 
   // Real-time: bookings (INSERT + UPDATE) and notifications so changes show quickly
   useEffect(() => {
