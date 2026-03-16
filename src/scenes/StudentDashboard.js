@@ -14,105 +14,82 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-simple-toast';
 import { SCREEN_NAMES } from '../navigators/screenNames';
 import { supabase } from '../../supabase';
-import { getAllTeachers, createBooking, getStudentBookings, getTeacherSlotsByDateRange, bookAvailabilitySlot, isProfileComplete, getUnreadNotificationCount, getTeachersGroupedByProfession } from '../database/database';
+import { createBooking } from '../database/database';
 import UNIFIED_THEME from '../constants/unifiedTheme';
 import ThemedText from '../components/ThemedText';
 import Icon from '../components/Icon';
+import logger from '../utils/logger';
+import { useStudentTeachers } from '../hooks/useStudentTeachers';
+import { useStudentProfile } from '../hooks/useStudentProfile';
+import { useStudentBooking } from '../hooks/useStudentBooking';
 
 const categories = ['All', 'Math', 'Physics', 'Chemistry', 'English', 'Science'];
 
 export default function StudentDashboard({ navigation }) {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
-  const [favoriteTeachers, setFavoriteTeachers] = useState([]);
+  // Custom hooks manage all complex state logic
+  const studentTeachers = useStudentTeachers();
+  const studentProfile = useStudentProfile();
+  const studentBooking = useStudentBooking();
+
+  // UI state only
   const [activeTab, setActiveTab] = useState('home');
-  const [teachers, setTeachers] = useState([]);
-  const [groupedTeachers, setGroupedTeachers] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [studentId, setStudentId] = useState(null);
-  const [studentName, setStudentName] = useState('Student');
-  const [profileIncomplete, setProfileIncomplete] = useState(false);
-
-  // Booking state
-  const [myBookings, setMyBookings] = useState([]);
-  const [showBookingModal, setShowBookingModal] = useState(false);
-  const [selectedTeacher, setSelectedTeacher] = useState(null);
-  const [availableSlots, setAvailableSlots] = useState([]);
-  const [slotsLoading, setSlotsLoading] = useState(false);
-  const [selectedSlot, setSelectedSlot] = useState(null);
-  const [bookingSubject, setBookingSubject] = useState('');
-  const [bookingInProgress, setBookingInProgress] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
 
-  // Fetch user info and teachers on mount
-  useEffect(() => {
-    const initialize = async () => {
-      try {
-        console.log('🔵 [StudentDashboard] Initializing...');
+  // Convenience aliases for hook properties (maintains compatibility with rest of component)
+  const teachers = studentTeachers.teachers;
+  const groupedTeachers = studentTeachers.groupedTeachers;
+  const searchQuery = studentTeachers.searchQuery;
+  const selectedCategory = studentTeachers.selectedCategory;
+  const favoriteTeachers = studentTeachers.favoriteTeachers;
+  const loading = studentTeachers.loading;
 
-        // Get current user
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          setStudentId(user.id);
+  const studentId = studentProfile.studentId;
+  const studentName = studentProfile.studentName;
+  const profileIncomplete = studentProfile.profileIncomplete;
+  const myBookings = studentProfile.myBookings;
+  const unreadNotificationCount = studentProfile.unreadNotificationCount;
 
-          // Get student profile (limit(1) to avoid single-object coercion errors)
-          const { data: profileRows } = await supabase
-            .from('profiles')
-            .select('full_name')
-            .eq('id', user.id)
-            .limit(1);
-          const profile = Array.isArray(profileRows) && profileRows.length > 0 ? profileRows[0] : profileRows;
+  const showBookingModal = studentBooking.showBookingModal;
+  const selectedTeacher = studentBooking.selectedTeacher;
+  const availableSlots = studentBooking.availableSlots;
+  const slotsLoading = studentBooking.slotsLoading;
+  const selectedSlot = studentBooking.selectedSlot;
+  const bookingSubject = studentBooking.bookingSubject;
+  const bookingInProgress = studentBooking.bookingInProgress;
 
-          if (profile?.full_name) {
-            setStudentName(profile.full_name);
-          }
-          try {
-            const complete = await isProfileComplete('student', user.id);
-            setProfileIncomplete(!complete);
-          } catch (e) {
-            setProfileIncomplete(true);
-          }
-        }
-
-        // Fetch all teachers grouped by profession
-        console.log('🔵 [StudentDashboard] Fetching teachers grouped by profession...');
+  // Initialize on focus: Fetch student profile and teachers
+  useFocusEffect(
+    React.useCallback(() => {
+      const initialize = async () => {
         try {
-          const grouped = await getTeachersGroupedByProfession();
-          setGroupedTeachers(grouped || {});
+          logger.info('Initializing StudentDashboard...');
 
-          // Flatten for search/filter functionality
-          const allTeachers = Object.values(grouped).flat();
-          setTeachers(allTeachers || []);
-          console.log('✅ [StudentDashboard] Teachers loaded:', Object.keys(grouped).length, 'professions');
-        } catch (teacherErr) {
-          console.error('🔴 [StudentDashboard] Error fetching teachers:', teacherErr);
-          setTeachers([]);
-          setGroupedTeachers({});
-          Toast.show(teacherErr?.message || 'Could not load teachers. Try again.');
+          // Fetch student profile and bookings
+          const userId = await studentProfile.fetchStudentProfile();
+          if (userId) {
+            await studentProfile.fetchStudentBookings(userId);
+          }
+
+          // Fetch all teachers grouped by profession
+          await studentTeachers.fetchTeachers();
+
+        } catch (error) {
+          logger.error('Error initializing StudentDashboard:', error);
+          Toast.show(error?.message || 'Something went wrong');
         }
+      };
 
-      } catch (error) {
-        console.error('🔴 [StudentDashboard] Error initializing:', error);
-        Toast.show(error?.message || 'Something went wrong');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    initialize();
-  }, []);
+      initialize();
+    }, [])
+  );
 
   // Refresh bookings – used by pull-to-refresh
   const onRefreshBookings = React.useCallback(async () => {
     setRefreshing(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const bookingsData = await getStudentBookings(user.id);
-      setMyBookings(bookingsData || []);
+      await studentProfile.fetchStudentBookings(studentProfile.studentId);
     } catch (e) {
-      console.error('🔴 Error refreshing bookings:', e);
+      logger.error('Error refreshing bookings:', e);
     } finally {
       setRefreshing(false);
     }
@@ -122,181 +99,33 @@ export default function StudentDashboard({ navigation }) {
   const onRefreshHome = React.useCallback(async () => {
     setRefreshing(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        // Refresh profile
-        const { data: profileRows } = await supabase
-          .from('profiles')
-          .select('full_name')
-          .eq('id', user.id)
-          .limit(1);
-        const profile = Array.isArray(profileRows) && profileRows.length > 0 ? profileRows[0] : profileRows;
-        if (profile?.full_name) {
-          setStudentName(profile.full_name);
-        }
-
-        // Refresh teachers list grouped by profession
-        const grouped = await getTeachersGroupedByProfession();
-        setGroupedTeachers(grouped || {});
-        const allTeachers = Object.values(grouped).flat();
-        setTeachers(allTeachers || []);
-        console.log('✅ Home tab refreshed:', Object.keys(grouped).length, 'professions');
-      }
+      // Refresh teachers list
+      await studentTeachers.fetchTeachers();
+      // Refresh profile
+      await studentProfile.refreshProfile();
+      logger.success('Home tab refreshed');
     } catch (e) {
-      console.error('🔴 Error refreshing home tab:', e);
+      logger.error('Error refreshing home tab:', e);
       Toast.show('Failed to refresh');
     } finally {
       setRefreshing(false);
     }
   }, []);
 
-  // Real-time: bookings (INSERT + UPDATE) so new bookings and teacher-go-live show quickly
-  useEffect(() => {
-    let bookingsChannel;
-    let notificationsChannel;
-
-    const setupSubscriptions = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-
-        console.log('🔵 Setting up real-time subscriptions for student...');
-
-        const refreshBookingsForUser = () => {
-          getStudentBookings(user.id).then(updatedBookings => {
-            setMyBookings(updatedBookings || []);
-            console.log('📝 Bookings updated in real-time');
-          });
-        };
-
-        bookingsChannel = supabase
-          .channel(`bookings:student_${user.id}`)
-          .on(
-            'postgres_changes',
-            { event: 'INSERT', schema: 'public', table: 'bookings', filter: `student_id=eq.${user.id}` },
-            () => {
-              console.log('📡 New booking (INSERT)');
-              Toast.show('📅 Your booking was confirmed.');
-              refreshBookingsForUser();
-            }
-          )
-          .on(
-            'postgres_changes',
-            { event: 'UPDATE', schema: 'public', table: 'bookings', filter: `student_id=eq.${user.id}` },
-            (payload) => {
-              console.log('📡 Real-time update received:', payload);
-              if (payload.new) {
-                if (payload.new.meeting_id && !payload.old?.meeting_id) {
-                  Toast.show('📞 Class is starting! You can now join!');
-                }
-                refreshBookingsForUser();
-              }
-            }
-          )
-          .subscribe((status) => console.log('📡 Bookings channel:', status));
-
-        // Debounce notification toasts to avoid flood and perceived delay (show latest after 400ms quiet)
-        let notificationDebounceTimer = null;
-        let pendingNotification = null;
-        const showNotificationToast = () => {
-          if (pendingNotification) {
-            const n = pendingNotification;
-            Toast.show(n.title ? `${n.title}\n${n.message || ''}` : n.message || 'New notification');
-            pendingNotification = null;
-          }
-        };
-        notificationsChannel = supabase
-          .channel(`notifications:student_${user.id}`)
-          .on(
-            'postgres_changes',
-            { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
-            (payload) => {
-              const n = payload?.new;
-              if (!n?.title && !n?.message) return;
-              setUnreadNotificationCount((c) => c + 1);
-              pendingNotification = n;
-              if (notificationDebounceTimer) clearTimeout(notificationDebounceTimer);
-              notificationDebounceTimer = setTimeout(showNotificationToast, 400);
-            }
-          )
-          .subscribe((status) => console.log('📡 Notifications channel:', status));
-
-        console.log('✅ Real-time subscriptions started');
-      } catch (error) {
-        console.error('🔴 Error setting up subscriptions:', error);
-      }
-    };
-
-    setupSubscriptions();
-    return () => {
-      if (bookingsChannel) supabase.removeChannel(bookingsChannel);
-      if (notificationsChannel) supabase.removeChannel(notificationsChannel);
-    };
-  }, [studentId]);
-
-  // Refresh profile data when screen comes into focus (after edit)
-  useFocusEffect(
-    React.useCallback(() => {
-      const refreshProfile = async () => {
-        try {
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user) {
-            const { data: profileRows } = await supabase
-              .from('profiles')
-              .select('full_name')
-              .eq('id', user.id)
-              .limit(1);
-            const profile = Array.isArray(profileRows) && profileRows.length > 0 ? profileRows[0] : profileRows;
-
-            if (profile?.full_name) {
-              setStudentName(profile.full_name);
-            }
-
-            // Also refresh bookings when returning to dashboard
-            console.log('🔵 Refreshing bookings...');
-            const bookingsData = await getStudentBookings(user.id);
-            setMyBookings(bookingsData || []);
-            console.log('✅ Bookings loaded:', bookingsData?.length);
-
-            // Refresh notification count (e.g. after viewing Notifications screen)
-            const count = await getUnreadNotificationCount(user.id);
-            setUnreadNotificationCount(count);
-          }
-        } catch (error) {
-          console.error('🔴 Error refreshing profile:', error);
-        }
-      };
-
-      refreshProfile();
-    }, [])
-  );
-
-  // Load unread notification count when user is set
-  useEffect(() => {
-    if (!studentId) return;
-    getUnreadNotificationCount(studentId).then(setUnreadNotificationCount);
-  }, [studentId]);
-
   // Load available slots for selected teacher
   const loadAvailableSlots = async (teacher) => {
     try {
-      setSlotsLoading(true);
-      console.log('🔵 Loading available slots for teacher:', teacher.id);
+      logger.info('Loading available slots for teacher:', teacher.id);
 
       // Get slots for next 30 days
       const startDate = new Date().toISOString().split('T')[0];
       const endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-      const slots = await getTeacherSlotsByDateRange(teacher.id, startDate, endDate);
-
-      console.log('✅ Slots loaded:', slots?.length);
-      setAvailableSlots(slots || []);
-      // Note: Empty slots are handled by UI display, no need for toast
+      await studentBooking.fetchAvailableSlots(teacher.id, { startDate, endDate });
+      logger.success('Slots loaded');
     } catch (error) {
-      console.error('🔴 Error loading slots:', error);
+      logger.error('Error loading slots:', error);
       Toast.show('Error loading availability');
-    } finally {
-      setSlotsLoading(false);
     }
   };
 
@@ -308,65 +137,64 @@ export default function StudentDashboard({ navigation }) {
       if (slot.slot_status === 'booked') {
         Alert.alert('Slot Unavailable', 'This time slot is already booked. Please select another slot.');
         // Refresh slots to show updated status
-        if (selectedTeacher) {
-          loadAvailableSlots(selectedTeacher);
+        if (studentBooking.selectedTeacher) {
+          loadAvailableSlots(studentBooking.selectedTeacher);
         }
         return null;
       }
 
-      if (!bookingSubject.trim()) {
+      if (!studentBooking.bookingSubject.trim()) {
         Alert.alert('Error', 'Please enter the subject/topic');
         return null;
       }
 
-      setBookingInProgress(true);
-      console.log('🔵 Creating booking for slot:', slot.id);
+      logger.info('Creating booking for slot:', slot.id);
 
       // Create booking with pending status (will be confirmed after payment)
-      const booking = await bookAvailabilitySlot(
-        studentId,
-        selectedTeacher.id,
+      const booking = await studentBooking.bookSlot(
+        studentProfile.studentId,
+        studentBooking.selectedTeacher.id,
         slot.id,
-        bookingSubject
+        studentBooking.bookingSubject
       );
 
-      console.log('✅ Booking created:', booking);
-      
+      logger.success('Booking created');
+
       // Refresh slots immediately to show updated availability
-      if (selectedTeacher) {
-        loadAvailableSlots(selectedTeacher);
+      if (studentBooking.selectedTeacher) {
+        loadAvailableSlots(studentBooking.selectedTeacher);
       }
-      
+
       return booking; // Return booking object for checkout
 
     } catch (error) {
-      console.error('🔴 Error booking slot:', error);
-      
+      logger.error('Error booking slot:', error);
+
       // Refresh slots on error to get latest status
-      if (selectedTeacher) {
-        loadAvailableSlots(selectedTeacher);
+      if (studentBooking.selectedTeacher) {
+        loadAvailableSlots(studentBooking.selectedTeacher);
       }
-      
+
       // Show specific error messages
       if (error.message?.includes('just booked') || error.message?.includes('no longer available')) {
         Alert.alert(
           'Slot Unavailable',
           error.message || 'This slot was just booked by another student. Please select a different time.',
           [
-            { text: 'OK', onPress: () => {
-              // Refresh slots after alert
-              if (selectedTeacher) {
-                loadAvailableSlots(selectedTeacher);
+            {
+              text: 'OK', onPress: () => {
+                // Refresh slots after alert
+                if (studentBooking.selectedTeacher) {
+                  loadAvailableSlots(studentBooking.selectedTeacher);
+                }
               }
-            }}
+            }
           ]
         );
       } else {
         Alert.alert('Error', error.message || 'Failed to create booking');
       }
       return null;
-    } finally {
-      setBookingInProgress(false);
     }
   };
 
@@ -402,7 +230,7 @@ export default function StudentDashboard({ navigation }) {
         return;
       }
 
-      console.log('🔵 Student attempting to join meeting:', booking.meeting_id);
+      logger.info('🔵 Student attempting to join meeting:', booking.meeting_id);
 
       // Navigate to Join screen with booking data
       navigation.navigate(SCREEN_NAMES.Join, {
@@ -413,7 +241,7 @@ export default function StudentDashboard({ navigation }) {
         name: studentName,
       });
     } catch (error) {
-      console.error('🔴 Error joining meeting:', error);
+      logger.error('🔴 Error joining meeting:', error);
       Alert.alert('Error', 'Failed to join meeting');
     }
   };
@@ -437,7 +265,7 @@ export default function StudentDashboard({ navigation }) {
             }
           }
         } catch (error) {
-          console.error('🔴 Error refreshing profile:', error);
+          logger.error('🔴 Error refreshing profile:', error);
         }
       };
 
@@ -463,16 +291,14 @@ export default function StudentDashboard({ navigation }) {
   });
 
   const toggleFavorite = (teacher) => {
-    setFavoriteTeachers(prev => {
-      const isFavorite = prev.find(t => t.id === teacher.id);
-      if (isFavorite) {
-        Toast.show('❤️ Removed from favorites');
-        return prev.filter(t => t.id !== teacher.id);
-      } else {
-        Toast.show('❤️ Added to favorites');
-        return [...prev, teacher];
-      }
-    });
+    const isFavorite = studentTeachers.isFavorite(teacher.id);
+    if (isFavorite) {
+      Toast.show('❤️ Removed from favorites');
+      studentTeachers.toggleFavorite(teacher.id);
+    } else {
+      Toast.show('❤️ Added to favorites');
+      studentTeachers.toggleFavorite(teacher.id);
+    }
   };
 
   // Teacher status colors (online / away / offline) – same as teacher dashboard
@@ -497,8 +323,7 @@ export default function StudentDashboard({ navigation }) {
         // Students should use bookings to join sessions.
         activeOpacity={0.9}
         onPress={() => {
-          setSelectedTeacher(item);
-          setShowBookingModal(true);
+          studentBooking.openBookingModal(item);
         }}
       >
         <View style={styles.teacherCardContent}>
@@ -569,10 +394,7 @@ export default function StudentDashboard({ navigation }) {
         <ScrollView style={{ flex: 1 }}>
           <View style={styles.headerTop}>
             <TouchableOpacity onPress={() => {
-              setShowBookingModal(false);
-              setSelectedTeacher(null);
-              setAvailableSlots([]);
-              setSelectedSlot(null);
+              studentBooking.closeBookingModal();
             }}>
               {/* <ThemedText style={styles.backButton}>← Back</ThemedText> */}
               
@@ -613,7 +435,7 @@ export default function StudentDashboard({ navigation }) {
                 placeholder="e.g., Algebra, Physics Problem Solving"
                 placeholderTextColor={UNIFIED_THEME.colors.text.muted}
                 value={bookingSubject}
-                onChangeText={setBookingSubject}
+                onChangeText={studentBooking.setBookingSubject}
               />
             </View>
           )}
@@ -650,7 +472,7 @@ export default function StudentDashboard({ navigation }) {
                         isBooked && styles.slotCardBooked,
                         isSelected && !isBooked && styles.slotCardSelected
                       ]}
-                      onPress={() => !isBooked && setSelectedSlot(slot)}
+                      onPress={() => !isBooked && studentBooking.setSelectedSlot(slot)}
                       disabled={isBooked}
                     >
                       <View style={styles.slotContent}>
@@ -708,10 +530,7 @@ export default function StudentDashboard({ navigation }) {
           <TouchableOpacity
             style={styles.cancelBtn}
             onPress={() => {
-              setShowBookingModal(false);
-              setSelectedTeacher(null);
-              setAvailableSlots([]);
-              setSelectedSlot(null);
+              studentBooking.closeBookingModal();
             }}
             disabled={bookingInProgress}
           >
@@ -756,7 +575,7 @@ export default function StudentDashboard({ navigation }) {
                   slot: selectedSlot,
                 });
               } catch (err) {
-                console.error(err);
+                logger.error(err);
                 Toast.show('Booking failed');
               }
             }}
@@ -828,7 +647,7 @@ export default function StudentDashboard({ navigation }) {
               placeholder="Search teachers..."
               placeholderTextColor={UNIFIED_THEME.colors.text.muted}
               value={searchQuery}
-              onChangeText={setSearchQuery}
+              onChangeText={studentTeachers.handleSearch}
             />
             <Icon name="search" size={25} color="secondary" style={styles.searchIcon} />
 
@@ -843,7 +662,7 @@ export default function StudentDashboard({ navigation }) {
                   styles.categoryBtn,
                   selectedCategory === category && styles.categoryBtnActive,
                 ]}
-                onPress={() => setSelectedCategory(category)}
+                onPress={() => studentTeachers.handleCategoryChange(category)}
               >
                 <ThemedText
                   style={[
@@ -1218,8 +1037,7 @@ export default function StudentDashboard({ navigation }) {
                   <View style={styles.favTeacherActions}>
                     <TouchableOpacity
                       onPress={() => {
-                        setSelectedTeacher(teacher);
-                        setShowBookingModal(true);
+                        studentBooking.openBookingModal(teacher);
                       }}
                     >
                       <Icon name="calendar" size={20} color="primary" />
