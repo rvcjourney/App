@@ -3,6 +3,33 @@ import logger from '../utils/logger';
 import { API_URL } from '../api/api';
 
 // ==========================================
+// HELPER FUNCTIONS
+// ==========================================
+
+/**
+ * Generic profile fetcher with error handling
+ * @param {string} table - Table name (e.g., 'profiles', 'teacher_profiles')
+ * @param {string} userId - User ID to fetch
+ * @returns {Promise<object|null>}
+ */
+export const getProfileByUserId = async (table, userId) => {
+  try {
+    const { data, error } = await supabase
+      .from(table)
+      .select('*')
+      .eq('id', userId)
+      .limit(1);
+
+    if (error) throw error;
+
+    return Array.isArray(data) && data.length > 0 ? data[0] : data;
+  } catch (error) {
+    logger.error(`Error fetching ${table} profile:`, error);
+    throw error;
+  }
+};
+
+// ==========================================
 // TEACHER QUERIES
 // ==========================================
 
@@ -843,7 +870,7 @@ export const getTeacherAvailableSlots = async (teacherId, date) => {
 export const getTeacherSlotsByDateRange = async (teacherId, startDate, endDate) => {
   try {
     logger.info('🔵 Fetching slots in date range...');
-    
+
     const { data, error } = await supabase
       .from('teacher_availability_slots')
       .select('*')
@@ -851,12 +878,41 @@ export const getTeacherSlotsByDateRange = async (teacherId, startDate, endDate) 
       .gte('available_date', startDate)
       .lte('available_date', endDate)
       .in('slot_status', ['available', 'booked'])
+      .order('available_date', { ascending: true })
       .order('start_time', { ascending: true });
 
     if (error) throw error;
-    
-    logger.info('✅ Slots fetched:', data?.length);
-    return data || [];
+
+    // Filter out past slots (same day or earlier)
+    // Get current time in IST (UTC+5:30)
+    const now = new Date();
+    const istTime = new Date(now.getTime() + (5.5 * 60 * 60 * 1000)); // Convert to IST
+    const todayIST = istTime.toISOString().split('T')[0];
+    const currentHour = istTime.getHours();
+    const currentMinute = istTime.getMinutes();
+
+    const futureSlots = data?.filter(slot => {
+      // Always show slots from future dates
+      if (slot.available_date > todayIST) {
+        return true;
+      }
+
+      // For today's slots, only show if the slot time hasn't passed
+      if (slot.available_date === todayIST && slot.start_time) {
+        const [slotHour, slotMinute] = slot.start_time.split(':').map(Number);
+        const slotMinutesFromMidnight = slotHour * 60 + slotMinute;
+        const currentMinutesFromMidnight = currentHour * 60 + currentMinute;
+
+        // Only show slots that start at least 30 minutes in the future
+        return slotMinutesFromMidnight > currentMinutesFromMidnight;
+      }
+
+      // Don't show past slots
+      return false;
+    }) || [];
+
+    logger.info('✅ Slots fetched:', futureSlots.length, 'out of', data?.length);
+    return futureSlots;
   } catch (error) {
     logger.error('🔴 Error fetching slots:', error);
     throw error;
