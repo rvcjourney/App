@@ -246,33 +246,6 @@ export default function StudentDashboard({ navigation }) {
     }
   };
 
-  // Refresh profile data when screen comes into focus (after edit)
-  useFocusEffect(
-    React.useCallback(() => {
-      const refreshProfile = async () => {
-        try {
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user) {
-            const { data: profileRows } = await supabase
-              .from('profiles')
-              .select('full_name')
-              .eq('id', user.id)
-              .limit(1);
-            const profile = Array.isArray(profileRows) && profileRows.length > 0 ? profileRows[0] : profileRows;
-
-            if (profile?.full_name) {
-              setStudentName(profile.full_name);
-            }
-          }
-        } catch (error) {
-          logger.error('🔴 Error refreshing profile:', error);
-        }
-      };
-
-      refreshProfile();
-    }, [])
-  );
-
   // Filter teachers based on search and category
   const filteredTeachers = teachers.filter(teacher => {
     // Parse specializations if it's a string
