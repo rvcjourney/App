@@ -1,6 +1,9 @@
 version: '3.8'
 
 services:
+  # ============================================
+  # BACKEND API - Node.js Express Server
+  # ============================================
   backend:
     build:
       context: .
@@ -36,30 +39,62 @@ services:
       retries: 3
       start_period: 5s
 
+  # ============================================
+  # ADMIN PANEL - React + Vite (Port 5173)
+  # ============================================
   admin-panel:
     build:
       context: .
       dockerfile: Dockerfile.admin
     container_name: connectiqo-admin
     ports:
-      - "80:80"
-      - "443:443"
+      - "5173:5173"
     environment:
       - VITE_API_URL=http://localhost:3000
       - VITE_SUPABASE_URL=${SUPABASE_URL}
       - VITE_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+    volumes:
+      - ./LearningPlatform:/app
+      - /app/node_modules
     depends_on:
-      backend:
-        condition: service_healthy
+      - backend
     restart: unless-stopped
     networks:
       - connectiqo-network
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/"]
+      test: ["CMD", "curl", "-f", "http://localhost:5173/"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 5s
+      start_period: 10s
+
+  # ============================================
+  # FRONTEND - React Native / Expo (Port 8081)
+  # ============================================
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: connectiqo-frontend
+    ports:
+      - "8081:8081"
+      - "19000:19000"
+    environment:
+      - API_URL=http://backend:3000
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - EXPO_PUBLIC_SUPABASE_URL=${SUPABASE_URL}
+      - EXPO_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+    volumes:
+      - ./src:/app/src
+      - ./app.json:/app/app.json
+      - ./package.json:/app/package.json
+      - /app/node_modules
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - connectiqo-network
 
 networks:
   connectiqo-network:
