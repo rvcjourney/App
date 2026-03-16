@@ -984,13 +984,17 @@ export const bookAvailabilitySlot = async (studentId, teacherId, slotId, subject
     }
 
     // Step 5: Create booking with status "pending" (will be confirmed after payment)
+    // Combine available_date with start_time to create proper booking datetime
+    const [hours, minutes, seconds] = slot.start_time.split(':').map(Number);
+    const bookingDateTime = new Date(`${slot.available_date}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds || 0).padStart(2, '0')}Z`);
+
     const { data: booking, error: bookingError } = await supabase
       .from('bookings')
       .insert([{
         student_id: studentId,
         teacher_id: teacherId,
         availability_slot_id: slotId,
-        booked_date: new Date(slot.start_time).toISOString(),
+        booked_date: bookingDateTime.toISOString(),
         subject: subject,
         status: 'pending', // Pending until payment is verified
         duration_minutes: hoursRequired * 60,
