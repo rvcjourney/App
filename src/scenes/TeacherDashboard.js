@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -12,150 +12,60 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-simple-toast';
-import { SCREEN_NAMES } from '../navigators/screenNames';
 import { supabase } from '../../supabase';
-import { getTeacherProfile, getTeacherBookings, getTeacherTodayCallHistory, getTeacherEarnings, getTeacherTodayEarnings, getUnreadNotificationCount } from '../database/database';
+import { SCREEN_NAMES } from '../navigators/screenNames';
 import UNIFIED_THEME from '../constants/unifiedTheme';
 import ThemedText from '../components/ThemedText';
 import Icon from '../components/Icon';
-
+import logger from '../utils/logger';
+import { useTeacherDashboard } from '../hooks/useTeacherDashboard';
 
 export default function TeacherDashboard({ navigation }) {
+  // Custom hook manages all dashboard state
+  const dashboard = useTeacherDashboard();
+
+  // UI state only
   const [activeTab, setActiveTab] = useState('home');
   const [earningsFilter, setEarningsFilter] = useState('weekly');
-  const [teacherName, setTeacherName] = useState('Teacher Name');
-  const [pricePerCall, setPricePerCall] = useState(0);
-  const [rating, setRating] = useState(0.0);
-  const [followers, setFollowers] = useState(0);
-  const [specializations, setSpecializations] = useState('Subject Name');
-  const [upcomingBookings, setUpcomingBookings] = useState([]);
-  const [todayCallHistory, setTodayCallHistory] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [teacherStatus, setTeacherStatus] = useState('offline'); // 'online' | 'away' | 'offline'
-  const [profileIncomplete, setProfileIncomplete] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [earningsData, setEarningsData] = useState({
-    weekly: [{ day: 'Mon', amount: 0 }, { day: 'Tue', amount: 0 }, { day: 'Wed', amount: 0 }, { day: 'Thu', amount: 0 }, { day: 'Fri', amount: 0 }, { day: 'Sat', amount: 0 }, { day: 'Sun', amount: 0 }],
-    monthly: [{ month: 'Week 1', amount: 0 }, { month: 'Week 2', amount: 0 }, { month: 'Week 3', amount: 0 }, { month: 'Week 4', amount: 0 }, { month: 'Week 5', amount: 0 }],
-    yearly: [{ month: 'Jan', amount: 0 }, { month: 'Feb', amount: 0 }, { month: 'Mar', amount: 0 }, { month: 'Apr', amount: 0 }, { month: 'May', amount: 0 }, { month: 'Jun', amount: 0 }, { month: 'Jul', amount: 0 }, { month: 'Aug', amount: 0 }, { month: 'Sep', amount: 0 }, { month: 'Oct', amount: 0 }, { month: 'Nov', amount: 0 }, { month: 'Dec', amount: 0 }]
-  });
-  const [earningsLoading, setEarningsLoading] = useState(false);
-  const [todayEarnings, setTodayEarnings] = useState({ totalAmount: 0, sessionsCount: 0, pendingAmount: 0, pendingCount: 0 });
-  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
-  const loadTeacherProfileRef = useRef(null);
 
-  // Function to load teacher profile data
-  const loadTeacherProfile = async () => {
+  // Convenience aliases for hook properties
+  const {
+    teacherName,
+    pricePerCall,
+    rating,
+    followers,
+    specializations,
+    upcomingBookings,
+    todayCallHistory,
+    loading,
+    teacherStatus,
+    profileIncomplete,
+    earningsData,
+    earningsLoading,
+    todayEarnings,
+    unreadNotificationCount,
+  } = dashboard;
+
+  // Initialize dashboard on mount (runs once)
+  useEffect(() => {
+    dashboard.refreshAll().catch(error => {
+      logger.error('Error initializing dashboard:', error);
+      Toast.show('Failed to load dashboard');
+    });
+  }, []);
+
+  // Refresh dashboard (used by pull-to-refresh)
+  const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
     try {
-      console.log('🔵 [TeacherDashboard] Loading profile... Time:', new Date().toLocaleTimeString());
-
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        // Get teacher profile
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('full_name')
-          .eq('id', user.id)
-          .single();
-
-        if (profile?.full_name) {
-          setTeacherName(profile.full_name);
-        }
-
-        // Get teacher details
-        const { data: teacherRows } = await supabase
-          .from('teacher_profiles')
-          .select('*')
-          .eq('id', user.id)
-          .limit(1);
-        const teacherData = Array.isArray(teacherRows) && teacherRows.length > 0 ? teacherRows[0] : (teacherRows && !Array.isArray(teacherRows) ? teacherRows : null);
-
-        if (teacherData) {
-          setPricePerCall(teacherData.price_per_call || 500);
-          setRating(teacherData.rating || 4.8);
-          setFollowers(teacherData.followers || 0);
-          setSpecializations(teacherData.specializations || '');
-          const status = teacherData.availability_status;
-          if (status === 'online' || status === 'away' || status === 'offline') {
-            setTeacherStatus(status);
-          }
-          const hasContent = (teacherData.specializations || '').trim() || (teacherData.bio || '').trim();
-          setProfileIncomplete(!hasContent);
-        } else {
-          // No teacher_profiles row or empty profile → show snackbar to complete profile
-          setProfileIncomplete(true);
-        }
-
-        // Refresh unread notification count
-        const count = await getUnreadNotificationCount(user.id);
-        setUnreadNotificationCount(count);
-
-        // Get teacher's bookings (include today and future; only show confirmed bookings)
-        try {
-          const bookingsData = await getTeacherBookings(user.id);
-          console.log('📚 [TeacherDashboard] Bookings fetched:', bookingsData?.length, bookingsData);
-          if (bookingsData && bookingsData.length > 0) {
-            const now = new Date();
-            // Use UTC dates for comparison to match ISO format in database
-            const startOfTodayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-            const upcoming = bookingsData.filter(b => {
-              const bookedAt = new Date(b.booked_date);
-              // Only show confirmed/ongoing bookings (not pending, not cancelled, not completed)
-              const isUpcoming = bookedAt >= startOfTodayUTC && (b.status === 'confirmed' || b.status === 'ongoing');
-              console.log(`📅 [TeacherDashboard] Booking ${b.id}: status='${b.status}', date=${bookedAt.toISOString()}, startOfToday=${startOfTodayUTC.toISOString()}, isUpcoming=${isUpcoming}`);
-              return isUpcoming;
-            });
-            console.log('📅 [TeacherDashboard] Upcoming bookings filtered:', upcoming.length, upcoming);
-            setUpcomingBookings(upcoming);
-          } else {
-            setUpcomingBookings([]);
-          }
-        } catch (bookingsErr) {
-          console.error('🔴 [TeacherDashboard] Error fetching bookings:', bookingsErr);
-          setUpcomingBookings([]);
-          Toast.show(bookingsErr?.message || 'Could not load bookings');
-        }
-
-        // Today's call history (only visible for the current day)
-        try {
-          const historyData = await getTeacherTodayCallHistory(user.id);
-          setTodayCallHistory(historyData || []);
-        } catch (historyErr) {
-          console.error('🔴 [TeacherDashboard] Error fetching call history:', historyErr);
-          setTodayCallHistory([]);
-        }
-
-        // Fetch earnings data
-        try {
-          const earnings = await getTeacherEarnings(user.id);
-          if (earnings) {
-            setEarningsData(earnings);
-          }
-        } catch (earningsErr) {
-          console.error('🔴 [TeacherDashboard] Error fetching earnings:', earningsErr);
-        }
-
-        // Fetch today's earnings
-        try {
-          const todayData = await getTeacherTodayEarnings(user.id);
-          setTodayEarnings(todayData);
-        } catch (todayErr) {
-          console.error('🔴 [TeacherDashboard] Error fetching today earnings:', todayErr);
-        }
-      }
-
+      await dashboard.refreshAll();
     } catch (error) {
-      console.error('🔴 [TeacherDashboard] Error loading profile:', error);
-      Toast.show('Error loading profile');
+      logger.error('Error refreshing dashboard:', error);
     } finally {
-      setLoading(false);
       setRefreshing(false);
     }
-  };
-
-  loadTeacherProfileRef.current = loadTeacherProfile;
-  const onRefresh = React.useCallback(() => { setRefreshing(true); loadTeacherProfile(); }, []);
+  }, []);
 
   // Change status (online / away / offline) – manual only
   const handleStatusPress = () => {
@@ -198,14 +108,14 @@ export default function TeacherDashboard({ navigation }) {
         .eq('id', user.id);
       if (error) {
         setTeacherStatus(previousStatus);
-        console.error('🔴 Status update error:', error);
+        logger.error('🔴 Status update error:', error);
         Toast.show(error.message || 'Failed to save status');
         return;
       }
       Toast.show(`Status set to ${newStatus}`);
     } catch (e) {
       setTeacherStatus(previousStatus);
-      console.error('🔴 Status save error:', e);
+      logger.error('🔴 Status save error:', e);
       Toast.show(e?.message || 'Failed to save status');
     }
   };
@@ -213,15 +123,12 @@ export default function TeacherDashboard({ navigation }) {
   const statusColor = { online: '#22c55e', away: '#eab308', offline: '#6b7280' };
   const statusLabel = { online: 'Online', away: 'Away', offline: 'Offline' };
 
-  // Fetch teacher profile data on mount
-  useEffect(() => {
-    loadTeacherProfile();
-  }, []);
-
   // Refresh profile data when screen comes into focus (after edit)
   useFocusEffect(
     React.useCallback(() => {
-      loadTeacherProfile();
+      dashboard.refreshAll().catch(error => {
+        logger.error('Error refreshing profile:', error);
+      });
     }, [])
   );
 
@@ -235,7 +142,7 @@ export default function TeacherDashboard({ navigation }) {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
-        console.log('🔵 [TeacherDashboard] Setting up real-time subscriptions...');
+        logger.info('🔵 [TeacherDashboard] Setting up real-time subscriptions...');
 
         bookingsChannel = supabase
           .channel(`bookings:teacher_${user.id}`)
@@ -243,20 +150,20 @@ export default function TeacherDashboard({ navigation }) {
             'postgres_changes',
             { event: 'INSERT', schema: 'public', table: 'bookings', filter: `teacher_id=eq.${user.id}` },
             (payload) => {
-              console.log('📡 New booking (INSERT):', payload?.new?.id);
+              logger.info('📡 New booking (INSERT):', payload?.new?.id);
               Toast.show('📚 New booking! A student scheduled a session.');
-              if (loadTeacherProfileRef.current) loadTeacherProfileRef.current();
+              dashboard.refreshAll().catch(err => logger.warn('Real-time refresh error:', err));
             }
           )
           .on(
             'postgres_changes',
             { event: 'UPDATE', schema: 'public', table: 'bookings', filter: `teacher_id=eq.${user.id}` },
             (payload) => {
-              console.log('📡 Booking updated (UPDATE):', payload?.new?.id, 'Status:', payload?.new?.status, 'Updated_at:', payload?.new?.updated_at);
-              if (loadTeacherProfileRef.current) loadTeacherProfileRef.current();
+              logger.info('📡 Booking updated (UPDATE):', payload?.new?.id, 'Status:', payload?.new?.status, 'Updated_at:', payload?.new?.updated_at);
+              dashboard.refreshAll().catch(err => logger.warn('Real-time refresh error:', err));
             }
           )
-          .subscribe((status) => console.log('📡 Bookings channel:', status));
+          .subscribe((status) => logger.info('📡 Bookings channel:', status));
 
         // Debounce notification toasts to avoid flood and perceived delay (show latest after 400ms quiet)
         let notificationDebounceTimer = null;
@@ -282,11 +189,11 @@ export default function TeacherDashboard({ navigation }) {
               notificationDebounceTimer = setTimeout(showNotificationToast, 400);
             }
           )
-          .subscribe((status) => console.log('📡 Notifications channel:', status));
+          .subscribe((status) => logger.info('📡 Notifications channel:', status));
 
-        console.log('✅ [TeacherDashboard] Real-time subscriptions started');
+        logger.info('✅ [TeacherDashboard] Real-time subscriptions started');
       } catch (error) {
-        console.error('🔴 Error setting up subscriptions:', error);
+        logger.error('🔴 Error setting up subscriptions:', error);
       }
     };
 
@@ -294,10 +201,8 @@ export default function TeacherDashboard({ navigation }) {
     
     // Fallback: Poll for booking updates every 8 seconds (in case real-time subscriptions are slow)
     const bookingsPollInterval = setInterval(() => {
-      if (loadTeacherProfileRef.current) {
-        console.log('🔄 [TeacherDashboard] Polling for booking updates...');
-        loadTeacherProfileRef.current();
-      }
+      logger.info('🔄 [TeacherDashboard] Polling for booking updates...');
+      dashboard.refreshAll().catch(err => logger.warn('Poll refresh error:', err));
     }, 8000); // 8 seconds - more frequent to catch meeting completions faster
     
     return () => {
@@ -677,7 +582,7 @@ export default function TeacherDashboard({ navigation }) {
     const liveBookings = confirmedBookings.filter(b => b.meeting_id); // Meetings that have started
     const readyToStart = confirmedBookings.filter(b => !b.meeting_id); // Ready to join
     
-    console.log('📊 [TeacherDashboard] Booking stats:', {
+    logger.info('📊 [TeacherDashboard] Booking stats:', {
       total: upcomingBookings.length,
       confirmed: confirmedBookings.length,
       live: liveBookings.length,
@@ -1411,7 +1316,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   filterBtnActive: {
-    backgroundColor: UNIFIED_THEME.colors.component.button,
+    // backgroundColor: UNIFIED_THEME.colors.component.button,
     borderColor: UNIFIED_THEME.colors.accent.primary,
   },
   filterText: {
@@ -1420,7 +1325,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   filterTextActive: {
-    color: UNIFIED_THEME.colors.text.primary,
+    color: UNIFIED_THEME.colors.text.secondary,
   },
 
   // Chart Container
