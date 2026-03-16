@@ -19,9 +19,25 @@ const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const nodemailer = require('nodemailer');
 const { createClient } = require('@supabase/supabase-js');
+const rateLimit = require('express-rate-limit');
+const { body } = require('express-validator');
 const path = require('path');
+
+// Load environment variables
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 require('dotenv').config({ path: path.join(__dirname, '.env') });
+
+// Import utilities
+const logger = require('./logger');
+const {
+  validateRequest,
+  sendError,
+  sendSuccess,
+  errorHandler,
+  requestLogger,
+  rateLimitHandler,
+  ERROR_CODES,
+} = require('./middleware');
 
 const app = express();
 
@@ -34,19 +50,72 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 // Store OTPs in memory (in production, use Redis or database)
 const otpStore = new Map();
 
-// CORS: handle preflight first so PATCH is allowed from LearningPlatform (localhost:5173)
+// ==========================================
+// Rate Limiters for Different Endpoints
+// ==========================================
+
+// OTP endpoints - 5 attempts per 15 minutes per IP
+const otpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: rateLimitHandler,
+  message: 'Too many OTP requests, please try again later',
+});
+
+// Login/Authentication endpoints - 10 attempts per 30 minutes
+const loginLimiter = rateLimit({
+  windowMs: 30 * 60 * 1000, // 30 minutes
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: rateLimitHandler,
+  message: 'Too many login attempts, please try again later',
+});
+
+// Payment endpoints - 20 attempts per hour
+const paymentLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 60 minutes
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: rateLimitHandler,
+  message: 'Too many payment requests, please try again later',
+});
+
+// General API limiter - 100 requests per 15 minutes
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// ==========================================
+// CORS Configuration
+// ==========================================
+
 app.options('*', (req, res) => {
   res.set('Access-Control-Allow-Origin', req.headers.origin || '*');
   res.set('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
   res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.sendStatus(204);
 });
+
 app.use(cors({
   origin: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
+
+// ==========================================
+// Middleware Stack
+// ==========================================
+
 app.use(express.json());
+app.use(requestLogger); // Log all requests
+app.use(generalLimiter); // Apply general rate limiting to all routes
 
 // ==========================================
 // Configuration from Environment Variables
@@ -75,13 +144,13 @@ const transporter = nodemailer.createTransport({
 
 // Validate configuration
 if (!VIDEOSDK_API_KEY || !VIDEOSDK_SECRET_KEY) {
-  console.error('❌ ERROR: Missing VIDEOSDK_API_KEY or VIDEOSDK_SECRET_KEY in .env');
-  console.error('Please set these environment variables before starting the server');
+  logger.error('❌ ERROR: Missing VIDEOSDK_API_KEY or VIDEOSDK_SECRET_KEY in .env');
+  logger.error('Please set these environment variables before starting the server');
   process.exit(1);
 }
 
-console.log('✅ VideoSDK Configuration loaded successfully');
-console.log(`📌 API Key: ${VIDEOSDK_API_KEY.substring(0, 8)}...`);
+logger.info('✅ VideoSDK Configuration loaded successfully');
+logger.info(`📌 API Key: ${VIDEOSDK_API_KEY.substring(0, 8)}...`);
 
 // ==========================================
 // Token Generation Function
@@ -165,46 +234,42 @@ function generateVideoSDKToken(apiKey, secretKey) {
  *   "message": "OTP sent to email"
  * }
  */
-app.post('/send-otp', async (req, res) => {
-  try {
-    const { email } = req.body;
+app.post(
+  '/send-otp',
+  otpLimiter,
+  body('email')
+    .isEmail()
+    .withMessage('Valid email is required'),
+  validateRequest,
+  async (req, res) => {
+    try {
+      const { email } = req.body;
 
-    if (!email) {
-      return res.status(400).json({
-        success: false,
-        error: 'Email is required',
+      const otp = generateOTP();
+      const expiryTime = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+      // Store OTP with email
+      otpStore.set(email, {
+        otp,
+        expiryTime,
+        attempts: 0,
       });
+
+      // Send OTP via email
+      await sendOTPEmail(email, otp);
+
+      logger.info('OTP sent successfully', { email });
+
+      sendSuccess(res, {
+        message: 'OTP sent to your email',
+        expiresIn: '10 minutes',
+      });
+    } catch (error) {
+      logger.error('Failed to send OTP', { email: req.body.email, error: error.message });
+      sendError(res, 500, ERROR_CODES.INTERNAL_SERVER_ERROR, 'Failed to send OTP');
     }
-
-    const otp = generateOTP();
-    const expiryTime = Date.now() + 10 * 60 * 1000; // 10 minutes
-
-    // Store OTP with email
-    otpStore.set(email, {
-      otp,
-      expiryTime,
-      attempts: 0,
-    });
-
-    // Send OTP via email
-    await sendOTPEmail(email, otp);
-
-    console.log(`✅ OTP sent to ${email}: ${otp}`);
-
-    res.json({
-      success: true,
-      message: 'OTP sent to your email',
-      expiresIn: '10 minutes',
-    });
-  } catch (error) {
-    console.error('🔴 Error sending OTP:', error.message);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to send OTP',
-      message: error.message,
-    });
   }
-});
+);
 
 /**
  * POST /verify-otp
@@ -223,73 +288,71 @@ app.post('/send-otp', async (req, res) => {
  *   "message": "OTP verified successfully"
  * }
  */
-app.post('/verify-otp', (req, res) => {
-  try {
-    const { email, otp } = req.body;
+app.post(
+  '/verify-otp',
+  otpLimiter,
+  body('email')
+    .isEmail()
+    .withMessage('Valid email is required'),
+  body('otp')
+    .isLength({ min: 6, max: 6 })
+    .isNumeric()
+    .withMessage('OTP must be a 6-digit number'),
+  validateRequest,
+  (req, res) => {
+    try {
+      const { email, otp } = req.body;
 
-    if (!email || !otp) {
-      return res.status(400).json({
-        success: false,
-        error: 'Email and OTP are required',
-      });
-    }
+      const storedOTPData = otpStore.get(email);
 
-    const storedOTPData = otpStore.get(email);
+      if (!storedOTPData) {
+        logger.warn('OTP verification failed - OTP not found', { email });
+        return sendError(res, 400, ERROR_CODES.OTP_INVALID, 'OTP not found or expired. Please request a new OTP.');
+      }
 
-    if (!storedOTPData) {
-      return res.status(400).json({
-        success: false,
-        error: 'OTP not found or expired. Please request a new OTP.',
-      });
-    }
+      // Check if OTP is expired
+      if (Date.now() > storedOTPData.expiryTime) {
+        otpStore.delete(email);
+        logger.warn('OTP verification failed - OTP expired', { email });
+        return sendError(res, 400, ERROR_CODES.OTP_EXPIRED, 'OTP has expired. Please request a new OTP.');
+      }
 
-    // Check if OTP is expired
-    if (Date.now() > storedOTPData.expiryTime) {
+      // Check attempt limit (max 5 attempts)
+      if (storedOTPData.attempts >= 5) {
+        otpStore.delete(email);
+        logger.warn('OTP verification failed - max attempts exceeded', { email });
+        return sendError(res, 400, ERROR_CODES.OTP_MAX_ATTEMPTS, 'Too many failed attempts. Please request a new OTP.');
+      }
+
+      // Verify OTP
+      if (storedOTPData.otp !== otp) {
+        storedOTPData.attempts += 1;
+        logger.warn('OTP verification failed - invalid OTP', { email, attemptsRemaining: 5 - storedOTPData.attempts });
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: ERROR_CODES.OTP_INVALID,
+            message: 'Invalid OTP. Please try again.',
+            attemptsRemaining: 5 - storedOTPData.attempts,
+          },
+        });
+      }
+
+      // OTP is valid, remove it from store
       otpStore.delete(email);
-      return res.status(400).json({
-        success: false,
-        error: 'OTP has expired. Please request a new OTP.',
+
+      logger.info('OTP verified successfully', { email });
+
+      sendSuccess(res, {
+        message: 'OTP verified successfully',
+        verified: true,
       });
+    } catch (error) {
+      logger.error('Failed to verify OTP', { error: error.message });
+      sendError(res, 500, ERROR_CODES.INTERNAL_SERVER_ERROR, 'Failed to verify OTP');
     }
-
-    // Check attempt limit (max 5 attempts)
-    if (storedOTPData.attempts >= 5) {
-      otpStore.delete(email);
-      return res.status(400).json({
-        success: false,
-        error: 'Too many failed attempts. Please request a new OTP.',
-      });
-    }
-
-    // Verify OTP
-    if (storedOTPData.otp !== otp) {
-      storedOTPData.attempts += 1;
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid OTP. Please try again.',
-        attemptsRemaining: 5 - storedOTPData.attempts,
-      });
-    }
-
-    // OTP is valid, remove it from store
-    otpStore.delete(email);
-
-    console.log(`✅ OTP verified for ${email}`);
-
-    res.json({
-      success: true,
-      message: 'OTP verified successfully',
-      verified: true,
-    });
-  } catch (error) {
-    console.error('🔴 Error verifying OTP:', error.message);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to verify OTP',
-      message: error.message,
-    });
   }
-});
+);
 
 /**
  * GET /get-token
@@ -303,11 +366,11 @@ app.post('/verify-otp', (req, res) => {
  */
 app.get('/get-token', (req, res) => {
   try {
-    console.log('🔵 Token request received');
+    logger.info('🔵 Token request received');
     
     const token = generateVideoSDKToken(VIDEOSDK_API_KEY, VIDEOSDK_SECRET_KEY);
     
-    console.log('✅ Token generated successfully');
+    logger.info('✅ Token generated successfully');
     
     res.json({
       token: token,
@@ -315,7 +378,7 @@ app.get('/get-token', (req, res) => {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('🔴 Error generating token:', error.message);
+    logger.error('🔴 Error generating token:', error.message);
     res.status(500).json({
       error: 'Failed to generate token',
       message: error.message,
@@ -358,32 +421,30 @@ app.get('/health', (req, res) => {
  *   "decoded": {...}
  * }
  */
-app.post('/validate-token', (req, res) => {
-  try {
-    const { token } = req.body;
-    
-    if (!token) {
-      return res.status(400).json({
-        error: 'Token is required',
-      });
-    }
+app.post(
+  '/validate-token',
+  body('token')
+    .isString()
+    .notEmpty()
+    .withMessage('Token is required'),
+  validateRequest,
+  (req, res) => {
+    try {
+      const { token } = req.body;
 
-    const decoded = jwt.verify(token, VIDEOSDK_SECRET_KEY);
-    
-    res.json({
-      valid: true,
-      decoded: decoded,
-      message: 'Token is valid',
-    });
-  } catch (error) {
-    console.error('🔴 Token validation failed:', error.message);
-    res.status(400).json({
-      valid: false,
-      error: 'Invalid token',
-      message: error.message,
-    });
+      const decoded = jwt.verify(token, VIDEOSDK_SECRET_KEY);
+
+      sendSuccess(res, {
+        valid: true,
+        decoded: decoded,
+        message: 'Token is valid',
+      });
+    } catch (error) {
+      logger.error('Token validation failed', { error: error.message });
+      sendError(res, 400, ERROR_CODES.AUTHENTICATION_FAILED, 'Invalid token');
+    }
   }
-});
+);
 
 // ==========================================
 // BOOKING MANAGEMENT ENDPOINTS
@@ -403,25 +464,33 @@ app.post('/validate-token', (req, res) => {
  *   "teacherId": "uuid"
  * }
  */
-app.post('/api/meetings/start', async (req, res) => {
-  try {
-    const { bookingId, teacherId, meetingId } = req.body;
+app.post(
+  '/api/meetings/start',
+  body('bookingId')
+    .isString()
+    .notEmpty()
+    .withMessage('Booking ID is required'),
+  body('teacherId')
+    .isString()
+    .notEmpty()
+    .withMessage('Teacher ID is required'),
+  body('meetingId')
+    .isString()
+    .notEmpty()
+    .withMessage('Meeting ID is required'),
+  validateRequest,
+  async (req, res) => {
+    try {
+      const { bookingId, teacherId, meetingId } = req.body;
 
-    if (!bookingId || !teacherId || !meetingId) {
-      return res.status(400).json({
-        success: false,
-        error: 'bookingId, teacherId, and meetingId are required',
-      });
-    }
-
-    console.log('🔵 Starting meeting for booking:', bookingId, 'with meetingId:', meetingId);
+    logger.info('🔵 Starting meeting for booking:', bookingId, 'with meetingId:', meetingId);
 
     // Don't generate a new ID - use the one the teacher is already in!
     // Generate meeting token using VideoSDK (using the existing meetingId)
     const meetingToken = generateVideoSDKToken(VIDEOSDK_API_KEY, VIDEOSDK_SECRET_KEY);
 
     // Get booking details
-    console.log('🔵 Fetching booking details for ID:', bookingId);
+    logger.info('🔵 Fetching booking details for ID:', bookingId);
     const { data: bookingData, error: bookingError } = await supabase
       .from('bookings')
       .select('*')
@@ -429,16 +498,16 @@ app.post('/api/meetings/start', async (req, res) => {
       .single();
 
     if (bookingError) {
-      console.error('🔴 Booking fetch error:', JSON.stringify(bookingError));
+      logger.error('🔴 Booking fetch error:', JSON.stringify(bookingError));
       throw new Error(`Booking not found: ${bookingError?.message}`);
     }
     
     if (!bookingData) {
-      console.error('🔴 No booking data returned');
+      logger.error('🔴 No booking data returned');
       throw new Error('Booking not found - no data returned');
     }
     
-    console.log('✅ Booking found:', {
+    logger.info('✅ Booking found:', {
       id: bookingData.id,
       student_id: bookingData.student_id,
       teacher_id: bookingData.teacher_id,
@@ -447,17 +516,17 @@ app.post('/api/meetings/start', async (req, res) => {
     });
 
     // Get teacher profile
-    console.log('🔵 Fetching teacher profile...');
+    logger.info('🔵 Fetching teacher profile...');
     const { data: teacherProfile, error: teacherError } = await supabase
       .from('profiles')
       .select('full_name')
       .eq('id', bookingData.teacher_id)
       .single();
 
-    if (teacherError) console.warn('⚠️ Teacher profile error:', teacherError);
+    if (teacherError) logger.warn('⚠️ Teacher profile error:', teacherError);
 
     // Update booking with meeting ID
-    console.log('🔵 Updating booking with meeting ID...');
+    logger.info('🔵 Updating booking with meeting ID...');
     const { error: updateError } = await supabase
       .from('bookings')
       .update({
@@ -466,13 +535,13 @@ app.post('/api/meetings/start', async (req, res) => {
       .eq('id', bookingId);
 
     if (updateError) {
-      console.error('🔴 Update error:', updateError);
+      logger.error('🔴 Update error:', updateError);
       throw updateError;
     }
-    console.log('✅ Booking updated');
+    logger.info('✅ Booking updated');
 
     // Create meeting log
-    console.log('🔵 Creating meeting log...');
+    logger.info('🔵 Creating meeting log...');
     const { error: logError } = await supabase
       .from('meeting_logs')
       .insert([{
@@ -482,10 +551,10 @@ app.post('/api/meetings/start', async (req, res) => {
         teacher_joined: true,
       }]);
 
-    if (logError) console.warn('⚠️ Meeting log error:', logError);
+    if (logError) logger.warn('⚠️ Meeting log error:', logError);
 
     // Send notification to student with meeting ID
-    console.log('🔵 Sending notification to student ID:', bookingData.student_id);
+    logger.info('🔵 Sending notification to student ID:', bookingData.student_id);
     const notificationPayload = {
       user_id: bookingData.student_id,
       notification_type: 'meeting_started',
@@ -494,7 +563,7 @@ app.post('/api/meetings/start', async (req, res) => {
       booking_id: bookingId,
       is_read: false,
     };
-    console.log('📋 Notification payload:', JSON.stringify(notificationPayload));
+    logger.info('📋 Notification payload:', JSON.stringify(notificationPayload));
     
     const { data: notifData, error: notifError } = await supabase
       .from('notifications')
@@ -502,13 +571,13 @@ app.post('/api/meetings/start', async (req, res) => {
       .select();
 
     if (notifError) {
-      console.error('🔴 Notification insertion error:', JSON.stringify(notifError));
+      logger.error('🔴 Notification insertion error:', JSON.stringify(notifError));
       throw notifError;
     }
     
-    console.log('✅ Notification sent, ID:', notifData?.[0]?.id);
+    logger.info('✅ Notification sent, ID:', notifData?.[0]?.id);
 
-    console.log(`✅ Meeting started: ${bookingId}, Meeting ID: ${meetingId}`);
+    logger.info(`✅ Meeting started: ${bookingId}, Meeting ID: ${meetingId}`);
 
     res.json({
       success: true,
@@ -518,7 +587,7 @@ app.post('/api/meetings/start', async (req, res) => {
       bookingId: bookingId,
     });
   } catch (error) {
-    console.error('🔴 Error starting meeting:', error.message, error);
+    logger.error('🔴 Error starting meeting:', error.message, error);
     res.status(500).json({
       success: false,
       error: 'Failed to start meeting',
@@ -538,16 +607,20 @@ app.post('/api/meetings/start', async (req, res) => {
  *   "duration": "number (minutes)"
  * }
  */
-app.post('/api/meetings/end', async (req, res) => {
-  try {
-    const { bookingId, duration } = req.body;
-
-    if (!bookingId) {
-      return res.status(400).json({
-        success: false,
-        error: 'bookingId is required',
-      });
-    }
+app.post(
+  '/api/meetings/end',
+  body('bookingId')
+    .isString()
+    .notEmpty()
+    .withMessage('Booking ID is required'),
+  body('duration')
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage('Duration must be a non-negative number'),
+  validateRequest,
+  async (req, res) => {
+    try {
+      const { bookingId, duration } = req.body;
 
     // Get booking details
     const { data: bookingData } = await supabase
@@ -598,7 +671,7 @@ app.post('/api/meetings/end', async (req, res) => {
         },
       ]);
 
-    console.log(`✅ Meeting ended: ${bookingId}`);
+    logger.info(`✅ Meeting ended: ${bookingId}`);
 
     res.json({
       success: true,
@@ -606,7 +679,7 @@ app.post('/api/meetings/end', async (req, res) => {
       bookingId: bookingId,
     });
   } catch (error) {
-    console.error('🔴 Error ending meeting:', error.message);
+    logger.error('🔴 Error ending meeting:', error.message);
     res.status(500).json({
       success: false,
       error: 'Failed to end meeting',
@@ -626,16 +699,16 @@ app.post('/api/meetings/end', async (req, res) => {
  *   "bookingId": "uuid"
  * }
  */
-app.post('/api/notifications/send-reminder', async (req, res) => {
-  try {
-    const { bookingId } = req.body;
-
-    if (!bookingId) {
-      return res.status(400).json({
-        success: false,
-        error: 'bookingId is required',
-      });
-    }
+app.post(
+  '/api/notifications/send-reminder',
+  body('bookingId')
+    .isString()
+    .notEmpty()
+    .withMessage('Booking ID is required'),
+  validateRequest,
+  async (req, res) => {
+    try {
+      const { bookingId } = req.body;
 
     // Get booking details
     const { data: bookingData } = await supabase
@@ -666,14 +739,14 @@ app.post('/api/notifications/send-reminder', async (req, res) => {
         },
       ]);
 
-    console.log(`✅ Reminder sent for booking: ${bookingId}`);
+    logger.info(`✅ Reminder sent for booking: ${bookingId}`);
 
     res.json({
       success: true,
       message: 'Reminder sent',
     });
   } catch (error) {
-    console.error('🔴 Error sending reminder:', error.message);
+    logger.error('🔴 Error sending reminder:', error.message);
     res.status(500).json({
       success: false,
       error: 'Failed to send reminder',
@@ -715,89 +788,88 @@ const razorpay = new Razorpay({
  *   "totalAmount": 750
  * }
  */
-app.post('/api/payments/create-order', async (req, res) => {
-  try {
-    const { bookingId, studentId, teacherId, basePrice, adminCharge, totalAmount } = req.body;
+app.post(
+  '/api/payments/create-order',
+  paymentLimiter,
+  body('bookingId')
+    .isString()
+    .notEmpty()
+    .withMessage('Booking ID is required'),
+  body('studentId')
+    .isString()
+    .notEmpty()
+    .withMessage('Student ID is required'),
+  body('teacherId')
+    .isString()
+    .notEmpty()
+    .withMessage('Teacher ID is required'),
+  body('totalAmount')
+    .isInt({ min: 1 })
+    .withMessage('Total amount must be a positive number'),
+  body('basePrice')
+    .optional()
+    .isInt({ min: 0 }),
+  body('adminCharge')
+    .optional()
+    .isInt({ min: 0 }),
+  validateRequest,
+  async (req, res) => {
+    try {
+      const { bookingId, studentId, teacherId, basePrice, adminCharge, totalAmount } = req.body;
 
-    if (!bookingId || !studentId || !teacherId || !totalAmount) {
-      return res.status(400).json({
-        success: false,
-        error: 'Missing required fields',
+      logger.info('Creating Razorpay order', { bookingId, amount: totalAmount });
+
+      // Validate Razorpay configuration
+      if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+        logger.error('Razorpay keys not configured');
+        return sendError(res, 500, ERROR_CODES.PAYMENT_FAILED, 'Payment service not configured');
+      }
+
+      // Create Razorpay order
+      // Note: receipt must be <= 40 characters, so we use a shortened hash instead of full bookingId
+      const bookingReceiptId = bookingId.substring(0, 12); // Use first 12 chars of booking ID
+      const order = await razorpay.orders.create({
+        amount: totalAmount * 100, // Convert to paise
+        currency: 'INR',
+        receipt: `book_${bookingReceiptId}`, // Max 40 chars: "book_" (5) + 12 chars = 17 chars
+        notes: {
+          bookingId: bookingId,
+          studentId: studentId,
+          teacherId: teacherId,
+          basePrice: basePrice,
+          adminCharge: adminCharge,
+        },
       });
-    }
 
-    console.log('🔵 Creating Razorpay order for booking:', bookingId, 'Amount:', totalAmount);
+      logger.info('Order created successfully', { orderId: order.id });
 
-    // Validate Razorpay configuration
-    if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
-      console.error('🔴 Razorpay keys not configured in environment');
-      return res.status(500).json({
-        success: false,
-        error: 'Payment service not configured',
-      });
-    }
+      // Log in database
+      const { error: logError } = await supabase
+        .from('razorpay_orders')
+        .insert([{
+          booking_id: bookingId,
+          student_id: studentId,
+          teacher_id: teacherId,
+          razorpay_order_id: order.id,
+          amount: totalAmount,
+          currency: 'INR',
+          status: 'created',
+        }]);
 
-    // Create Razorpay order
-    // Note: receipt must be <= 40 characters, so we use a shortened hash instead of full bookingId
-    const bookingReceiptId = bookingId.substring(0, 12); // Use first 12 chars of booking ID
-    const order = await razorpay.orders.create({
-      amount: totalAmount * 100, // Convert to paise
-      currency: 'INR',
-      receipt: `book_${bookingReceiptId}`, // Max 40 chars: "book_" (5) + 12 chars = 17 chars
-      notes: {
-        bookingId: bookingId,
-        studentId: studentId,
-        teacherId: teacherId,
-        basePrice: basePrice,
-        adminCharge: adminCharge,
-      },
-    });
+      if (logError) logger.warn('Failed to log order in database', { error: logError.message });
 
-    console.log('✅ Order created:', order.id);
-
-    // Log in database
-    const { error: logError } = await supabase
-      .from('razorpay_orders')
-      .insert([{
-        booking_id: bookingId,
-        student_id: studentId,
-        teacher_id: teacherId,
-        razorpay_order_id: order.id,
+      sendSuccess(res, {
+        orderId: order.id,
         amount: totalAmount,
         currency: 'INR',
-        status: 'created',
-      }]);
-
-    if (logError) console.warn('⚠️ Order log error:', logError);
-
-    res.json({
-      success: true,
-      orderId: order.id,
-      amount: totalAmount,
-      currency: 'INR',
-      keyId: process.env.RAZORPAY_KEY_ID,
-    });
-  } catch (error) {
-    console.error('🔴 Error creating order:', error.message);
-    console.error('Full error:', error);
-    
-    // Check if it's a Razorpay API error
-    if (error.statusCode) {
-      return res.status(500).json({
-        success: false,
-        error: 'Failed to create order',
-        message: error.message,
-        razorpayError: error.error?.description || error.message,
+        keyId: process.env.RAZORPAY_KEY_ID,
       });
+    } catch (error) {
+      logger.error('Failed to create order', { error: error.message });
+      sendError(res, 500, ERROR_CODES.PAYMENT_FAILED, 'Failed to create order');
     }
-    
-    res.status(500).json({
-      success: false,
-      error: 'Failed to create order',
-      message: error.message,
-    });
   }
-});
+);
 
 /**
  * POST /api/payments/verify
@@ -816,219 +888,246 @@ app.post('/api/payments/create-order', async (req, res) => {
  *   "totalAmount": 750
  * }
  */
-app.post('/api/payments/verify', async (req, res) => {
-  try {
-    const {
-      razorpayPaymentId,
-      razorpayOrderId,
-      razorpaySignature,
-      bookingId,
-      studentId,
-      teacherId,
-      basePrice,
-      adminCharge,
-      totalAmount,
-    } = req.body;
+app.post(
+  '/api/payments/verify',
+  paymentLimiter,
+  body('razorpayPaymentId')
+    .isString()
+    .notEmpty()
+    .withMessage('Payment ID is required'),
+  body('razorpayOrderId')
+    .isString()
+    .notEmpty()
+    .withMessage('Order ID is required'),
+  body('razorpaySignature')
+    .isString()
+    .notEmpty()
+    .withMessage('Signature is required'),
+  body('bookingId')
+    .isString()
+    .notEmpty()
+    .withMessage('Booking ID is required'),
+  body('studentId')
+    .isString()
+    .notEmpty()
+    .withMessage('Student ID is required'),
+  body('teacherId')
+    .isString()
+    .notEmpty()
+    .withMessage('Teacher ID is required'),
+  body('totalAmount')
+    .isInt({ min: 1 })
+    .withMessage('Total amount must be a positive number'),
+  validateRequest,
+  async (req, res) => {
+    try {
+      const {
+        razorpayPaymentId,
+        razorpayOrderId,
+        razorpaySignature,
+        bookingId,
+        studentId,
+        teacherId,
+        basePrice,
+        adminCharge,
+        totalAmount,
+      } = req.body;
 
-    if (!razorpayPaymentId || !razorpayOrderId || !razorpaySignature) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid payment details',
-      });
-    }
+      logger.info('Verifying payment', { paymentId: razorpayPaymentId });
 
-    console.log('🔵 Verifying payment:', razorpayPaymentId);
+      // Verify signature
+      const crypto = require('crypto');
+      const hmac = crypto.createHmac('sha256', process.env.RAZORPAY_KEY_SECRET);
+      hmac.update(razorpayOrderId + '|' + razorpayPaymentId);
+      const generatedSignature = hmac.digest('hex');
 
-    // Verify signature
-    const crypto = require('crypto');
-    const hmac = crypto.createHmac('sha256', process.env.RAZORPAY_KEY_SECRET);
-    hmac.update(razorpayOrderId + '|' + razorpayPaymentId);
-    const generatedSignature = hmac.digest('hex');
+      if (generatedSignature !== razorpaySignature) {
+        logger.warn('Payment signature verification failed', { paymentId: razorpayPaymentId });
+        return sendError(res, 400, ERROR_CODES.PAYMENT_VERIFICATION_FAILED, 'Invalid signature');
+      }
 
-    if (generatedSignature !== razorpaySignature) {
-      console.error('🔴 Signature mismatch');
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid signature',
-      });
-    }
+      logger.info('Payment signature verified');
 
-    console.log('✅ Signature verified');
+      // Create payment record
+      const { data: payment, error: paymentError } = await supabase
+        .from('payments')
+        .insert([{
+          booking_id: bookingId,
+          student_id: studentId,
+          teacher_id: teacherId,
+          base_price: basePrice,
+          admin_charge: adminCharge,
+          total_amount: totalAmount,
+          razorpay_payment_id: razorpayPaymentId,
+          razorpay_order_id: razorpayOrderId,
+          razorpay_signature: razorpaySignature,
+          status: 'completed',
+          paid_at: new Date().toISOString(),
+        }])
+        .select();
 
-    // Create payment record
-    const { data: payment, error: paymentError } = await supabase
-      .from('payments')
-      .insert([{
-        booking_id: bookingId,
-        student_id: studentId,
-        teacher_id: teacherId,
-        base_price: basePrice,
-        admin_charge: adminCharge,
-        total_amount: totalAmount,
-        razorpay_payment_id: razorpayPaymentId,
-        razorpay_order_id: razorpayOrderId,
-        razorpay_signature: razorpaySignature,
-        status: 'completed',
-        paid_at: new Date().toISOString(),
-      }])
-      .select();
+      if (paymentError) {
+        logger.error('Failed to create payment record', { error: paymentError.message, bookingId });
+        throw paymentError;
+      }
 
-    if (paymentError) {
-      console.error('🔴 Payment creation error:', paymentError);
-      throw paymentError;
-    }
+      logger.info('Payment record created', { paymentId: payment[0].id });
 
-    console.log('✅ Payment created:', payment[0].id);
+      // Create teacher earnings record
+      const platformFee = 100; // Fixed platform fee
+      const teacherEarn = totalAmount - adminCharge - platformFee;
 
-    // Create teacher earnings record
-    const platformFee = 100; // Fixed platform fee
-    const teacherEarn = totalAmount - adminCharge - platformFee;
-
-    const { data: earnings, error: earningsError } = await supabase
-      .from('teacher_earnings')
-      .insert([{
-        teacher_id: teacherId,
-        payment_id: payment[0].id,
-        booking_id: bookingId,
-        total_collected: totalAmount,
-        admin_deduction: adminCharge,
-        platform_fee: platformFee,
-        status: 'pending',
-      }])
-      .select();
-
-    if (earningsError) {
-      console.error('🔴 Earnings creation error:', earningsError);
-      throw earningsError;
-    }
-
-    console.log('✅ Earnings record created. Teacher will earn:', teacherEarn);
-
-    // Update booking status and confirm
-    const { data: updatedBooking, error: bookingError } = await supabase
-      .from('bookings')
-      .update({
-        payment_status: 'completed',
-        total_price: totalAmount,
-        payment_id: payment[0].id,
-        status: 'confirmed', // Mark booking as confirmed after payment
-        teacher_confirmed_at: new Date().toISOString(), // Auto-confirm at payment time
-      })
-      .eq('id', bookingId)
-      .select();
-
-    if (bookingError) {
-      console.warn('⚠️ Booking update error:', bookingError);
-    } else {
-      console.log(`✅ Booking status updated to confirmed`);
-    }
-
-    // Update teacher wallet
-    const { data: wallet } = await supabase
-      .from('teacher_wallet')
-      .select('*')
-      .eq('teacher_id', teacherId)
-      .single();
-
-    if (wallet) {
-      const newBalance = (wallet.total_balance || 0) + teacherEarn;
-      await supabase
-        .from('teacher_wallet')
-        .update({
-          total_balance: newBalance,
-          available_balance: newBalance,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('teacher_id', teacherId);
-    } else {
-      // Create wallet if not exists
-      await supabase
-        .from('teacher_wallet')
+      const { data: earnings, error: earningsError } = await supabase
+        .from('teacher_earnings')
         .insert([{
           teacher_id: teacherId,
-          total_balance: teacherEarn,
-          available_balance: teacherEarn,
-          created_at: new Date().toISOString(),
+          payment_id: payment[0].id,
+          booking_id: bookingId,
+          total_collected: totalAmount,
+          admin_deduction: adminCharge,
+          platform_fee: platformFee,
+          status: 'pending',
+        }])
+        .select();
+
+      if (earningsError) {
+        logger.error('Failed to create earnings record', { error: earningsError.message, teacherId });
+        throw earningsError;
+      }
+
+      logger.info('Earnings record created', { teacherId, earnAmount: teacherEarn });
+
+      // Update booking status and confirm
+      const { data: updatedBooking, error: bookingError } = await supabase
+        .from('bookings')
+        .update({
+          payment_status: 'completed',
+          total_price: totalAmount,
+          payment_id: payment[0].id,
+          status: 'confirmed',
+          teacher_confirmed_at: new Date().toISOString(),
+        })
+        .eq('id', bookingId)
+        .select();
+
+      if (bookingError) {
+        logger.warn('Failed to update booking status', { error: bookingError.message, bookingId });
+      } else {
+        logger.info('Booking status updated to confirmed', { bookingId });
+      }
+
+      // Update teacher wallet
+      const { data: wallet } = await supabase
+        .from('teacher_wallet')
+        .select('*')
+        .eq('teacher_id', teacherId)
+        .single();
+
+      if (wallet) {
+        const newBalance = (wallet.total_balance || 0) + teacherEarn;
+        await supabase
+          .from('teacher_wallet')
+          .update({
+            total_balance: newBalance,
+            available_balance: newBalance,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('teacher_id', teacherId);
+      } else {
+        await supabase
+          .from('teacher_wallet')
+          .insert([{
+            teacher_id: teacherId,
+            total_balance: teacherEarn,
+            available_balance: teacherEarn,
+            created_at: new Date().toISOString(),
+          }]);
+      }
+
+      logger.info('Teacher wallet updated', { teacherId, newBalance: (wallet?.total_balance || 0) + teacherEarn });
+
+      // Update order status
+      await supabase
+        .from('razorpay_orders')
+        .update({
+          status: 'paid',
+          paid_at: new Date().toISOString(),
+        })
+        .eq('razorpay_order_id', razorpayOrderId);
+
+      // Send notification to student
+      await supabase
+        .from('notifications')
+        .insert([{
+          user_id: studentId,
+          notification_type: 'payment_confirmed',
+          title: '✅ Payment Successful',
+          message: `Your booking with teacher is confirmed. Session will start at the scheduled time.`,
+          booking_id: bookingId,
+          is_read: false,
         }]);
+
+      // Send notification to teacher
+      await supabase
+        .from('notifications')
+        .insert([{
+          user_id: teacherId,
+          notification_type: 'payment_received',
+          title: '💰 Payment Received',
+          message: `A student has booked and paid for your session. ₹${teacherEarn} added to your wallet.`,
+          booking_id: bookingId,
+          is_read: false,
+        }]);
+
+      sendSuccess(res, {
+        message: 'Payment verified successfully',
+        payment: payment[0],
+        earnings: {
+          totalCollected: totalAmount,
+          adminDeduction: adminCharge,
+          platformFee: platformFee,
+          teacherEarn: teacherEarn,
+        },
+      });
+    } catch (error) {
+      logger.error('Failed to verify payment', { error: error.message });
+      sendError(res, 500, ERROR_CODES.PAYMENT_VERIFICATION_FAILED, 'Failed to verify payment');
     }
-
-    console.log('✅ Wallet updated');
-
-    // Update order status
-    await supabase
-      .from('razorpay_orders')
-      .update({
-        status: 'paid',
-        paid_at: new Date().toISOString(),
-      })
-      .eq('razorpay_order_id', razorpayOrderId);
-
-    // Send notification to student
-    await supabase
-      .from('notifications')
-      .insert([{
-        user_id: studentId,
-        notification_type: 'payment_confirmed',
-        title: '✅ Payment Successful',
-        message: `Your booking with teacher is confirmed. Session will start at the scheduled time.`,
-        booking_id: bookingId,
-        is_read: false,
-      }]);
-
-    // Send notification to teacher
-    await supabase
-      .from('notifications')
-      .insert([{
-        user_id: teacherId,
-        notification_type: 'payment_received',
-        title: '💰 Payment Received',
-        message: `A student has booked and paid for your session. ₹${teacherEarn} added to your wallet.`,
-        booking_id: bookingId,
-        is_read: false,
-      }]);
-
-    res.json({
-      success: true,
-      message: 'Payment verified successfully',
-      payment: payment[0],
-      earnings: {
-        totalCollected: totalAmount,
-        adminDeduction: adminCharge,
-        platformFee: platformFee,
-        teacherEarn: teacherEarn,
-      },
-    });
-  } catch (error) {
-    console.error('🔴 Error verifying payment:', error.message);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to verify payment',
-      message: error.message,
-    });
   }
-});
+);
 
 /**
  * POST /api/admin/charges/set
  * Admin sets charges for a teacher: base (₹), admin charge %, GST %.
  * Request Body: { teacherId, baseCharge, adminChargePercent, gstPercent }
  */
-app.post('/api/admin/charges/set', async (req, res) => {
-  try {
-    const { teacherId, baseCharge, adminChargePercent, gstPercent } = req.body;
+app.post(
+  '/api/admin/charges/set',
+  body('teacherId')
+    .isString()
+    .notEmpty()
+    .withMessage('Teacher ID is required'),
+  body('baseCharge')
+    .isInt({ min: 0 })
+    .withMessage('Base charge must be a non-negative number'),
+  body('adminChargePercent')
+    .optional()
+    .isInt({ min: 0, max: 100 })
+    .withMessage('Admin charge percent must be between 0 and 100'),
+  body('gstPercent')
+    .optional()
+    .isInt({ min: 0, max: 100 })
+    .withMessage('GST percent must be between 0 and 100'),
+  validateRequest,
+  async (req, res) => {
+    try {
+      const { teacherId, baseCharge, adminChargePercent, gstPercent } = req.body;
 
-    if (!teacherId || baseCharge === undefined || baseCharge === null) {
-      return res.status(400).json({
-        success: false,
-        error: 'Missing required fields (teacherId, baseCharge)',
-      });
-    }
+      const base = Number(baseCharge);
+      const adminPct = Number(adminChargePercent) ?? 0;
+      const gstPct = Number(gstPercent) ?? 0;
 
-    const base = Number(baseCharge) || 0;
-    const adminPct = Number(adminChargePercent) ?? 0;
-    const gstPct = Number(gstPercent) ?? 0;
-
-    console.log('🔵 Setting charges for teacher:', teacherId, { base, adminPct, gstPct });
+    logger.info('🔵 Setting charges for teacher:', teacherId, { base, adminPct, gstPct });
 
     const { data: existing } = await supabase
       .from('admin_charges')
@@ -1067,7 +1166,7 @@ app.post('/api/admin/charges/set', async (req, res) => {
     const gstAmt = (subtotal * gstPct) / 100;
     const total = subtotal + gstAmt;
 
-    console.log('✅ Charges set:', data);
+    logger.info('✅ Charges set:', data);
 
     res.json({
       success: true,
@@ -1076,7 +1175,7 @@ app.post('/api/admin/charges/set', async (req, res) => {
       totalAmount: total,
     });
   } catch (error) {
-    console.error('🔴 Error setting charges:', error.message);
+    logger.error('🔴 Error setting charges:', error.message);
     res.status(500).json({
       success: false,
       error: 'Failed to set charges',
@@ -1093,7 +1192,7 @@ app.get('/api/admin/charges/:teacherId', async (req, res) => {
   try {
     const { teacherId } = req.params;
 
-    console.log('🔵 Fetching admin charge for teacher:', teacherId);
+    logger.info('🔵 Fetching admin charge for teacher:', teacherId);
 
     const { data, error } = await supabase
       .from('admin_charges')
@@ -1112,14 +1211,14 @@ app.get('/api/admin/charges/:teacherId', async (req, res) => {
       });
     }
 
-    console.log('✅ Admin charge found:', data);
+    logger.info('✅ Admin charge found:', data);
 
     res.json({
       success: true,
       data: data,
     });
   } catch (error) {
-    console.error('🔴 Error fetching admin charge:', error.message);
+    logger.error('🔴 Error fetching admin charge:', error.message);
     res.status(500).json({
       success: false,
       error: 'Failed to fetch admin charge',
@@ -1146,7 +1245,7 @@ function profileFromRow(row) {
  */
 app.get('/api/admin/teachers', async (req, res) => {
   try {
-    console.log('🔵 Fetching all teachers');
+    logger.info('🔵 Fetching all teachers');
 
     const { data: teachers, error: teErr } = await supabase
       .from('teacher_profiles')
@@ -1158,10 +1257,10 @@ app.get('/api/admin/teachers', async (req, res) => {
       ...t,
       profile: profileFromRow(t),
     }));
-    console.log('✅ Teachers fetched:', list.length);
+    logger.info('✅ Teachers fetched:', list.length);
     res.json(list);
   } catch (error) {
-    console.error('🔴 Error fetching teachers:', error.message);
+    logger.error('🔴 Error fetching teachers:', error.message);
     res.status(500).json({
       error: 'Failed to load teachers',
       message: error.message,
@@ -1189,12 +1288,12 @@ async function updateTeacherHandler(req, res) {
         .from('profiles')
         .update(profile)
         .eq('id', teacherId);
-      if (prErr) console.warn('⚠️ Profiles update:', prErr.message);
+      if (prErr) logger.warn('⚠️ Profiles update:', prErr.message);
     }
 
     res.json(teacherData);
   } catch (error) {
-    console.error('🔴 Error updating teacher:', error.message);
+    logger.error('🔴 Error updating teacher:', error.message);
     res.status(500).json({
       error: 'Failed to update teacher',
       message: error.message,
@@ -1214,7 +1313,7 @@ app.post('/api/admin/teachers/:teacherId', updateTeacherHandler);
  */
 app.get('/api/admin/students', async (req, res) => {
   try {
-    console.log('🔵 Fetching all students');
+    logger.info('🔵 Fetching all students');
 
     const { data: students, error: stErr } = await supabase
       .from('student_profiles')
@@ -1226,10 +1325,10 @@ app.get('/api/admin/students', async (req, res) => {
       ...s,
       profile: profileFromRow(s),
     }));
-    console.log('✅ Students fetched:', list.length);
+    logger.info('✅ Students fetched:', list.length);
     res.json(list);
   } catch (error) {
-    console.error('🔴 Error fetching students:', error.message);
+    logger.error('🔴 Error fetching students:', error.message);
     res.status(500).json({
       error: 'Failed to load students',
       message: error.message,
@@ -1245,7 +1344,7 @@ app.get('/api/teacher/earnings/:teacherId', async (req, res) => {
   try {
     const { teacherId } = req.params;
 
-    console.log('🔵 Fetching earnings for teacher:', teacherId);
+    logger.info('🔵 Fetching earnings for teacher:', teacherId);
 
     // Get wallet
     const { data: wallet } = await supabase
@@ -1266,7 +1365,7 @@ app.get('/api/teacher/earnings/:teacherId', async (req, res) => {
     const { data: eligibility } = await supabase
       .rpc('get_withdrawal_eligibility', { p_teacher_id: teacherId });
 
-    console.log('✅ Earnings fetched');
+    logger.info('✅ Earnings fetched');
 
     res.json({
       success: true,
@@ -1280,7 +1379,7 @@ app.get('/api/teacher/earnings/:teacherId', async (req, res) => {
       eligibility: eligibility?.[0] || null,
     });
   } catch (error) {
-    console.error('🔴 Error fetching earnings:', error.message);
+    logger.error('🔴 Error fetching earnings:', error.message);
     res.status(500).json({
       success: false,
       error: 'Failed to fetch earnings',
@@ -1301,18 +1400,37 @@ app.get('/api/teacher/earnings/:teacherId', async (req, res) => {
  *   "accountHolderName": "Teacher Name"
  * }
  */
-app.post('/api/teacher/withdrawal/request', async (req, res) => {
-  try {
-    const { teacherId, amount, bankAccountNumber, bankIFSCCode, accountHolderName } = req.body;
+app.post(
+  '/api/teacher/withdrawal/request',
+  body('teacherId')
+    .isString()
+    .notEmpty()
+    .withMessage('Teacher ID is required'),
+  body('amount')
+    .isInt({ min: 1 })
+    .withMessage('Amount must be a positive number'),
+  body('bankAccountNumber')
+    .isString()
+    .notEmpty()
+    .trim()
+    .withMessage('Bank account number is required'),
+  body('bankIFSCCode')
+    .isString()
+    .notEmpty()
+    .trim()
+    .matches(/^[A-Z]{4}0[A-Z0-9]{6}$/)
+    .withMessage('Invalid IFSC code format'),
+  body('accountHolderName')
+    .isString()
+    .notEmpty()
+    .trim()
+    .withMessage('Account holder name is required'),
+  validateRequest,
+  async (req, res) => {
+    try {
+      const { teacherId, amount, bankAccountNumber, bankIFSCCode, accountHolderName } = req.body;
 
-    if (!teacherId || !amount || !bankAccountNumber || !bankIFSCCode || !accountHolderName) {
-      return res.status(400).json({
-        success: false,
-        error: 'Missing required fields',
-      });
-    }
-
-    console.log('🔵 Processing withdrawal request for teacher:', teacherId, 'Amount:', amount);
+      logger.info('Processing withdrawal request', { teacherId, amount });
 
     // Check wallet and eligibility
     const { data: wallet } = await supabase
@@ -1374,7 +1492,7 @@ app.post('/api/teacher/withdrawal/request', async (req, res) => {
 
     if (withdrawalError) throw withdrawalError;
 
-    console.log('✅ Withdrawal request created:', withdrawal[0].id);
+    logger.info('✅ Withdrawal request created:', withdrawal[0].id);
 
     // Update wallet
     const newAvailableBalance = wallet.available_balance - amount;
@@ -1404,7 +1522,7 @@ app.post('/api/teacher/withdrawal/request', async (req, res) => {
       data: withdrawal[0],
     });
   } catch (error) {
-    console.error('🔴 Error processing withdrawal:', error.message);
+    logger.error('🔴 Error processing withdrawal:', error.message);
     res.status(500).json({
       success: false,
       error: 'Failed to process withdrawal request',
@@ -1417,26 +1535,28 @@ app.post('/api/teacher/withdrawal/request', async (req, res) => {
  * PATCH /api/admin/teacher/:teacherId/wallet
  * Admin updates teacher wallet amounts (total_balance, available_balance)
  */
-app.patch('/api/admin/teacher/:teacherId/wallet', async (req, res) => {
-  try {
-    const { teacherId } = req.params;
-    const { total_balance, available_balance } = req.body;
+app.patch(
+  '/api/admin/teacher/:teacherId/wallet',
+  body('total_balance')
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage('Total balance must be a non-negative number'),
+  body('available_balance')
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage('Available balance must be a non-negative number'),
+  validateRequest,
+  async (req, res) => {
+    try {
+      const { teacherId } = req.params;
+      const { total_balance, available_balance } = req.body;
 
-    if (total_balance === undefined && available_balance === undefined) {
-      return res.status(400).json({
-        success: false,
-        error: 'Provide at least one of total_balance or available_balance',
-      });
-    }
+      if (total_balance === undefined && available_balance === undefined) {
+        return sendError(res, 400, ERROR_CODES.VALIDATION_ERROR, 'Provide at least one of total_balance or available_balance');
+      }
 
-    const total = total_balance !== undefined ? Number(total_balance) : undefined;
-    const available = available_balance !== undefined ? Number(available_balance) : undefined;
-    if ((total !== undefined && (isNaN(total) || total < 0)) || (available !== undefined && (isNaN(available) || available < 0))) {
-      return res.status(400).json({
-        success: false,
-        error: 'Amounts must be non-negative numbers',
-      });
-    }
+      const total = total_balance !== undefined ? Number(total_balance) : undefined;
+      const available = available_balance !== undefined ? Number(available_balance) : undefined;
 
     const { data: wallet } = await supabase
       .from('teacher_wallet')
@@ -1473,7 +1593,7 @@ app.patch('/api/admin/teacher/:teacherId/wallet', async (req, res) => {
       return res.json({ success: true, wallet: created });
     }
   } catch (error) {
-    console.error('🔴 Error updating teacher wallet:', error.message);
+    logger.error('🔴 Error updating teacher wallet:', error.message);
     res.status(500).json({
       success: false,
       error: error.message || 'Failed to update wallet',
@@ -1522,7 +1642,7 @@ app.get('/api/admin/dashboard', async (req, res) => {
 
     return res.json({ success: true, stats, withdrawals });
   } catch (error) {
-    console.error('🔴 Dashboard error:', error.message);
+    logger.error('🔴 Dashboard error:', error.message);
     return res.json({
       success: true,
       stats: { totalTeachers: 0, totalStudents: 0, totalBookings: 0 },
@@ -1538,7 +1658,7 @@ app.get('/api/admin/dashboard', async (req, res) => {
 app.get('/api/admin/withdrawals', async (req, res) => {
   const empty = () => res.json({ success: true, data: [], count: 0 });
   try {
-    console.log('🔵 Fetching withdrawal requests');
+    logger.info('🔵 Fetching withdrawal requests');
 
     const { data: withdrawals, error } = await supabase
       .from('withdrawal_requests')
@@ -1547,7 +1667,7 @@ app.get('/api/admin/withdrawals', async (req, res) => {
       .order('requested_at', { ascending: false });
 
     if (error) {
-      console.warn('⚠️ Withdrawals query error:', error.message);
+      logger.warn('⚠️ Withdrawals query error:', error.message);
       return empty();
     }
 
@@ -1564,7 +1684,7 @@ app.get('/api/admin/withdrawals', async (req, res) => {
         const results = await Promise.all(chunks.map((chunk) => supabase.from('profiles').select('id, full_name, email').in('id', chunk)));
         results.forEach((res) => { if (Array.isArray(res.data)) res.data.forEach((p) => { profileMap[p.id] = p; }); });
       } catch (e) {
-        console.warn('⚠️ Profiles for withdrawals:', e.message);
+        logger.warn('⚠️ Profiles for withdrawals:', e.message);
       }
     }
 
@@ -1573,10 +1693,10 @@ app.get('/api/admin/withdrawals', async (req, res) => {
       sender: profileMap[w.teacher_id] || null,
     }));
 
-    console.log('✅ Withdrawal requests fetched:', data.length);
+    logger.info('✅ Withdrawal requests fetched:', data.length);
     return res.json({ success: true, data, count: data.length });
   } catch (error) {
-    console.error('🔴 Error fetching withdrawals:', error.message);
+    logger.error('🔴 Error fetching withdrawals:', error.message);
     return empty();
   }
 });
@@ -1590,7 +1710,7 @@ app.post('/api/admin/withdrawals/:withdrawalId/approve', async (req, res) => {
     const { withdrawalId } = req.params;
     const { adminId } = req.body;
 
-    console.log('🔵 Approving withdrawal:', withdrawalId);
+    logger.info('🔵 Approving withdrawal:', withdrawalId);
 
     // Get withdrawal request
     const { data: withdrawal } = await supabase
@@ -1625,7 +1745,7 @@ app.post('/api/admin/withdrawals/:withdrawalId/approve', async (req, res) => {
     // For now, mark as pending processing
     // In production: await razorpay.payouts.create(payoutDetails);
 
-    console.log('✅ Withdrawal marked as processing:', withdrawalId);
+    logger.info('✅ Withdrawal marked as processing:', withdrawalId);
 
     // Send notification to teacher
     await supabase
@@ -1644,7 +1764,7 @@ app.post('/api/admin/withdrawals/:withdrawalId/approve', async (req, res) => {
       data: updated[0],
     });
   } catch (error) {
-    console.error('🔴 Error approving withdrawal:', error.message);
+    logger.error('🔴 Error approving withdrawal:', error.message);
     res.status(500).json({
       success: false,
       error: 'Failed to approve withdrawal',
@@ -1659,7 +1779,7 @@ app.post('/api/admin/withdrawals/:withdrawalId/approve', async (req, res) => {
  */
 app.get('/api/admin/analytics', async (req, res) => {
   try {
-    console.log('🔵 Fetching payment analytics');
+    logger.info('🔵 Fetching payment analytics');
 
     // Total revenue
     const { data: totalRevenue } = await supabase
@@ -1685,7 +1805,7 @@ app.get('/api/admin/analytics', async (req, res) => {
 
     const totalPending = pendingWithdrawals?.reduce((sum, w) => sum + w.amount, 0) || 0;
 
-    console.log('✅ Analytics fetched');
+    logger.info('✅ Analytics fetched');
 
     res.json({
       success: true,
@@ -1697,7 +1817,7 @@ app.get('/api/admin/analytics', async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('🔴 Error fetching analytics:', error.message);
+    logger.error('🔴 Error fetching analytics:', error.message);
     res.status(500).json({
       success: false,
       error: 'Failed to fetch analytics',
@@ -1706,42 +1826,46 @@ app.get('/api/admin/analytics', async (req, res) => {
 });
 
 app.listen(PORT, HOST, () => {
-  console.log('\n' + '='.repeat(50));
-  console.log('🚀 VideoSDK Token Server Started');
-  console.log('='.repeat(50));
-  console.log(`📍 Server running at: http://localhost:${PORT}`);
-  console.log(`📍 Also reachable at: http://192.168.1.19:${PORT}`);
-  console.log('\n📌 Available Endpoints:');
-  console.log(`   POST /send-otp        - Send OTP to email`);
-  console.log(`   POST /verify-otp      - Verify OTP`);
-  console.log(`   GET  /get-token       - Get fresh token`);
-  console.log(`   GET  /health          - Health check`);
-  console.log(`   POST /validate-token  - Validate token`);
-  console.log(`\n📋 Admin (LearningPlatform):`);
-  console.log(`   GET  /api/admin/teachers     - List all teachers`);
-  console.log(`   POST /api/admin/teachers/:id - Update teacher (use POST if PATCH blocked by CORS)`);
-  console.log(`   GET  /api/admin/students     - List all students`);
-  console.log(`\n💳 Payment Endpoints:`);
-  console.log(`   POST /api/payments/create-order    - Create Razorpay order`);
-  console.log(`   POST /api/payments/verify          - Verify payment`);
-  console.log(`   POST /api/admin/charges/set        - Set admin charge`);
-  console.log(`   GET  /api/admin/charges/:id        - Get admin charge`);
-  console.log(`   GET  /api/teacher/earnings/:id     - Get earnings`);
-  console.log(`   POST /api/teacher/withdrawal/request - Request withdrawal`);
-  console.log(`   PATCH /api/admin/teacher/:id/wallet - Admin update wallet amounts`);
-  console.log(`   GET  /api/admin/withdrawals        - Get pending withdrawals`);
-  console.log(`   POST /api/admin/withdrawals/:id/approve - Approve withdrawal`);
-  console.log(`   GET  /api/admin/analytics          - Analytics`);
-  console.log('\n💡 Use in .env:');
-  console.log(`   REACT_APP_AUTH_URL = "http://192.168.1.19:${PORT}"`);
-  console.log(`   VITE_API_URL       = "http://192.168.1.19:${PORT}"`);
-  console.log('='.repeat(50) + '\n');
+  logger.info('\n' + '='.repeat(50));
+  logger.info('🚀 VideoSDK Token Server Started');
+  logger.info('='.repeat(50));
+  logger.info(`📍 Server running at: http://localhost:${PORT}`);
+  logger.info(`📍 Also reachable at: http://192.168.1.19:${PORT}`);
+  logger.info('\n📌 Available Endpoints:');
+  logger.info(`   POST /send-otp        - Send OTP to email`);
+  logger.info(`   POST /verify-otp      - Verify OTP`);
+  logger.info(`   GET  /get-token       - Get fresh token`);
+  logger.info(`   GET  /health          - Health check`);
+  logger.info(`   POST /validate-token  - Validate token`);
+  logger.info(`\n📋 Admin (LearningPlatform):`);
+  logger.info(`   GET  /api/admin/teachers     - List all teachers`);
+  logger.info(`   POST /api/admin/teachers/:id - Update teacher (use POST if PATCH blocked by CORS)`);
+  logger.info(`   GET  /api/admin/students     - List all students`);
+  logger.info(`\n💳 Payment Endpoints:`);
+  logger.info(`   POST /api/payments/create-order    - Create Razorpay order`);
+  logger.info(`   POST /api/payments/verify          - Verify payment`);
+  logger.info(`   POST /api/admin/charges/set        - Set admin charge`);
+  logger.info(`   GET  /api/admin/charges/:id        - Get admin charge`);
+  logger.info(`   GET  /api/teacher/earnings/:id     - Get earnings`);
+  logger.info(`   POST /api/teacher/withdrawal/request - Request withdrawal`);
+  logger.info(`   PATCH /api/admin/teacher/:id/wallet - Admin update wallet amounts`);
+  logger.info(`   GET  /api/admin/withdrawals        - Get pending withdrawals`);
+  logger.info(`   POST /api/admin/withdrawals/:id/approve - Approve withdrawal`);
+  logger.info(`   GET  /api/admin/analytics          - Analytics`);
+  logger.info('\n💡 Use in .env:');
+  logger.info(`   REACT_APP_AUTH_URL = "http://192.168.1.19:${PORT}"`);
+  logger.info(`   VITE_API_URL       = "http://192.168.1.19:${PORT}"`);
+  logger.info('='.repeat(50) + '\n');
 });
 
 // ==========================================
 // Error Handling (Must be LAST)
 // ==========================================
 
+// Global error handler middleware (catches all unhandled errors)
+app.use(errorHandler);
+
+// 404 Not Found handler
 app.use((req, res) => {
   res.status(404).json({
     error: 'Not Found',

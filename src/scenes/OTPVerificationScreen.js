@@ -41,8 +41,8 @@ export default function OTPVerificationScreen({ navigation, route }) {
   const sendOTP = async () => {
     try {
       setResending(true);
-      console.log('📧 Sending OTP to:', email);
-      console.log('🔗 Backend URL:', BACKEND_URL);
+      logger.info('📧 Sending OTP to:', email);
+      logger.info('🔗 Backend URL:', BACKEND_URL);
 
       const response = await fetch(`${BACKEND_URL}/send-otp`, {
         method: 'POST',
@@ -55,7 +55,7 @@ export default function OTPVerificationScreen({ navigation, route }) {
       const data = await response.json();
 
       if (!response.ok) {
-        console.error('❌ OTP Send Error:', data);
+        logger.error('❌ OTP Send Error:', data);
         Alert.alert(
           'Error Sending OTP',
           `${data.error || 'Failed to send OTP'}\n\nMake sure:\n1. Backend is running\n2. Email is configured\n3. Backend URL is correct`
@@ -63,11 +63,11 @@ export default function OTPVerificationScreen({ navigation, route }) {
         return;
       }
 
-      console.log('✅ OTP sent successfully');
+      logger.info('✅ OTP sent successfully');
       Alert.alert('Success', `OTP sent to ${email}`);
       setTimer(60); // 60 second cooldown
     } catch (error) {
-      console.error('❌ Network Error:', error.message);
+      logger.error('❌ Network Error:', error.message);
       Alert.alert(
         'Connection Error',
         `Cannot reach backend at ${BACKEND_URL}\n\nMake sure backend is running on port 3000`
@@ -108,7 +108,7 @@ export default function OTPVerificationScreen({ navigation, route }) {
 
       // Update user verification status in database
       if (isSignup) {
-        console.log('✅ Updating profile with email_verified=true');
+        logger.info('✅ Updating profile with email_verified=true');
         const { error: updateError } = await supabase
           .from('profiles')
           .update({
@@ -118,11 +118,11 @@ export default function OTPVerificationScreen({ navigation, route }) {
           .eq('id', userId);
 
         if (updateError) {
-          console.error('❌ Profile update error:', updateError);
+          logger.error('❌ Profile update error:', updateError);
           Alert.alert('Success', 'Email verified! Redirecting...');
           // Still navigate even if update fails, will retry from RootNavigator
         } else {
-          console.log('✅ Profile updated successfully');
+          logger.info('✅ Profile updated successfully');
         }
       }
 
@@ -142,7 +142,7 @@ export default function OTPVerificationScreen({ navigation, route }) {
         navigation.goBack();
       }
     } catch (error) {
-      console.error('❌ OTP verification error:', error);
+      logger.error('❌ OTP verification error:', error);
 
       Alert.alert('Error', error.message);
     } finally {

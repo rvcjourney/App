@@ -87,7 +87,7 @@ export default function UserEditScreen({ route, navigation }) {
           setPreferredLanguage(student.preferred_language || 'English');
         }
       } catch (e) {
-        console.error('🔴 UserEdit load:', e);
+        logger.error('🔴 UserEdit load:', e);
       }
       if (!cancelled) setLoading(false);
     };
@@ -131,7 +131,7 @@ export default function UserEditScreen({ route, navigation }) {
       Toast.show('User updated');
       navigation.goBack();
     } catch (e) {
-      console.error('🔴 UserEdit save:', e);
+      logger.error('🔴 UserEdit save:', e);
       Alert.alert('Error', e?.message || 'Failed to update user');
     } finally {
       setSaving(false);

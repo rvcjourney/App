@@ -62,7 +62,7 @@ export default function WithdrawalRequest({ navigation, route }) {
         }
       }
     } catch (error) {
-      console.error('Error loading bank details:', error);
+      logger.error('Error loading bank details:', error);
     }
   };
 
@@ -153,7 +153,7 @@ export default function WithdrawalRequest({ navigation, route }) {
         Alert.alert('Error', result.error || 'Failed to submit withdrawal request');
       }
     } catch (error) {
-      console.error('Error:', error);
+      logger.error('Error:', error);
       Alert.alert('Error', error.message);
     } finally {
       setLoading(false);

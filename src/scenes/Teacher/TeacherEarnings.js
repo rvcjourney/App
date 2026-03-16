@@ -53,7 +53,7 @@ export default function TeacherEarnings({ navigation, route }) {
         setTeacherId(user.id);
       }
     } catch (error) {
-      console.error('Error getting teacher ID:', error);
+      logger.error('Error getting teacher ID:', error);
     }
   };
 
@@ -72,14 +72,14 @@ export default function TeacherEarnings({ navigation, route }) {
         setEarnings(result.earnings || []);
         setEligibility(result.eligibility);
       } else {
-        console.warn('API returned failure:', result);
+        logger.warn('API returned failure:', result);
         // Set default values
         setWallet({ total_balance: 0, available_balance: 0, pending_balance: 0 });
         setEarnings([]);
         Toast.show('Failed to load earnings');
       }
     } catch (error) {
-      console.error('Error loading earnings:', error);
+      logger.error('Error loading earnings:', error);
       // Set default values on error
       setWallet({ total_balance: 0, available_balance: 0, pending_balance: 0 });
       setEarnings([]);

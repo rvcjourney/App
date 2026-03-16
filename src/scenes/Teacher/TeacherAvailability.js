@@ -60,7 +60,7 @@ export default function TeacherAvailability({ navigation }) {
           setAvailability(newAvailability);
         }
       } catch (error) {
-        console.error('Error loading availability:', error);
+        logger.error('Error loading availability:', error);
         Alert.alert('Error', 'Failed to load availability');
       } finally {
         setLoading(false);
@@ -106,7 +106,7 @@ export default function TeacherAvailability({ navigation }) {
       Toast.show('✅ Availability updated successfully!');
       navigation.goBack();
     } catch (error) {
-      console.error('Error saving availability:', error);
+      logger.error('Error saving availability:', error);
       Alert.alert('Error', 'Failed to save availability');
     } finally {
       setSaving(false);

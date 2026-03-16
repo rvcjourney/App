@@ -43,7 +43,7 @@ export default function ScheduleLecture({ navigation, route }) {
           }
         }
       } catch (error) {
-        console.error('Error getting teacher ID:', error);
+        logger.error('Error getting teacher ID:', error);
       }
     };
 
@@ -85,7 +85,7 @@ export default function ScheduleLecture({ navigation, route }) {
       // Go back
       navigation.goBack();
     } catch (error) {
-      console.error('Error scheduling lecture:', error);
+      logger.error('Error scheduling lecture:', error);
       Alert.alert('Error', 'Failed to schedule lecture');
     } finally {
       setLoading(false);

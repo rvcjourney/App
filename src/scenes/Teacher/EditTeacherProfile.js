@@ -88,7 +88,7 @@ export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
       }
 
       setSaving(true);
-      console.log('🔵 [EditTeacherProfile] Saving profile...');
+      logger.info('🔵 [EditTeacherProfile] Saving profile...');
 
       // Update profiles table (full_name)
       const { error: profileError } = await supabase
@@ -97,7 +97,7 @@ export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
         .eq('id', teacherId);
 
       if (profileError) {
-        console.error('🔴 Profile update error:', profileError);
+        logger.error('🔴 Profile update error:', profileError);
         throw new Error(profileError.message || 'Could not update name');
       }
 
@@ -117,11 +117,11 @@ export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
         .upsert(teacherPayload, { onConflict: 'id' });
 
       if (teacherError) {
-        console.error('🔴 Teacher profile upsert error:', teacherError);
+        logger.error('🔴 Teacher profile upsert error:', teacherError);
         throw new Error(teacherError.message || 'Could not save teacher details');
       }
 
-      console.log('✅ Profile updated successfully');
+      logger.info('✅ Profile updated successfully');
       Toast.show('✅ Profile updated successfully');
       if (onSaveSuccess) {
         onSaveSuccess();
@@ -130,7 +130,7 @@ export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
       }
 
     } catch (error) {
-      console.error('🔴 Save error:', error);
+      logger.error('🔴 Save error:', error);
       const msg = error?.message || 'Failed to save profile';
       Alert.alert('Error', msg);
     } finally {

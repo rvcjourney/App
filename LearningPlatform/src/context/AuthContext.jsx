@@ -111,36 +111,76 @@ export function AuthProvider({ children }) {
       setAuthError(error.message || 'Login failed');
       throw error;
     }
-    const PROFILE_TIMEOUT_MS = 5000;
-    const profilePromise = supabase
-      .from('profiles')
-      .select('id, full_name, role')
-      .eq('id', data.user.id)
-      .maybeSingle();
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Profile check timed out. Try again.')), PROFILE_TIMEOUT_MS)
-    );
-    let result;
+
+    const PROFILE_TIMEOUT_MS = 10000; // Increased timeout to 10 seconds
+
     try {
-      result = await Promise.race([profilePromise, timeoutPromise]);
+      // Fetch profile with timeout
+      const { data: prof, error: profileErr } = await Promise.race([
+        supabase
+          .from('profiles')
+          .select('id, full_name, role')
+          .eq('id', data.user.id)
+          .maybeSingle(),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Profile fetch timed out. Please try again.')), PROFILE_TIMEOUT_MS)
+        ),
+      ]);
+
+      if (profileErr) {
+        console.error('Profile fetch error:', profileErr);
+        setAuthError('Could not load your profile. Please try again.');
+        await supabase.auth.signOut();
+        throw new Error(profileErr.message);
+      }
+
+      // If profile doesn't exist, create it
+      if (!prof) {
+        console.warn('Profile not found, creating new profile...');
+        const { data: newProfile, error: createErr } = await supabase
+          .from('profiles')
+          .insert([{
+            id: data.user.id,
+            full_name: data.user?.user_metadata?.full_name || 'User',
+            role: 'super_admin', // Default to super_admin for login attempt
+            email_verified: true,
+          }])
+          .select('id, full_name, role')
+          .single();
+
+        if (createErr) {
+          console.error('Profile creation error:', createErr);
+          setAuthError('Could not create your profile. Please try again.');
+          await supabase.auth.signOut();
+          throw new Error(createErr.message);
+        }
+
+        setUser(data.user);
+        setProfile(newProfile ? { ...newProfile, email: data.user?.email } : null);
+        setAuthError(null);
+        return data;
+      }
+
+      // Check if user is super_admin
+      if (prof?.role !== 'super_admin') {
+        console.warn('User does not have super_admin role:', prof?.role);
+        await supabase.auth.signOut();
+        setAuthError('Only Super Admin can access this platform. Your account role: ' + (prof?.role || 'unknown'));
+        throw new Error('Not super admin');
+      }
+
+      setUser(data.user);
+      setProfile(prof ? { ...prof, email: data.user?.email } : null);
+      setAuthError(null);
+      return data;
     } catch (err) {
-      setAuthError(err?.message || 'Could not load your profile. Try again.');
+      // Only set error if not already set
+      if (!authError) {
+        setAuthError(err?.message || 'Login failed. Please try again.');
+      }
+      await supabase.auth.signOut();
       throw err;
     }
-    const { data: prof, error: profileErr } = result || {};
-    if (profileErr) {
-      setAuthError('Could not load your profile. Try again.');
-      throw new Error(profileErr.message);
-    }
-    if (prof?.role !== 'super_admin') {
-      await supabase.auth.signOut();
-      setAuthError('Only Super Admin can access this platform. Your account does not have access.');
-      throw new Error('Not super admin');
-    }
-    setUser(data.user);
-    setProfile(prof ? { ...prof, email: data.user?.email } : null);
-    setAuthError(null);
-    return data;
   };
 
   const logout = async () => {

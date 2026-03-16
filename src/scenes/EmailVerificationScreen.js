@@ -54,8 +54,8 @@ export default function EmailVerificationScreen({ route, onVerificationComplete 
 
     try {
       setResending(true);
-      console.log('📧 Sending OTP to:', pageEmail);
-      console.log('🔗 Backend URL:', BACKEND_URL);
+      logger.info('📧 Sending OTP to:', pageEmail);
+      logger.info('🔗 Backend URL:', BACKEND_URL);
 
       const response = await fetch(`${BACKEND_URL}/send-otp`, {
         method: 'POST',
@@ -68,7 +68,7 @@ export default function EmailVerificationScreen({ route, onVerificationComplete 
       const data = await response.json();
 
       if (!response.ok) {
-        console.error('❌ OTP Send Error:', data);
+        logger.error('❌ OTP Send Error:', data);
         Alert.alert(
           'Error Sending OTP',
           `${data.error || 'Failed to send OTP'}\n\nMake sure:\n1. Backend is running\n2. Email is configured\n3. Backend URL is correct`
@@ -76,11 +76,11 @@ export default function EmailVerificationScreen({ route, onVerificationComplete 
         return;
       }
 
-      console.log('✅ OTP sent successfully');
+      logger.info('✅ OTP sent successfully');
       Alert.alert('Success', `OTP sent to ${pageEmail}`);
       setTimer(60); // 60 second cooldown
     } catch (error) {
-      console.error('❌ Network Error:', error.message);
+      logger.error('❌ Network Error:', error.message);
       Alert.alert(
         'Connection Error',
         `Cannot reach backend at ${BACKEND_URL}\n\nMake sure backend is running on port 3000`
@@ -124,7 +124,7 @@ export default function EmailVerificationScreen({ route, onVerificationComplete 
         return;
       }
 
-      console.log('✅ OTP verified successfully');
+      logger.info('✅ OTP verified successfully');
 
       // Update profile with email_verified = true
       if (userId) {
@@ -137,10 +137,10 @@ export default function EmailVerificationScreen({ route, onVerificationComplete 
           .eq('id', userId);
 
         if (updateError) {
-          console.error('⚠️ Profile update error (non-critical):', updateError);
+          logger.error('⚠️ Profile update error (non-critical):', updateError);
           // Don't fail, continue anyway
         } else {
-          console.log('✅ Profile marked as verified');
+          logger.info('✅ Profile marked as verified');
         }
       }
 
@@ -151,7 +151,7 @@ export default function EmailVerificationScreen({ route, onVerificationComplete 
         onVerificationComplete();
       }
     } catch (error) {
-      console.error('❌ OTP verification error:', error);
+      logger.error('❌ OTP verification error:', error);
       Alert.alert('Error', error.message);
     } finally {
       setLoading(false);

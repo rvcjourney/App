@@ -49,7 +49,7 @@ export default function AdminTeacherWallet({ navigation, route }) {
         Toast.show(result.error || 'Failed to load wallet');
       }
     } catch (error) {
-      console.error('Error loading teacher wallet:', error);
+      logger.error('Error loading teacher wallet:', error);
       Toast.show('Error loading wallet');
     } finally {
       setLoading(false);
@@ -88,7 +88,7 @@ export default function AdminTeacherWallet({ navigation, route }) {
         Toast.show(result.error || 'Failed to update wallet');
       }
     } catch (error) {
-      console.error('Error updating wallet:', error);
+      logger.error('Error updating wallet:', error);
       Toast.show('Error updating wallet');
     } finally {
       setSaving(false);

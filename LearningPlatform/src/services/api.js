@@ -1,7 +1,31 @@
 import { supabase } from '../config/supabase';
+import {
+  TeacherListSchema,
+  StudentListSchema,
+  DashboardDataSchema,
+  WithdrawalListSchema,
+  AdminChargeSchema,
+  validateResponse,
+} from '../schemas/responses';
 
-// Backend API base URL – use 192.168.1.19 so LearningPlatform can reach the server
-const API_URL = import.meta.env.VITE_API_URL?.trim() || 'http://192.168.1.19:3000';
+/**
+ * Backend API base URL
+ * Uses environment variable VITE_API_URL for environment-specific configuration
+ *
+ * Development: typically http://localhost:3000
+ * Production: typically https://api.example.com
+ *
+ * ⚠️ DO NOT use hardcoded IP addresses - use environment variables instead
+ */
+const API_URL = import.meta.env.VITE_API_URL?.trim();
+
+if (!API_URL) {
+  console.error(
+    '❌ ERROR: VITE_API_URL environment variable not set.\n' +
+    'Please configure it in your .env file (e.g., VITE_API_URL=http://localhost:3000)\n' +
+    'See .env.example for details.'
+  );
+}
 
 // Profile fields (minimal so it works even if profiles table has fewer columns)
 const PROFILE_SELECT = 'id, full_name, email, role, email_verified, created_at';
@@ -42,20 +66,38 @@ export const getAllTeachers = async () => {
       .order('created_at', { ascending: false });
     if (!teErr && Array.isArray(teachers)) {
       const list = teachers.map((t) => ({ ...t, profile: profileFromRow(t) }));
-      listCache.teachers = list;
-      listCache.teachersAt = Date.now();
-      return list;
+      // Validate response structure
+      const validation = validateResponse(list, TeacherListSchema, 'getAllTeachers (Supabase)');
+      if (validation.success) {
+        listCache.teachers = validation.data;
+        listCache.teachersAt = Date.now();
+        return validation.data;
+      } else {
+        console.warn('Teacher data validation warning:', validation.error.details);
+        // Still return the data if validation fails, but log warning
+        listCache.teachers = list;
+        listCache.teachersAt = Date.now();
+        return list;
+      }
     }
-  } catch (_) {}
+  } catch (err) {
+    console.warn('Supabase teacher fetch error:', err);
+  }
   try {
     const res = await fetchWithTimeout(`${API_URL}/api/admin/teachers`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    if (res.ok && Array.isArray(data)) {
-      listCache.teachers = data;
-      listCache.teachersAt = Date.now();
-      return data;
+    if (Array.isArray(data)) {
+      const validation = validateResponse(data, TeacherListSchema, 'getAllTeachers (Backend)');
+      if (validation.success) {
+        listCache.teachers = validation.data;
+        listCache.teachersAt = Date.now();
+        return validation.data;
+      }
     }
-  } catch (_) {}
+  } catch (err) {
+    console.warn('Backend teacher fetch error:', err);
+  }
   return [];
 };
 

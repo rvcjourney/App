@@ -43,4 +43,4 @@ yarn-error.log
 .yarn/install-state.gz
 
 # Misc
-.env.example
+# .env.example intentionally NOT ignored - should be committed as template

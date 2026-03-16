@@ -8,6 +8,7 @@ import {
   ScrollView,
   Modal,
   TouchableWithoutFeedback,
+  Text,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-simple-toast';
@@ -17,8 +18,11 @@ import RazorpayCheckout from 'react-native-razorpay';
 import { releaseAvailabilitySlot } from '../../database/database';
 import { isNetworkError } from '../../utils/networkUtils';
 import UNIFIED_THEME from '../../constants/unifiedTheme';
+import { PAYMENT_CONFIG } from '../../constants/appConfig';
 import ThemedText from '../../components/ThemedText';
 import Icon from '../../components/Icon';
+import { Person } from '../../assets/icons';
+import logger from '../../utils/logger';
 
 /**
  * StudentCheckout Component
@@ -60,12 +64,12 @@ export default function StudentCheckout({
       setStudentInfo(user);
 
       // Try to fetch admin charges for this teacher
-      const teacherRate = teacher?.price_per_call; 
-      console.log(teacherRate);
-      
-      const gstAmount = Math.round(teacherRate * 0.18); // 18% GST
-      const platformFeeAmount = Math.round(teacherRate * 0.075); // 7.5% Platform Fee
-      const grossAmount = Math.round(teacherRate + gstAmount + platformFeeAmount); // Teacher Rate + 18% + 7.5%
+      const teacherRate = teacher?.price_per_call;
+      logger.info('Teacher rate:', teacherRate);
+
+      const gstAmount = Math.round(teacherRate * PAYMENT_CONFIG.GST_RATE);
+      const platformFeeAmount = Math.round(teacherRate * PAYMENT_CONFIG.PLATFORM_FEE_RATE);
+      const grossAmount = Math.round(teacherRate + gstAmount + platformFeeAmount);
       
       try {
         const chargesResponse = await fetch(
@@ -96,13 +100,13 @@ export default function StudentCheckout({
         if (isNetworkError(apiError)) {
           setNetworkError(true);
         } else {
-          console.warn('Admin charges API not available, using defaults:', apiError.message);
+          logger.warn('Admin charges API not available, using defaults:', apiError.message);
         }
         // Use default charges if API fails
         const teacherRate = teacher?.price_per_call;
         // const grossAmount = Math.round(teacherRate / 0.745);
-        const gstAmount = Math.round(teacherRate * 0.18);
-        const platformFeeAmount = Math.round(teacherRate * 0.075);
+        const gstAmount = Math.round(teacherRate * PAYMENT_CONFIG.GST_RATE);
+        const platformFeeAmount = Math.round(teacherRate * PAYMENT_CONFIG.PLATFORM_FEE_RATE);
         const grossAmount = Math.round(teacherRate + gstAmount + platformFeeAmount);
         
         setCharges({
@@ -117,7 +121,7 @@ export default function StudentCheckout({
       if (isNetworkError(error)) {
         setNetworkError(true);
       } else {
-        console.error('Error loading checkout:', error);
+        logger.error('Error loading checkout:', error);
         Toast.show('Failed to load checkout');
       }
     } finally {
@@ -144,9 +148,9 @@ export default function StudentCheckout({
       setProcessing(true);
 
       // Step 1: Create Razorpay order
-      console.log('Creating payment order...');
-      console.log('📌 API URL:', API_URL);
-      console.log('📌 Booking Details:', {
+      logger.info('Creating payment order...');
+      logger.info('📌 API URL:', API_URL);
+      logger.info('📌 Booking Details:', {
         bookingId: booking.id,
         studentId: studentInfo.id,
         teacherId: teacher.id,
@@ -161,20 +165,20 @@ export default function StudentCheckout({
           studentId: studentInfo.id,
           teacherId: teacher.id,
           basePrice: charges.teacher_rate || teacher.price_per_call,
-          adminCharge: charges.gst_amount || Math.round((charges.total_amount || 0) * 0.18),
+          adminCharge: charges.gst_amount || Math.round((charges.total_amount || 0) * PAYMENT_CONFIG.GST_RATE),
           totalAmount: charges.total_amount || charges.gross_amount,
         }),
       });
 
-      console.log('Order response status:', orderResponse.status);
+      logger.info('Order response status:', orderResponse.status);
       const orderData = await orderResponse.json();
-      console.log('Order response data:', orderData);
+      logger.info('Order response data:', orderData);
 
       if (!orderData.success) {
         throw new Error(orderData.razorpayError || orderData.message || orderData.error || 'Failed to create order');
       }
 
-      console.log('✅ Order created:', orderData.orderId);
+      logger.info('✅ Order created:', orderData.orderId);
       setOrderDetails(orderData);
 
       // Step 2: Open Razorpay checkout
@@ -195,14 +199,14 @@ export default function StudentCheckout({
         },
       };
 
-      console.log('Opening Razorpay checkout...');
+      logger.info('Opening Razorpay checkout...');
       RazorpayCheckout.open(options)
         .then(async (data) => {
-          console.log('✅ Payment successful:', data);
+          logger.info('✅ Payment successful:', data);
           await verifyPayment(data);
         })
         .catch((error) => {
-          console.error('❌ Payment error:', error);
+          logger.error('❌ Payment error:', error);
           setProcessing(false);
           
           // Check if payment was cancelled by user or network error
@@ -231,8 +235,8 @@ export default function StudentCheckout({
           setShowPaymentFailedModal(true);
         });
     } catch (error) {
-      console.error('🔴 Error initiating payment:', error);
-      console.error('Error details:', error.message);
+      logger.error('🔴 Error initiating payment:', error);
+      logger.error('Error details:', error.message);
       setProcessing(false);
       
       // Show payment failed modal for network or other errors during order creation
@@ -246,7 +250,7 @@ export default function StudentCheckout({
       
       // Release the slot if booking exists (rollback)
       if (booking?.availability_slot_id) {
-        console.log('🔄 Releasing slot due to payment failure:', booking.availability_slot_id);
+        logger.info('🔄 Releasing slot due to payment failure:', booking.availability_slot_id);
         await releaseAvailabilitySlot(booking.availability_slot_id, booking.id);
       }
       
@@ -258,8 +262,8 @@ export default function StudentCheckout({
   const verifyPayment = async (paymentData, retryCount = 0) => {
     const MAX_RETRIES = 3;
     try {
-      console.log('🔵 Verifying payment... (attempt ' + (retryCount + 1) + ')');
-      console.log('Payment data:', paymentData);
+      logger.info('🔵 Verifying payment... (attempt ' + (retryCount + 1) + ')');
+      logger.info('Payment data:', paymentData);
 
       // Step 3: Verify payment on backend
       const verifyResponse = await fetch(`${API_URL}/api/payments/verify`, {
@@ -278,16 +282,16 @@ export default function StudentCheckout({
         }),
       });
 
-      console.log('Verify response status:', verifyResponse.status);
+      logger.info('Verify response status:', verifyResponse.status);
       const verifyData = await verifyResponse.json();
-      console.log('Verify response data:', verifyData);
+      logger.info('Verify response data:', verifyData);
 
       if (!verifyData.success) {
         // Check if payment already exists (duplicate verification)
         if (verifyData.error?.toLowerCase().includes('duplicate') || 
             verifyData.error?.toLowerCase().includes('already exists') ||
             verifyData.error?.toLowerCase().includes('already verified')) {
-          console.log('ℹ️ Payment already verified, checking booking status...');
+          logger.info('ℹ️ Payment already verified, checking booking status...');
           // Payment was already verified - check if booking is confirmed
           const { data: bookingData } = await supabase
             .from('bookings')
@@ -296,7 +300,7 @@ export default function StudentCheckout({
             .single();
           
           if (bookingData?.payment_status === 'completed' || bookingData?.status === 'confirmed') {
-            console.log('✅ Booking already confirmed');
+            logger.info('✅ Booking already confirmed');
             Toast.show('Payment already verified! Booking confirmed.', Toast.SHORT);
             setTimeout(() => {
               navigation.reset({
@@ -315,21 +319,21 @@ export default function StudentCheckout({
           verifyData.error?.toLowerCase().includes('temporary') ||
           verifyResponse.status >= 500
         )) {
-          console.log(`🔄 Retrying verification (${retryCount + 1}/${MAX_RETRIES})...`);
+          logger.info(`🔄 Retrying verification (${retryCount + 1}/${MAX_RETRIES})...`);
           await new Promise(resolve => setTimeout(resolve, 2000 * (retryCount + 1))); // Exponential backoff
           return verifyPayment(paymentData, retryCount + 1);
         }
 
         // If verification fails permanently, release the slot
         if (retryCount >= MAX_RETRIES && booking?.availability_slot_id) {
-          console.log('🔄 Releasing slot due to verification failure:', booking.availability_slot_id);
+          logger.info('🔄 Releasing slot due to verification failure:', booking.availability_slot_id);
           await releaseAvailabilitySlot(booking.availability_slot_id, booking.id);
         }
         
         throw new Error(verifyData.error || 'Payment verification failed');
       }
 
-      console.log('✅ Payment verified successfully!');
+      logger.info('✅ Payment verified successfully!');
       Toast.show('Payment successful! Booking confirmed.', Toast.SHORT);
 
       // Navigate back to StudentDashboard - booking is now confirmed
@@ -340,18 +344,18 @@ export default function StudentCheckout({
         });
       }, 800);
     } catch (error) {
-      console.error('🔴 Error verifying payment:', error);
+      logger.error('🔴 Error verifying payment:', error);
       
       // Check if it's a network error
       if (isNetworkError(error) && retryCount < MAX_RETRIES) {
-        console.log(`🔄 Network error, retrying verification (${retryCount + 1}/${MAX_RETRIES})...`);
+        logger.info(`🔄 Network error, retrying verification (${retryCount + 1}/${MAX_RETRIES})...`);
         await new Promise(resolve => setTimeout(resolve, 2000 * (retryCount + 1)));
         return verifyPayment(paymentData, retryCount + 1);
       }
 
       // Release slot if verification failed permanently (after all retries)
       if (retryCount >= MAX_RETRIES && booking?.availability_slot_id) {
-        console.log('🔄 Releasing slot due to verification failure:', booking.availability_slot_id);
+        logger.info('🔄 Releasing slot due to verification failure:', booking.availability_slot_id);
         await releaseAvailabilitySlot(booking.availability_slot_id, booking.id);
       }
       
@@ -399,8 +403,8 @@ export default function StudentCheckout({
   }
 
   const teacherRate = charges.teacher_rate || teacher.price_per_call;
-  const gstAmount = charges.gst_amount || Math.round(teacherRate * 0.18);
-  const platformFeeAmount = charges.platform_fee_amount || Math.round(teacherRate * 0.075);
+  const gstAmount = charges.gst_amount || Math.round(teacherRate * PAYMENT_CONFIG.GST_RATE);
+  const platformFeeAmount = charges.platform_fee_amount || Math.round(teacherRate * PAYMENT_CONFIG.PLATFORM_FEE_RATE);
   const grossAmount = charges.gross_amount || Math.round(teacherRate + gstAmount + platformFeeAmount);
   const totalAmount = charges.total_amount || grossAmount;
 
@@ -422,7 +426,7 @@ export default function StudentCheckout({
           <View style={styles.detailCard}>
             <View style={styles.teacherHeader}>
               <View style={styles.teacherAvatar}>
-                <ThemedText style={styles.avatarIcon}>👨‍🏫</ThemedText>
+                <Text style={styles.avatarIcon}>< Person /></Text>
               </View>
               <View style={styles.teacherDetails}>
                 <ThemedText variant="labelLg" color={UNIFIED_THEME.colors.text.primary} style={styles.teacherName}>{teacher.profile?.full_name}</ThemedText>
@@ -778,17 +782,17 @@ const styles = StyleSheet.create({
   teacherAvatar: {
     width: 50,
     height: 50,
-    backgroundColor: UNIFIED_THEME.colors.border.light,
+    // backgroundColor: UNIFIED_THEME.colors.border.light,
     borderRadius: UNIFIED_THEME.borderRadius.sm,
-    borderWidth: 2,
-    borderColor: UNIFIED_THEME.colors.accent.primary,
+    // borderWidth: 2,
+    // borderColor: UNIFIED_THEME.colors.accent.primary,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: UNIFIED_THEME.spacing.md,
   },
 
   avatarIcon: {
-    fontSize: 28,
+    fontSize: 50,
   },
 
   teacherDetails: {
@@ -1173,7 +1177,8 @@ const styles = StyleSheet.create({
   },
 
   confirmModalCard: {
-    backgroundColor: UNIFIED_THEME.colors.component.card,
+    // backgroundColor: UNIFIED_THEME.colors.component.card,
+    backgroundColor: 'rgb(0, 0, 0)',
     borderRadius: UNIFIED_THEME.borderRadius.lg,
     padding: UNIFIED_THEME.spacing.xl,
     width: '100%',

@@ -22,19 +22,19 @@ export default function WelcomeScreen({ navigation }) {
       style={styles.background}
     >
       {/* Decorative stars background */}
-      <View style={styles.starsContainer}>
-        <Icon name="sparkles" size={24} color="accent.primary" style={[styles.star, { left: '10%', top: '15%' }]} />
+      {/* <View style={styles.starsContainer}>
+        <Icon name="sparkles" size={24} color="accent.primary" style={[styles.star, { left: '15%', top: '10%' }]} />
         <Icon name="sparkles" size={24} color="accent.primary" style={[styles.star, { right: '15%', top: '20%' }]} />
         <Icon name="sparkles" size={24} color="accent.primary" style={[styles.star, { left: '20%', bottom: '25%' }]} />
         <Icon name="sparkles" size={24} color="accent.primary" style={[styles.star, { right: '25%', bottom: '40%' }]} />
         <Icon name="sparkles" size={24} color="accent.primary" style={[styles.star, { left: '5%', top: '50%' }]} />
-        <Icon name="sparkles" size={24} color="accent.primary" style={[styles.star, { right: '5%', top: '40%' }]} />
-      </View>
+        <Icon name="sparkles" size={24} color="accent.primary" style={[styles.star, { right: '5%', top: '42%' }]} />
+      </View> */}
 
       <SafeAreaView style={styles.overlay}>
         {/* Logo/Icon placeholder */}
         <View style={[styles.logoContainer, shadows.glow]}>
-          <Icon name="videoCam" size={40} color="accent.primary" />
+          <Icon name="videoCam" size={40} color="accent.secondary" />
         </View>
 
         <ThemedText variant="heading" size="md" color="secondary" style={styles.title}>

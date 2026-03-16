@@ -49,7 +49,7 @@ export default function SignupScreen({ navigation, route }) {
         return;
       }
 
-      console.log('✅ Signup successful, user ID:', data.user.id);
+      logger.info('✅ Signup successful, user ID:', data.user.id);
 
       // Save user profile with error handling
       const { error: profileError } = await supabase.from('profiles').insert({
@@ -63,14 +63,14 @@ export default function SignupScreen({ navigation, route }) {
         if (isNetworkError(profileError)) {
           setNetworkError(true);
         } else {
-          console.error('❌ Profile creation error:', profileError);
+          logger.error('❌ Profile creation error:', profileError);
           Alert.alert('Error', 'Failed to create profile: ' + profileError.message);
         }
         setLoading(false);
         return;
       }
 
-      console.log('✅ Profile created successfully');
+      logger.info('✅ Profile created successfully');
 
       // Create role-specific profile row (with name and email for admin list)
       try {
@@ -81,7 +81,7 @@ export default function SignupScreen({ navigation, route }) {
           await createStudentProfile(data.user.id, nameAndEmail);
         }
       } catch (roleProfileErr) {
-        console.error('❌ Role profile creation error:', roleProfileErr);
+        logger.error('❌ Role profile creation error:', roleProfileErr);
         // Continue to OTP; they can complete profile later
       }
 
@@ -97,7 +97,7 @@ export default function SignupScreen({ navigation, route }) {
       if (isNetworkError(err)) {
         setNetworkError(true);
       } else {
-        console.error('❌ Signup error:', err);
+        logger.error('❌ Signup error:', err);
         Alert.alert('Error', err.message);
       }
     } finally {

@@ -53,7 +53,7 @@ export default function BankAccountSettings({ navigation }) {
         setBankName(data.bank_name || '');
       }
     } catch (e) {
-      console.error('Error loading bank details:', e);
+      logger.error('Error loading bank details:', e);
       Toast.show('Failed to load bank details');
     } finally {
       setLoading(false);
@@ -109,7 +109,7 @@ export default function BankAccountSettings({ navigation }) {
       Toast.show('Bank account details saved. You can use them for withdrawals.');
       navigation.goBack();
     } catch (e) {
-      console.error('Error saving bank details:', e);
+      logger.error('Error saving bank details:', e);
       Toast.show(e.message || 'Failed to save bank details');
     } finally {
       setSaving(false);

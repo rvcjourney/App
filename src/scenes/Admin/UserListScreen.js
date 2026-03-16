@@ -37,7 +37,7 @@ export default function UserListScreen({ navigation }) {
       setUsers(data || []);
       applyFilters(data || [], search, roleFilter);
     } catch (e) {
-      console.error('🔴 UserList load:', e);
+      logger.error('🔴 UserList load:', e);
       setUsers([]);
       setFiltered([]);
     }

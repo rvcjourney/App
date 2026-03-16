@@ -7,6 +7,7 @@ import OneToOneMeetingViewer from "./OneToOne";
 import ConferenceMeetingViewer from "./Conference/ConferenceMeetingViewer";
 import ParticipantLimitViewer from "./OneToOne/ParticipantLimitViewer";
 import WaitingToJoinView from "./Components/WaitingToJoinView";
+import logger from "../../utils/logger";
 
 const AUTO_END_CHECK_INTERVAL_MS = 15000; // check every 15s
 
@@ -15,11 +16,11 @@ export default function MeetingContainer({ webcamEnabled, meetingType, isTeacher
   const [participantLimit, setParticipantLimit] = useState(false);
   const [error, setError] = useState(null);
 
-  console.log('MeetingContainer mounted, meetingType:', meetingType);
+  logger.info('MeetingContainer mounted, meetingType:', meetingType);
 
   const { join, participants, leave } = useMeeting({
     onMeetingJoined: () => {
-      console.log('Meeting joined');
+      logger.info('Meeting joined');
       setTimeout(() => {
         setJoined(true);
       }, 500);
@@ -30,7 +31,7 @@ export default function MeetingContainer({ webcamEnabled, meetingType, isTeacher
       }
     },
     onError: (error) => {
-      console.error('Meeting error:', error);
+      logger.error('Meeting error:', error);
       setError(error);
     },
   });

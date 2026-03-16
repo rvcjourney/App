@@ -80,7 +80,7 @@ export default function NotificationsScreen({ navigation }) {
       setNextCursor(next);
       setHasMore(more);
     } catch (err) {
-      console.error('Error loading notifications:', err);
+      logger.error('Error loading notifications:', err);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -112,7 +112,7 @@ export default function NotificationsScreen({ navigation }) {
         await markNotificationAsRead(item.id);
         setItems((prev) => prev.map((n) => (n.id === item.id ? { ...n, is_read: true } : n)));
       } catch (e) {
-        console.warn('Mark read failed:', e);
+        logger.warn('Mark read failed:', e);
       }
     }
   }, []);

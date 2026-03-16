@@ -70,7 +70,7 @@ export default function SuperAdminDashboard({ navigation }) {
         setPendingWithdrawalsCount(0);
       }
     } catch (e) {
-      console.error('🔴 SuperAdmin load stats:', e);
+      logger.error('🔴 SuperAdmin load stats:', e);
     }
   };
 
@@ -87,7 +87,7 @@ export default function SuperAdminDashboard({ navigation }) {
         if (name) setAdminName(name);
       }
     } catch (e) {
-      console.error('🔴 SuperAdmin load profile:', e);
+      logger.error('🔴 SuperAdmin load profile:', e);
     }
   };
 

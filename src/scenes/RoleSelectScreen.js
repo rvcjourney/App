@@ -21,21 +21,21 @@ export default function RoleSelectScreen({ navigation }) {
         <ThemedText variant="heading" size="lg" color="primary" style={styles.title}>Select Your Role</ThemedText>
 
         <TouchableOpacity
-          style={[styles.card, UNIFIED_THEME.shadows.medium]}
+          style={[styles.card]}
           onPress={() => navigation.navigate('Login', { role: 'teacher' })}
         >
           <View style={styles.cardContent}>
-            <Icon name="briefcase" size={40} color="accent.primary" />
+            <Icon name="briefcase" size={40} color="accent.secondary" />
             <ThemedText weight="600" color="accent.primary" style={styles.cardText}>Instructor</ThemedText>
           </View>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.card, UNIFIED_THEME.shadows.medium]}
+          style={[styles.card]}
           onPress={() => navigation.navigate('Login', { role: 'student' })}
         >
           <View style={styles.cardContent}>
-            <Icon name="academicTeacher" size={40} color="accent.primary" />
+            <Icon name="academicTeacher" size={40} color="accent.secondary" />
             <ThemedText weight="600" color="accent.primary" style={styles.cardText}>Learner</ThemedText>
           </View>
         </TouchableOpacity>

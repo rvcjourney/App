@@ -1109,7 +1109,7 @@ export default function StudentDashboard({ navigation }) {
               }
             >
               <View style={styles.settingIconContainer}>
-                <Icon name="user" size={18} color="error" />
+                <Icon name="user" size={18} color="primary" />
               </View>
               <ThemedText style={styles.settingText}>Logout</ThemedText>
             </TouchableOpacity>
@@ -1683,6 +1683,7 @@ const styles = StyleSheet.create({
   logoutItem: {
     backgroundColor: UNIFIED_THEME.colors.accent.error,
     marginTop: 10,
+    marginBottom: 50,
   },
 
   // TEACHER CARD STYLES

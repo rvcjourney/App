@@ -11,30 +11,12 @@ import { SCREEN_NAMES } from "../../navigators/screenNames";
 import { supabase } from "../../../supabase";
 import { endMeeting } from "../../database/database";
 import Toast from "react-native-simple-toast";
+import logger from "../../utils/logger";
 const { ForegroundServiceModule } = NativeModules;
 
-// const requestPermissions = async () => {
-//   if (Platform.OS !== "android") return true;
-
-//   try {
-//     const permissions = [
-//       PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
-//       PermissionsAndroid.PERMISSIONS.CAMERA,
-//       PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
-//     ];
-//     const granted = await PermissionsAndroid.requestMultiple(permissions);
-//     const allGranted = Object.values(granted).every(
-//       (permission) => permission === PermissionsAndroid.RESULTS.GRANTED
-//     );
-
-//     console.log(allGranted ? "permissions granted" : "permissions denied");
-
-//     return allGranted;
-//   } catch (err) {
-//     console.error("Error requesting permissions:", err);
-//     return false;
-//   }
-// };
+/**
+ * Request Android permissions for camera, microphone, and notifications
+ */
 const requestPermissions = async () => {
   if (Platform.OS !== "android") return true;
 
@@ -64,7 +46,7 @@ const requestPermissions = async () => {
 
     return true;
   } catch (e) {
-    console.log("Permission error", e);
+    logger.error("Permission request error:", e);
     return false;
   }
 };
@@ -74,8 +56,8 @@ export default function Meeting({ navigation, route }) {
   const [permissionsGranted, setPermissionsGranted] = useState(false);
   const [meetingStartTime, setMeetingStartTime] = useState(null);
 
-  console.log('Meeting component mounted - function signature is valid');
-  console.log('Route params:', route?.params);
+  logger.info('Meeting component mounted - function signature is valid');
+  logger.info('Route params:', route?.params);
 
   const {
     token,
@@ -92,7 +74,7 @@ export default function Meeting({ navigation, route }) {
   } = route?.params || {};
 
   if (!token || !meetingId || !name) {
-    console.error('Missing required meeting parameters:', { token: !!token, meetingId: !!meetingId, name: !!name });
+    logger.error('Missing required meeting parameters:', { token: !!token, meetingId: !!meetingId, name: !!name });
     return (
       <SafeAreaView
         edges={["top", "bottom"]}
@@ -117,7 +99,7 @@ export default function Meeting({ navigation, route }) {
   }, []);
 
   const handleMeetingJoined = async () => {
-    console.log('📞 Meeting joined! Teacher:', isTeacher, 'BookingId:', bookingId);
+    logger.info('📞 Meeting joined! Teacher:', isTeacher, 'BookingId:', bookingId);
     
     // Record when the meeting started (for calculating duration later)
     setMeetingStartTime(new Date());
@@ -129,10 +111,10 @@ export default function Meeting({ navigation, route }) {
         const { data: { user } } = await supabase.auth.getUser();
         const teacherId = user?.id;
         
-        console.log('📱 Notifying student about meeting start... BookingId:', bookingId, 'TeacherId:', teacherId);
+        logger.info('📱 Notifying student about meeting start... BookingId:', bookingId, 'TeacherId:', teacherId);
         
         const backendUrl = process.env.REACT_APP_AUTH_URL || 'http://192.168.1.19:3000';
-        console.log('🌐 Backend URL:', backendUrl);
+        logger.info('🌐 Backend URL:', backendUrl);
         
         const response = await fetch(`${backendUrl}/api/meetings/start`, {
           method: 'POST',
@@ -144,19 +126,19 @@ export default function Meeting({ navigation, route }) {
           })
         });
 
-        console.log('📤 Backend response status:', response.status);
+        logger.info('📤 Backend response status:', response.status);
         
         const data = await response.json();
-        console.log('📨 Backend response data:', JSON.stringify(data, null, 2));
+        logger.info('📨 Backend response data:', JSON.stringify(data, null, 2));
         
         if (data.success) {
-          console.log('✅ Student notified successfully with meeting ID:', data.meetingId);
+          logger.info('✅ Student notified successfully with meeting ID:', data.meetingId);
         } else {
-          console.error('⚠️ Failed to notify student - Error:', data.error, '| Message:', data.message);
+          logger.error('⚠️ Failed to notify student - Error:', data.error, '| Message:', data.message);
         }
       } catch (error) {
-        console.error('🔴 Error notifying student - Fetch error:', error.message);
-        console.error('🔴 Error stack:', error);
+        logger.error('🔴 Error notifying student - Fetch error:', error.message);
+        logger.error('🔴 Error stack:', error);
         // Continue anyway - meeting is running
       }
     }
@@ -167,7 +149,7 @@ export default function Meeting({ navigation, route }) {
           try {
             await ForegroundServiceModule.startService();
           } catch (err) {
-            console.error("[Error starting foreground service:", err);
+            logger.error("[Error starting foreground service:", err);
           }
         }, 300);
       }
@@ -179,7 +161,7 @@ export default function Meeting({ navigation, route }) {
       try {
         ForegroundServiceModule.stopService();
       } catch (e) {
-        console.warn("Foreground service stop:", e);
+        logger.warn("Foreground service stop:", e);
       }
     }
     // When teacher leaves, mark booking as completed in DB
@@ -190,10 +172,10 @@ export default function Meeting({ navigation, route }) {
           ? Math.round((new Date() - meetingStartTime) / 60000) 
           : 60; // Default to 60 minutes if start time not tracked
         
-        console.log(`⏱️ Meeting duration: ${duration} minutes`);
+        logger.info(`⏱️ Meeting duration: ${duration} minutes`);
         await endMeeting(bookingId, meetingId, duration);
       } catch (e) {
-        console.error("Error ending meeting in DB:", e);
+        logger.error("Error ending meeting in DB:", e);
       }
     }
     Toast.show("Meeting completed");
@@ -205,7 +187,7 @@ export default function Meeting({ navigation, route }) {
   };
 
   if (Platform.OS === "android" && !permissionsGranted) {
-    console.log('Waiting for permissions...');
+    logger.info('Waiting for permissions...');
     return (
       <SafeAreaView
         edges={["top", "bottom"]}

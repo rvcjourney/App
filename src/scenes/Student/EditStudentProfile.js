@@ -30,7 +30,7 @@ export default function EditStudentProfile({ navigation, onSaveSuccess }) {
   useEffect(() => {
     const loadProfile = async () => {
       try {
-        console.log('🔵 [EditStudentProfile] Loading profile...');
+        logger.info('🔵 [EditStudentProfile] Loading profile...');
         
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
@@ -65,7 +65,7 @@ export default function EditStudentProfile({ navigation, onSaveSuccess }) {
         }
         
       } catch (error) {
-        console.error('🔴 Error loading profile:', error);
+        logger.error('🔴 Error loading profile:', error);
         Toast.show(error?.message || 'Error loading profile');
       } finally {
         setLoading(false);
@@ -83,7 +83,7 @@ export default function EditStudentProfile({ navigation, onSaveSuccess }) {
       }
 
       setSaving(true);
-      console.log('🔵 [EditStudentProfile] Saving profile...');
+      logger.info('🔵 [EditStudentProfile] Saving profile...');
 
       // Update profiles table (full_name)
       const { error: profileError } = await supabase
@@ -92,7 +92,7 @@ export default function EditStudentProfile({ navigation, onSaveSuccess }) {
         .eq('id', studentId);
 
       if (profileError) {
-        console.error('🔴 Profile update error:', profileError);
+        logger.error('🔴 Profile update error:', profileError);
         throw new Error(profileError.message || 'Could not update name');
       }
 
@@ -108,11 +108,11 @@ export default function EditStudentProfile({ navigation, onSaveSuccess }) {
         .upsert(studentPayload, { onConflict: 'id' });
 
       if (studentError) {
-        console.error('🔴 Student profile upsert error:', studentError);
+        logger.error('🔴 Student profile upsert error:', studentError);
         throw new Error(studentError.message || 'Could not save student details');
       }
 
-      console.log('✅ Profile updated successfully');
+      logger.info('✅ Profile updated successfully');
       Toast.show('✅ Profile updated successfully');
       if (onSaveSuccess) {
         onSaveSuccess();
@@ -121,7 +121,7 @@ export default function EditStudentProfile({ navigation, onSaveSuccess }) {
       }
 
     } catch (error) {
-      console.error('🔴 Save error:', error);
+      logger.error('🔴 Save error:', error);
       const msg = error?.message || 'Failed to save profile';
       Alert.alert('Error', msg);
     } finally {

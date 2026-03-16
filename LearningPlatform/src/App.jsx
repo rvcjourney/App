@@ -1,5 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import ErrorBoundary from './components/ErrorBoundary';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Login from './pages/Login';
@@ -24,7 +26,7 @@ function ProtectedApp() {
     );
   }
 
-  if (isSuperAdmin) {
+  if (!isSuperAdmin) {
     return (
       <Routes>
         <Route path="/signup" element={<Signup />} />
@@ -34,18 +36,20 @@ function ProtectedApp() {
   }
 
   return (
-    <div className="d-flex flex-column">
-      <Navbar />
-      <main className="flex-grow-1 container-fluid py-4 bg-dark" style={{ minHeight: '60vh' }}>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/teachers" element={<Teachers />} />
-          <Route path="/students" element={<Students />} />
-          <Route path="/finance" element={<Finance />} />
-        </Routes>
-      </main>
-      <Footer />
-    </div>
+    <ErrorBoundary>
+      <div className="d-flex flex-column">
+        <Navbar />
+        <main className="flex-grow-1 container-fluid py-4 bg-dark" style={{ minHeight: '60vh' }}>
+          <Routes>
+            <Route path="/" element={<ErrorBoundary><Dashboard /></ErrorBoundary>} />
+            <Route path="/teachers" element={<ErrorBoundary><Teachers /></ErrorBoundary>} />
+            <Route path="/students" element={<ErrorBoundary><Students /></ErrorBoundary>} />
+            <Route path="/finance" element={<ErrorBoundary><Finance /></ErrorBoundary>} />
+          </Routes>
+        </main>
+        <Footer />
+      </div>
+    </ErrorBoundary>
   );
 }
 
@@ -54,6 +58,31 @@ function App() {
     <AuthProvider>
       <Router>
         <ProtectedApp />
+        <Toaster
+          position="top-right"
+          reverseOrder={false}
+          gutter={8}
+          toastOptions={{
+            duration: 4000,
+            style: {
+              background: '#363636',
+              color: '#fff',
+              borderRadius: '0.375rem',
+            },
+            success: {
+              duration: 3000,
+              style: {
+                background: '#10b981',
+              },
+            },
+            error: {
+              duration: 4000,
+              style: {
+                background: '#ef4444',
+              },
+            },
+          }}
+        />
       </Router>
     </AuthProvider>
   );

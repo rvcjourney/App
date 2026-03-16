@@ -51,7 +51,7 @@ export default function AdminDashboard({ navigation }) {
         await loadAnalytics();
       }
     } catch (error) {
-      console.error('Error loading data:', error);
+      logger.error('Error loading data:', error);
       Toast.show('Failed to load data');
     } finally {
       setLoading(false);
@@ -72,7 +72,7 @@ export default function AdminDashboard({ navigation }) {
       if (error) throw error;
       setTeachers(data || []);
     } catch (error) {
-      console.error('Error loading teachers:', error);
+      logger.error('Error loading teachers:', error);
       throw error;
     }
   };
@@ -88,7 +88,7 @@ export default function AdminDashboard({ navigation }) {
         Toast.show('Failed to load withdrawals');
       }
     } catch (error) {
-      console.error('Error loading withdrawals:', error);
+      logger.error('Error loading withdrawals:', error);
       throw error;
     }
   };
@@ -104,7 +104,7 @@ export default function AdminDashboard({ navigation }) {
         Toast.show('Failed to load analytics');
       }
     } catch (error) {
-      console.error('Error loading analytics:', error);
+      logger.error('Error loading analytics:', error);
       throw error;
     }
   };
@@ -145,7 +145,7 @@ export default function AdminDashboard({ navigation }) {
         Alert.alert('Error', result.error || 'Failed to update charge');
       }
     } catch (error) {
-      console.error('Error:', error);
+      logger.error('Error:', error);
       Alert.alert('Error', error.message);
     } finally {
       setLoading(false);
@@ -179,7 +179,7 @@ export default function AdminDashboard({ navigation }) {
         Alert.alert('Error', result.error);
       }
     } catch (error) {
-      console.error('Error:', error);
+      logger.error('Error:', error);
       Alert.alert('Error', error.message);
     }
   };

@@ -30,7 +30,7 @@ export default function AdminBookingsList({ navigation }) {
       const data = await getAllBookingsForAdmin();
       setBookings(data || []);
     } catch (e) {
-      console.error('🔴 AdminBookings load:', e);
+      logger.error('🔴 AdminBookings load:', e);
       setBookings([]);
     }
   }, []);
