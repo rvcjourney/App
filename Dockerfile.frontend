@@ -12,8 +12,6 @@ RUN npm ci
 COPY src ./src
 COPY app.json ./
 COPY babel.config.js ./
-COPY tsconfig.json ./
-COPY assets ./assets
 
 # Expose Expo ports
 EXPOSE 8081 19000
