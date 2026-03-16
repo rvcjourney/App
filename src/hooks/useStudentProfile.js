@@ -99,55 +99,63 @@ export const useStudentProfile = () => {
 
   // Refresh profile (used by pull-to-refresh)
   const refreshProfile = useCallback(async () => {
+    if (isProfileFetchingRef.current) {
+      logger.warn('Profile refresh already in progress');
+      return;
+    }
+
+    isProfileFetchingRef.current = true;
     try {
-      // Call the functions directly without relying on closure dependencies
-      // This ensures we always have access to the current state setters
-      if (isProfileFetchingRef.current) {
-        logger.warn('Profile refresh already in progress');
+      logger.info('Refreshing student profile...');
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        logger.warn('No authenticated user found');
         return;
       }
 
-      isProfileFetchingRef.current = true;
+      // Update student ID
+      setStudentId(user.id);
+
+      // Fetch and update profile
+      const { data: profileRows } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .limit(1);
+
+      const profile = Array.isArray(profileRows) && profileRows.length > 0
+        ? profileRows[0]
+        : profileRows;
+
+      if (profile?.full_name) {
+        setStudentName(profile.full_name);
+      }
+
+      // Check profile completeness
       try {
-        logger.info('Refreshing student profile...');
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-
-        setStudentId(user.id);
-        const { data: profileRows } = await supabase
-          .from('profiles')
-          .select('full_name')
-          .eq('id', user.id)
-          .limit(1);
-
-        const profile = Array.isArray(profileRows) && profileRows.length > 0
-          ? profileRows[0]
-          : profileRows;
-
-        if (profile?.full_name) {
-          setStudentName(profile.full_name);
-        }
-
         const complete = await isProfileComplete('student', user.id);
         setProfileIncomplete(!complete);
-
-        // Refresh bookings
-        if (!isBookingsFetchingRef.current) {
-          isBookingsFetchingRef.current = true;
-          try {
-            const bookingsData = await getStudentBookings(user.id);
-            setMyBookings(bookingsData || []);
-            logger.success('Profile refreshed');
-          } finally {
-            isBookingsFetchingRef.current = false;
-          }
-        }
-      } finally {
-        isProfileFetchingRef.current = false;
+      } catch (err) {
+        logger.warn('Could not verify profile completeness:', err);
       }
+
+      // Refresh bookings in parallel
+      if (!isBookingsFetchingRef.current) {
+        isBookingsFetchingRef.current = true;
+        try {
+          const bookingsData = await getStudentBookings(user.id);
+          setMyBookings(bookingsData || []);
+        } finally {
+          isBookingsFetchingRef.current = false;
+        }
+      }
+
+      logger.success('Profile refreshed');
     } catch (error) {
-      logger.error('Error refreshing profile:', error);
+      logger.error('Error in refreshProfile:', error?.message || error);
       throw error;
+    } finally {
+      isProfileFetchingRef.current = false;
     }
   }, []);
 
