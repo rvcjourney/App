@@ -60,12 +60,13 @@ export const useStudentBooking = () => {
       setBookingInProgress(true);
       logger.info('Booking slot:', slotId);
 
-      const result = await bookAvailabilitySlot({
-        student_id: studentId,
-        teacher_id: teacherId,
-        availability_slot_id: slotId,
-        subject: subject || bookingSubject,
-      });
+      // Call database function with individual parameters (not object)
+      const result = await bookAvailabilitySlot(
+        studentId,
+        teacherId,
+        slotId,
+        subject || bookingSubject
+      );
 
       logger.success('Slot booked successfully');
       closeBookingModal();

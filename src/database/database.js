@@ -929,7 +929,12 @@ export const getTeacherSlotsByDateRange = async (teacherId, startDate, endDate) 
 export const bookAvailabilitySlot = async (studentId, teacherId, slotId, subject, hoursRequired = 1) => {
   try {
     logger.info('🔵 Booking availability slot...');
-    
+
+    // Validate required parameters
+    if (!studentId || !teacherId || !slotId) {
+      throw new Error(`Missing required parameters: studentId=${studentId}, teacherId=${teacherId}, slotId=${slotId}`);
+    }
+
     // Step 1: Get slot details with FOR UPDATE lock (if supported) or optimistic locking
     const { data: slot, error: slotError } = await supabase
       .from('teacher_availability_slots')
