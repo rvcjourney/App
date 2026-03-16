@@ -11,21 +11,11 @@ services:
     container_name: connectiqo-backend
     ports:
       - "3000:3000"
+    env_file:
+      - ./backend/.env
     environment:
       - NODE_ENV=production
       - PORT=3000
-      - SUPABASE_URL=${SUPABASE_URL}
-      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
-      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
-      - VIDEOSDK_API_KEY=${VIDEOSDK_API_KEY}
-      - VIDEOSDK_SECRET_KEY=${VIDEOSDK_SECRET_KEY}
-      - JWT_SECRET=${JWT_SECRET}
-      - RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID}
-      - RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET}
-      - EMAIL_HOST=${EMAIL_HOST}
-      - EMAIL_PORT=${EMAIL_PORT}
-      - EMAIL_USER=${EMAIL_USER}
-      - EMAIL_PASSWORD=${EMAIL_PASSWORD}
     volumes:
       - ./backend:/app
       - /app/node_modules
@@ -49,10 +39,10 @@ services:
     container_name: connectiqo-admin
     ports:
       - "5173:5173"
+    env_file:
+      - ./LearningPlatform/.env
     environment:
-      - VITE_API_URL=http://localhost:3000
-      - VITE_SUPABASE_URL=${SUPABASE_URL}
-      - VITE_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - VITE_API_URL=http://backend:3000
     volumes:
       - ./LearningPlatform:/app
       - /app/node_modules
@@ -79,12 +69,11 @@ services:
     ports:
       - "8081:8081"
       - "19000:19000"
+    env_file:
+      - ./.env
     environment:
-      - API_URL=http://backend:3000
-      - SUPABASE_URL=${SUPABASE_URL}
-      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
-      - EXPO_PUBLIC_SUPABASE_URL=${SUPABASE_URL}
-      - EXPO_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - REACT_APP_AUTH_URL=http://backend:3000
+      - EXPO_PUBLIC_API_URL=http://backend:3000
     volumes:
       - ./src:/app/src
       - ./app.json:/app/app.json
