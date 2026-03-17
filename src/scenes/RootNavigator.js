@@ -85,8 +85,9 @@ export default function RootNavigator() {
         profile = Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
 
         if (!error && profile?.role) {
-          logger.success('RootNavigator: Role fetched:', profile.role, 'Verified:', profile.email_verified);
-          setRole(profile.role);
+          const normalizedRole = (profile.role || '').toLowerCase().replace('learner', 'student') || profile.role;
+          logger.success('RootNavigator: Role fetched:', profile.role, '->', normalizedRole, 'Verified:', profile.email_verified);
+          setRole(normalizedRole);
           setEmailVerified(profile.email_verified || false);
           return;
         }
@@ -98,8 +99,8 @@ export default function RootNavigator() {
         }
       }
 
-      // Fallback: use role from signup metadata so teacher doesn't land on student dashboard
-      const metaRole = user?.user_metadata?.role;
+      // Fallback: use role from signup metadata (normalize learner -> student)
+      const metaRole = (user?.user_metadata?.role || '').toLowerCase().replace('learner', 'student');
       if (metaRole === 'teacher' || metaRole === 'student') {
         logger.warn('RootNavigator: Using role from user_metadata:', metaRole);
         setRole(metaRole);
@@ -115,7 +116,7 @@ export default function RootNavigator() {
       }
     } catch (err) {
       logger.error('RootNavigator: Failed to fetch role:', err.message);
-      const metaRole = user?.user_metadata?.role;
+      const metaRole = (user?.user_metadata?.role || '').toLowerCase().replace('learner', 'student');
       if (metaRole === 'teacher' || metaRole === 'student') {
         setRole(metaRole);
       } else {
@@ -213,7 +214,7 @@ export default function RootNavigator() {
     return <TeacherStack />;
   }
 
-  if (role === 'student') {
+  if (role === 'student' || role === 'learner') {
     return <StudentStack />;
   }
 

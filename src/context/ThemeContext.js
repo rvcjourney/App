@@ -1,12 +1,11 @@
 import React, { createContext, useContext, useMemo, useState } from 'react';
 
 const lightPalette = {
-  // keep app background light, use purple only for cards/buttons
   background: '#F4F5F7',
   card: '#FFFFFF',
   textPrimary: '#111827',
   textSecondary: '#6B7280',
-  accent: '#8000FF', // rgb(128, 0, 255) for cards/buttons
+  accent: '#8000FF',
   border: '#E5E7EB',
   bottomNav: '#FFFFFF',
 };
@@ -21,11 +20,13 @@ const darkPalette = {
   bottomNav: '#0B0D2A',
 };
 
-const ThemeContext = createContext({
+const defaultThemeValue = {
   mode: 'dark',
   colors: darkPalette,
   toggleTheme: () => {},
-});
+};
+
+const ThemeContext = createContext(defaultThemeValue);
 
 export const ThemeProvider = ({ children }) => {
   const [mode, setMode] = useState('dark');
@@ -35,8 +36,7 @@ export const ThemeProvider = ({ children }) => {
     return {
       mode,
       colors,
-      toggleTheme: () =>
-        setMode((prev) => (prev === 'light' ? 'dark' : 'light')),
+      toggleTheme: () => setMode((prev) => (prev === 'light' ? 'dark' : 'light')),
     };
   }, [mode]);
 
@@ -45,5 +45,10 @@ export const ThemeProvider = ({ children }) => {
   );
 };
 
-export const useTheme = () => useContext(ThemeContext);
+export const useTheme = () => {
+  const context = useContext(ThemeContext);
+  return context ?? defaultThemeValue;
+};
+
+export default ThemeContext;
 

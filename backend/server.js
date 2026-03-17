@@ -1830,7 +1830,7 @@ app.listen(PORT, HOST, () => {
   logger.info('🚀 VideoSDK Token Server Started');
   logger.info('='.repeat(50));
   logger.info(`📍 Server running at: http://localhost:${PORT}`);
-  logger.info(`📍 Also reachable at: http://192.168.1.19:${PORT}`);
+  logger.info(`📍 Also reachable at: http://192.168.1.17:${PORT}`);
   logger.info('\n📌 Available Endpoints:');
   logger.info(`   POST /send-otp        - Send OTP to email`);
   logger.info(`   POST /verify-otp      - Verify OTP`);
@@ -1853,8 +1853,8 @@ app.listen(PORT, HOST, () => {
   logger.info(`   POST /api/admin/withdrawals/:id/approve - Approve withdrawal`);
   logger.info(`   GET  /api/admin/analytics          - Analytics`);
   logger.info('\n💡 Use in .env:');
-  logger.info(`   REACT_APP_AUTH_URL = "http://192.168.1.19:${PORT}"`);
-  logger.info(`   VITE_API_URL       = "http://192.168.1.19:${PORT}"`);
+  logger.info(`   REACT_APP_AUTH_URL = "http://192.168.1.17:${PORT}"`);
+  logger.info(`   VITE_API_URL       = "http://192.168.1.17:${PORT}"`);
   logger.info('='.repeat(50) + '\n');
 });
 

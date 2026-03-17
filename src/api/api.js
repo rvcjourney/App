@@ -4,7 +4,7 @@ import logger from '../utils/logger';
 const API_BASE_URL = "https://api.videosdk.live/v2";
 
 const VIDEOSDK_TOKEN = REACT_APP_VIDEOSDK_TOKEN;
-const API_AUTH_URL = REACT_APP_AUTH_URL || "http://147.93.104.60:3000";
+const API_AUTH_URL = REACT_APP_AUTH_URL || "http://192.168.1.17:3000";
 export const API_URL = API_AUTH_URL;
 
 const TOKEN_FETCH_TIMEOUT_MS = 15000;
@@ -52,7 +52,7 @@ export const getToken = async () => {
     } catch (error) {
       const isNetworkError = error.message === 'Network request failed' || error.name === 'AbortError';
       const message = isNetworkError
-        ? 'Error starting meeting. Make sure: 1) Backend is running (npm start in backend folder). 2) IP is the same for both frontend and backend — in .env set REACT_APP_AUTH_URL to your PC IP (e.g. http://192.168.1.19:3000). 3) If using USB, connect phone to same WiFi as PC, or run: adb reverse tcp:3000 tcp:3000 and use localhost in .env.'
+        ? 'Error starting meeting. Make sure: 1) Backend is running (npm start in backend folder). 2) IP is the same for both frontend and backend — in .env set REACT_APP_AUTH_URL to your PC IP (e.g. http://192.168.1.17:3000). 3) If using USB, connect phone to same WiFi as PC, or run: adb reverse tcp:3000 tcp:3000 and use localhost in .env.'
         : (error.message || 'Failed to get token');
       logger.error('🔴 Token fetch error:', message);
       throw new Error(message);
