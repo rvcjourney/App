@@ -16,7 +16,7 @@ export const UNIFIED_THEME = {
 
     // Accent colors (unified across entire app - NO MORE ADMIN-ONLY COLORS)
     accent: {
-      primary: '#ff006e',    // Neon pink (primary action, borders, accents)
+      primary: '#ff308a',    // Neon pink (primary action, borders, accents)
       secondary: '#00d4ff',  // Cyan (secondary accent, highlights)
       success: '#10B981',    // Unified green for all success states
       warning: '#F59E0B',    // Unified orange for warnings
@@ -37,7 +37,7 @@ export const UNIFIED_THEME = {
     component: {
       card: 'rgba(255, 255, 255, 0.08)',           // Glassmorphic card
       input: 'rgba(255, 255, 255, 0.05)',          // Input field
-      button: '#ff006e',                           // Primary button
+      button: '#ff2382',                           // Primary button
       buttonSecondary: 'rgba(255, 0, 110, 0.15)',  // Ghost/secondary button
       overlay: 'rgba(0, 0, 0, 0.7)',               // Modal overlay
       disabled: 'rgba(255, 255, 255, 0.03)',       // Disabled component

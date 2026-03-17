@@ -555,7 +555,7 @@ export default function StudentCheckout({
         </View>
 
         {/* Security & Terms */}
-        <View style={styles.section}>
+        {/* <View style={styles.section}>
           <View style={styles.securityBox}>
             <ThemedText variant="labelLg" color={UNIFIED_THEME.colors.accent.success} style={styles.securityTitle}>🔒 Secure & Protected</ThemedText>
             <ThemedText variant="bodySm" color={UNIFIED_THEME.colors.text.secondary} style={styles.termsText}>
@@ -571,7 +571,7 @@ export default function StudentCheckout({
               ✓ Money-back guarantee
             </ThemedText>
           </View>
-        </View>
+        </View> */}
         <View style={{ height: 80 }} /> 
       </ScrollView>
 

@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-simple-toast';
 import { supabase } from '../../../supabase';
+import logger from '../../utils/logger';
 import UNIFIED_THEME from '../../constants/unifiedTheme';
 import ThemedText from '../../components/ThemedText';
 import User from '../../assets/icons/User';
@@ -133,7 +134,7 @@ export default function EditStudentProfile({ navigation, onSaveSuccess }) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={UNIFIED_THEME.colors.accent.primary} />
+          <ActivityIndicator size="large" color={UNIFIED_THEME.colors.text.secondary} />
         </View>
       </SafeAreaView>
     );
@@ -148,7 +149,7 @@ export default function EditStudentProfile({ navigation, onSaveSuccess }) {
             style={styles.backButtonContainer}
             onPress={() => navigation.goBack()}
           >
-            <ChevronRight width={24} height={24} fill={UNIFIED_THEME.colors.accent.primary} style={{ transform: [{ rotate: '180deg' }] }} />
+            <ChevronRight width={24} height={24} fill={UNIFIED_THEME.colors.text.secondary} style={{ transform: [{ rotate: '180deg' }] }} />
           </TouchableOpacity>
           <ThemedText variant="heading" size="md">Edit Profile</ThemedText>
           <View style={{ width: 0 }} />
@@ -158,7 +159,7 @@ export default function EditStudentProfile({ navigation, onSaveSuccess }) {
           {/* Profile Avatar */}
           <View style={styles.avatarSection}>
             <View style={styles.avatarContainer}>
-              <User width={56} height={56} fill={UNIFIED_THEME.colors.accent.primary} />
+              <User width={56} height={56} fill={UNIFIED_THEME.colors.text.secondary} />
             </View>
             <ThemedText variant="body" size="sm" color="muted">Profile Information</ThemedText>
           </View>
@@ -166,11 +167,11 @@ export default function EditStudentProfile({ navigation, onSaveSuccess }) {
           {/* Full Name */}
           <View style={styles.fieldSection}>
             <View style={styles.labelContainer}>
-              <ThemedText variant="label" size="md" color="primary">Full Name</ThemedText>
-              <ThemedText variant="label" size="md" color="primary" style={{ marginLeft: 4 }}>*</ThemedText>
+              <ThemedText variant="label" size="md" color="secondary">Full Name</ThemedText>
+              <ThemedText variant="label" size="md" color="secondary" style={{ marginLeft: 4 }}>*</ThemedText>
             </View>
             <View style={styles.inputContainer}>
-              <User width={18} height={18} fill={UNIFIED_THEME.colors.accent.primary} style={{ marginRight: 10 }} />
+              <User width={18} height={18} fill={UNIFIED_THEME.colors.text.secondary} style={{ marginRight: 10 }} />
               <TextInput
                 style={styles.input}
                 placeholder="Enter your full name"
@@ -184,7 +185,7 @@ export default function EditStudentProfile({ navigation, onSaveSuccess }) {
           {/* Email */}
           <View style={styles.fieldSection}>
             <View style={styles.labelContainer}>
-              <ThemedText variant="label" size="md" color="primary">Email Address</ThemedText>
+              <ThemedText variant="label" size="md" color="secondary">Email Address</ThemedText>
             </View>
             <View style={[styles.inputContainer, styles.disabledInput]}>
               <ThemedText variant="body" size="md" color="muted">{email}</ThemedText>
@@ -195,7 +196,7 @@ export default function EditStudentProfile({ navigation, onSaveSuccess }) {
           {/* Grade Level */}
           <View style={styles.fieldSection}>
             <View style={styles.labelContainer}>
-              <ThemedText variant="label" size="md" color="primary">Grade Level</ThemedText>
+              <ThemedText variant="label" size="md" color="secondary">Grade Level</ThemedText>
             </View>
             <View style={styles.inputContainer}>
               <TextInput
@@ -211,7 +212,7 @@ export default function EditStudentProfile({ navigation, onSaveSuccess }) {
           {/* Subjects Interested */}
           <View style={styles.fieldSection}>
             <View style={styles.labelContainer}>
-              <ThemedText variant="label" size="md" color="primary">Subjects Interested</ThemedText>
+              <ThemedText variant="label" size="md" color="secondary">Subjects Interested</ThemedText>
             </View>
             <View style={[styles.inputContainer, styles.multilineContainer]}>
               <TextInput
@@ -229,7 +230,7 @@ export default function EditStudentProfile({ navigation, onSaveSuccess }) {
           {/* Preferred Language */}
           <View style={styles.fieldSection}>
             <View style={styles.labelContainer}>
-              <ThemedText variant="label" size="md" color="primary">Preferred Language</ThemedText>
+              <ThemedText variant="label" size="md" color="secondary">Preferred Language</ThemedText>
             </View>
             <View style={styles.languageButtons}>
               {['English', 'Hindi', 'Marathi'].map(lang => (
@@ -261,7 +262,7 @@ export default function EditStudentProfile({ navigation, onSaveSuccess }) {
             onPress={() => navigation.goBack()}
             disabled={saving}
           >
-            <ThemedText variant="label" size="md" color="primary">Cancel</ThemedText>
+            <ThemedText variant="label" size="md" color="secondary">Cancel</ThemedText>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -330,7 +331,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 0, 110, 0.15)',
     borderRadius: UNIFIED_THEME.borderRadius.lg,
     borderWidth: 2,
-    borderColor: UNIFIED_THEME.colors.accent.primary,
+    borderColor: UNIFIED_THEME.colors.text.secondary,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: UNIFIED_THEME.spacing.md,
@@ -401,8 +402,8 @@ const styles = StyleSheet.create({
   },
 
   langBtnActive: {
-    backgroundColor: UNIFIED_THEME.colors.accent.primary,
-    borderColor: UNIFIED_THEME.colors.accent.primary,
+    backgroundColor: UNIFIED_THEME.colors.text.secondary,
+    borderColor: UNIFIED_THEME.colors.text.secondary,
     ...UNIFIED_THEME.shadows.glow,
   },
 
@@ -426,7 +427,7 @@ const styles = StyleSheet.create({
 
   saveButton: {
     flex: 1,
-    backgroundColor: UNIFIED_THEME.colors.accent.primary,
+    backgroundColor: UNIFIED_THEME.colors.text.secondary,
     borderRadius: UNIFIED_THEME.borderRadius.round,
     paddingVertical: UNIFIED_THEME.spacing.lg,
     alignItems: 'center',

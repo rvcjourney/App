@@ -768,7 +768,7 @@ export default function TeacherDashboard({ navigation }) {
         <ScrollView>
           <View style={styles.header}>
             <View style={styles.settingsHeaderContainer}>
-              <ThemedText variant="heading" size="sm" color="primary" weight="700">Settings</ThemedText>
+              <ThemedText variant="heading" size="sm" color="secondary" weight="700">Settings</ThemedText>
               {/* <Icon name="settings" size={24} color="primary" /> */}
             </View>
           </View>
@@ -777,11 +777,11 @@ export default function TeacherDashboard({ navigation }) {
           <View style={styles.profileSettingsCard}>
             <TouchableOpacity onPress={handleStatusPress} style={styles.profileImageWrapperSettings} activeOpacity={0.8}>
               <View style={[styles.profileImageContainer, styles.profileImageContainerSettings]}>
-                <Icon name="user" size={64} color="primary" />
+                <Icon name="user" size={64} color="secondary" />
               </View>
               <View style={[styles.statusDot, styles.statusDotSettings, { backgroundColor: statusColor[teacherStatus] }]} />
             </TouchableOpacity>
-            <ThemedText variant="heading" size="sm" color="primary" weight="700" style={{ marginTop: 10 }}>{teacherName}</ThemedText>
+            <ThemedText variant="heading" size="sm" color="secondary" weight="700" style={{ marginTop: 10 }}>{teacherName}</ThemedText>
             <ThemedText variant="body" size="sm" color="secondary" style={{ marginTop: 3 }}>{specializations || 'Tutor'}</ThemedText>
             <ThemedText variant="body" size="xs" color="muted" style={{ marginTop: 4, textAlign: 'center' }}>{statusLabel[teacherStatus]}</ThemedText>
           </View>
@@ -793,18 +793,18 @@ export default function TeacherDashboard({ navigation }) {
               onPress={() => navigation.navigate(SCREEN_NAMES.EditTeacherProfile)}
             >
               <View style={styles.settingIconContainer}>
-                <Icon name="user" size={20} color="primary" />
+                <Icon name="user" size={20} color="secondary" />
               </View>
-              <ThemedText variant="body" size="sm" color="primary" weight="500" style={{ flex: 1 }}>Edit Profile</ThemedText>
+              <ThemedText variant="body" size="sm" color="secondary" weight="500" style={{ flex: 1 }}>Edit Profile</ThemedText>
               <Icon name="forward" size={16} color="muted" />
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.settingItem} onPress={() => Alert.alert('Set Price', `Current: ₹${pricePerCall}/call`)}>
               <View style={styles.settingIconContainer}>
-                <Icon name="dollarSign" size={20} color="primary" />
+                <Icon name="dollarSign" size={20} color="secondary" />
               </View>
-              <ThemedText variant="body" size="sm" color="primary" weight="500" style={{ flex: 1 }}>Set Hourly Rate</ThemedText>
-              <ThemedText variant="body" size="sm" color="primary">₹{pricePerCall}</ThemedText>
+              <ThemedText variant="body" size="sm" color="secondary" weight="500" style={{ flex: 1 }}>Set Hourly Rate</ThemedText>
+              <ThemedText variant="body" size="sm" color="secondary">₹{pricePerCall}</ThemedText>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -812,17 +812,17 @@ export default function TeacherDashboard({ navigation }) {
               onPress={() => navigation.navigate(SCREEN_NAMES.BankAccountSettings)}
             >
               <View style={styles.settingIconContainer}>
-                <Icon name="user" size={20} color="primary" />
+                <Icon name="user" size={20} color="secondary" />
               </View>
-              <ThemedText variant="body" size="sm" color="primary" weight="500" style={{ flex: 1 }}>Bank Account</ThemedText>
+              <ThemedText variant="body" size="sm" color="secondary" weight="500" style={{ flex: 1 }}>Bank Account</ThemedText>
               <Icon name="forward" size={16} color="muted" />
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.settingItem} onPress={() => navigation.navigate(SCREEN_NAMES.Notifications)}>
               <View style={styles.settingIconContainer}>
-                <Icon name="clock" size={20} color="primary" />
+                <Icon name="clock" size={20} color="secondary" />
               </View>
-              <ThemedText variant="body" size="sm" color="primary" weight="500" style={{ flex: 1 }}>Notifications</ThemedText>
+              <ThemedText variant="body" size="sm" color="secondary" weight="500" style={{ flex: 1 }}>Notifications</ThemedText>
               <Icon name="forward" size={16} color="muted" />
             </TouchableOpacity>
 
@@ -854,7 +854,7 @@ export default function TeacherDashboard({ navigation }) {
               <View style={styles.settingIconContainer}>
                 <ThemedText style={{ fontSize: 18 }}>🔒</ThemedText>
               </View>
-              <ThemedText variant="body" size="sm" color="primary" weight="500" style={{ flex: 1 }}>Reset Password</ThemedText>
+              <ThemedText variant="body" size="sm" color="secondary" weight="500" style={{ flex: 1 }}>Reset Password</ThemedText>
               <Icon name="forward" size={16} color="muted" />
             </TouchableOpacity>
 
@@ -863,23 +863,23 @@ export default function TeacherDashboard({ navigation }) {
               onPress={() => navigation.navigate(SCREEN_NAMES.TeacherAvailability)}
             >
               <View style={styles.settingIconContainer}>
-                <Icon name="calendar" size={20} color="primary" />
+                <Icon name="calendar" size={20} color="secondary" />
               </View>
-              <ThemedText variant="body" size="sm" color="primary" weight="500" style={{ flex: 1 }}>Set Availability</ThemedText>
+              <ThemedText variant="body" size="sm" color="secondary" weight="500" style={{ flex: 1 }}>Set Availability</ThemedText>
               <Icon name="forward" size={16} color="muted" />
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.settingItem} onPress={() => Alert.alert('Privacy')}>
               <View style={styles.settingIconContainer}>
-                <Icon name="user" size={20} color="primary" />
+                <Icon name="user" size={20} color="secondary" />
               </View>
-              <ThemedText variant="body" size="sm" color="primary" weight="500" style={{ flex: 1 }}>Privacy & Security</ThemedText>
+              <ThemedText variant="body" size="sm" color="secondary" weight="500" style={{ flex: 1 }}>Privacy & Security</ThemedText>
               <Icon name="forward" size={16} color="muted" />
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.settingItem} onPress={() => Alert.alert('Help')}>
               <ThemedText style={{ fontSize: 20, marginRight: 12 }}>❓</ThemedText>
-              <ThemedText variant="body" size="sm" color="primary" weight="500" style={{ flex: 1 }}>Help & Support</ThemedText>
+              <ThemedText variant="body" size="sm" color="secondary" weight="500" style={{ flex: 1 }}>Help & Support</ThemedText>
               <ThemedText variant="body" size="lg" color="muted">→</ThemedText>
             </TouchableOpacity>
 
@@ -888,9 +888,9 @@ export default function TeacherDashboard({ navigation }) {
               onPress={() => navigation.navigate(SCREEN_NAMES.TeacherEarnings)}
             >
               <View style={styles.settingIconContainer}>
-                <Icon name="money" size={20} color="primary" />
+                <Icon name="money" size={20} color="secondary" />
               </View>
-              <ThemedText variant="body" size="sm" color="primary" weight="500" style={{ flex: 1 }}>My Earnings & Withdrawals</ThemedText>
+              <ThemedText variant="body" size="sm" color="secondary" weight="500" style={{ flex: 1 }}>My Earnings & Withdrawals</ThemedText>
               <Icon name="forward" size={16} color="muted" />
             </TouchableOpacity>
 

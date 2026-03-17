@@ -126,10 +126,10 @@ export default function NotificationsScreen({ navigation }) {
         activeOpacity={0.7}
       >
         <View style={styles.iconWrap}>
-          <Icon name={meta.iconName} size={20} color={UNIFIED_THEME.colors.accent.primary} />
+          <Icon name={meta.iconName} size={20} color={UNIFIED_THEME.colors.text.secondary} />
         </View>
         <View style={styles.body}>
-          <ThemedText variant="label" size="sm" color="primary" style={styles.typeLabel}>{meta.label}</ThemedText>
+          <ThemedText variant="label" size="sm" color="secondary" style={styles.typeLabel}>{meta.label}</ThemedText>
           <ThemedText variant="body" size="md" numberOfLines={1} style={styles.title}>{item.title}</ThemedText>
           <ThemedText variant="body" size="sm" color="muted" numberOfLines={2} style={styles.message}>{item.message}</ThemedText>
           <ThemedText variant="body" size="xs" color="muted" style={styles.time}>{formatTime(item.created_at)}</ThemedText>
@@ -146,12 +146,12 @@ export default function NotificationsScreen({ navigation }) {
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
           <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-            <Icon name="chevronLeft" size={24} color={UNIFIED_THEME.colors.accent.primary} />
+            <Icon name="chevronLeft" size={24} color={UNIFIED_THEME.colors.text.secondary} />
           </TouchableOpacity>
           <ThemedText variant="heading" size="md" style={styles.headerTitle}>Notifications</ThemedText>
         </View>
         <View style={styles.center}>
-          <ActivityIndicator size="large" color={UNIFIED_THEME.colors.accent.primary} />
+          <ActivityIndicator size="large" color={UNIFIED_THEME.colors.text.secondary} />
         </View>
       </SafeAreaView>
     );
@@ -161,14 +161,14 @@ export default function NotificationsScreen({ navigation }) {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <Icon name="chevronLeft" size={24} color={UNIFIED_THEME.colors.accent.primary} />
+          <Icon name="chevronLeft" size={24} color={UNIFIED_THEME.colors.text.secondary} />
         </TouchableOpacity>
         <ThemedText variant="heading" size="md" style={styles.headerTitle}>Notifications</ThemedText>
       </View>
 
       {loading && items.length === 0 ? (
         <View style={styles.center}>
-          <ActivityIndicator size="large" color={UNIFIED_THEME.colors.accent.primary} />
+          <ActivityIndicator size="large" color={UNIFIED_THEME.colors.text.secondary} />
           <ThemedText variant="body" size="sm" color="muted" style={styles.loadingText}>Loading notifications...</ThemedText>
         </View>
       ) : items.length === 0 ? (
@@ -184,14 +184,14 @@ export default function NotificationsScreen({ navigation }) {
           keyExtractor={keyExtractor}
           contentContainerStyle={styles.listContent}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[UNIFIED_THEME.colors.accent.primary]} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[UNIFIED_THEME.colors.text.secondary]} />
           }
           onEndReached={onLoadMore}
           onEndReachedThreshold={0.3}
           ListFooterComponent={
             loadingMore ? (
               <View style={styles.footerLoader}>
-                <ActivityIndicator size="small" color={UNIFIED_THEME.colors.accent.primary} />
+                <ActivityIndicator size="small" color={UNIFIED_THEME.colors.text.secondary} />
               </View>
             ) : null
           }
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
   },
   cardUnread: {
     borderLeftWidth: 4,
-    borderLeftColor: UNIFIED_THEME.colors.accent.primary,
+    borderLeftColor: UNIFIED_THEME.colors.text.secondary,
     ...UNIFIED_THEME.shadows.medium,
   },
   iconWrap: {

@@ -163,12 +163,12 @@ export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
           {/* Profile Avatar */}
           <View style={styles.avatarSection}>
             {/* <Text style={styles.avatar}>👨‍🏫</Text> */}
-            <User width={60} height={60} fill="#ff006e" />
+            <User width={60} height={60} fill={UNIFIED_THEME.colors.text.secondary} />
           </View>
 
           {/* Full Name */}
           <View style={styles.fieldSection}>
-            <ThemedText variant="label" size="md" color="primary">Full Name *</ThemedText>
+            <ThemedText variant="label" size="md" color="secondary">Full Name *</ThemedText>
             <TextInput
               style={styles.input}
               placeholder="Enter your full name"
@@ -180,7 +180,7 @@ export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
 
           {/* Email */}
           <View style={styles.fieldSection}>
-            <ThemedText variant="label" size="md" color="primary">Email</ThemedText>
+            <ThemedText variant="label" size="md" color="secondary">Email</ThemedText>
             <View style={[styles.input, styles.readonlyInput]}>
               <ThemedText variant="body" size="md" color="muted">{email}</ThemedText>
             </View>
@@ -188,7 +188,7 @@ export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
 
           {/* Profession */}
           <View style={styles.fieldSection}>
-            <ThemedText variant="label" size="md" color="primary">Profession (Optional)</ThemedText>
+            <ThemedText variant="label" size="md" color="secondary">Profession *</ThemedText>
             <View style={styles.professionGrid}>
               {PROFESSIONS.map((prof) => (
                 <TouchableOpacity
@@ -199,10 +199,9 @@ export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
                   ]}
                   onPress={() => setProfession(prof.name)}
                 >
-                  <ThemedText style={styles.professionIcon}>{prof.icon}</ThemedText>
-                  <ThemedText variant="label" size="sm" color="primary" style={{ textAlign: 'center' }}>{prof.name}</ThemedText>
+                  <ThemedText variant="label" size="sm" color="secondary" style={{ textAlign: 'center' }}>{prof.name}</ThemedText>
                   {profession === prof.name && (
-                    <ThemedText style={styles.professionCheckmark}>✓</ThemedText>
+                    <ThemedText style={styles.professionCheckmark}></ThemedText>
                   )}
                 </TouchableOpacity>
               ))}
@@ -211,7 +210,7 @@ export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
 
           {/* Bio */}
           <View style={styles.fieldSection}>
-            <ThemedText variant="label" size="md" color="primary">Bio</ThemedText>
+            <ThemedText variant="label" size="md" color="secondary">Bio</ThemedText>
             <TextInput
               style={[styles.input, styles.multilineInput]}
               placeholder="Write a brief bio about yourself..."
@@ -225,7 +224,7 @@ export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
 
           {/* Specializations */}
           <View style={styles.fieldSection}>
-            <ThemedText variant="label" size="md" color="primary">Specializations</ThemedText>
+            <ThemedText variant="label" size="md" color="secondary">Specializations</ThemedText>
             <TextInput
               style={[styles.input, styles.multilineInput]}
               placeholder="e.g., Math, Physics, Chemistry (comma separated)"
@@ -239,13 +238,13 @@ export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
 
           {/* Price Per Hour Call */}
           <View style={styles.fieldSection}>
-            <ThemedText variant="label" size="md" color="primary">Price Per Hour Call (₹)</ThemedText>
+            <ThemedText variant="label" size="md" color="secondary">Price Per Hour Call (₹)</ThemedText>
             <View style={styles.priceRow}>
               <TouchableOpacity
                 style={styles.priceAdjustBtn}
                 onPress={() => setPricePerCall(String(Math.max(100, parseInt(pricePerCall) - 50)))}
               >
-                <ThemedText variant="heading" size="md" color="primary">-</ThemedText>
+                <ThemedText variant="heading" size="md" color="secondary">-</ThemedText>
               </TouchableOpacity>
               <TextInput
                 style={[styles.input, styles.priceInput]}
@@ -259,14 +258,14 @@ export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
                 style={styles.priceAdjustBtn}
                 onPress={() => setPricePerCall(String(parseInt(pricePerCall) + 50 || 550))}
               >
-                <ThemedText variant="heading" size="md" color="primary">+</ThemedText>
+                <ThemedText variant="heading" size="md" color="secondary">+</ThemedText>
               </TouchableOpacity>
             </View>
           </View>
 
           {/* Experience Years */}
           <View style={styles.fieldSection}>
-            <ThemedText variant="label" size="md" color="primary">Years of Experience</ThemedText>
+            <ThemedText variant="label" size="md" color="secondary">Years of Experience</ThemedText>
             <TextInput
               style={styles.input}
               placeholder="e.g., 5"
