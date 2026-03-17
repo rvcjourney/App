@@ -1,6 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { supabase } from '../../supabase';
-import { isProfileComplete, getStudentBookings } from '../database/database';
+import databaseApi from '../database/databaseApi';
 import logger from '../utils/logger';
 import Toast from 'react-native-simple-toast';
 import { UI_CONFIG } from '../constants/appConfig';
@@ -21,50 +20,37 @@ export const useStudentProfile = () => {
   const isBookingsFetchingRef = useRef(false);
 
   // Fetch current user and profile info
-  const fetchStudentProfile = useCallback(async () => {
+  const fetchStudentProfile = useCallback(async (userId) => {
     // Skip if already fetching
     if (isProfileFetchingRef.current) {
       logger.warn('Student profile fetch already in progress, skipping duplicate request');
       return null;
     }
 
+    if (!userId) {
+      logger.warn('No user ID provided');
+      return null;
+    }
+
     isProfileFetchingRef.current = true;
     try {
-      logger.info('Fetching student profile...');
-      const { data: { user } } = await supabase.auth.getUser();
+      logger.info('Fetching student profile via backend API...');
+      setStudentId(userId);
 
-      if (!user) {
-        logger.warn('No authenticated user found');
-        return null;
-      }
-
-      setStudentId(user.id);
-
-      // Get student profile
-      const { data: profileRows } = await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('id', user.id)
-        .limit(1);
-
-      const profile = Array.isArray(profileRows) && profileRows.length > 0
-        ? profileRows[0]
-        : profileRows;
+      // Get student profile from backend
+      const response = await databaseApi.getProfile(userId);
+      const profile = response.profile;
 
       if (profile?.full_name) {
         setStudentName(profile.full_name);
       }
 
-      // Check if profile is complete
-      try {
-        const complete = await isProfileComplete('student', user.id);
-        setProfileIncomplete(!complete);
-      } catch (error) {
-        logger.warn('Could not verify profile completeness:', error);
-        setProfileIncomplete(true);
-      }
+      // Check if profile is complete (has grade_level or subjects_interested)
+      const isComplete = profile?.grade_level || profile?.subjects_interested;
+      setProfileIncomplete(!isComplete);
 
-      return user.id;
+      logger.success('Student profile fetched');
+      return userId;
     } catch (error) {
       logger.error('Error fetching student profile:', error);
       throw error;
@@ -84,8 +70,8 @@ export const useStudentProfile = () => {
     isBookingsFetchingRef.current = true;
     try {
       if (!userId) return;
-      logger.info('Fetching student bookings...');
-      const bookingsData = await getStudentBookings(userId);
+      logger.info('Fetching student bookings via backend API...');
+      const bookingsData = await databaseApi.getStudentBookings(userId);
       setMyBookings(bookingsData || []);
       logger.success('Bookings loaded:', bookingsData?.length || 0);
     } catch (error) {
@@ -104,46 +90,32 @@ export const useStudentProfile = () => {
       return;
     }
 
+    if (!studentId) {
+      logger.warn('No student ID available');
+      return;
+    }
+
     isProfileFetchingRef.current = true;
     try {
-      logger.info('Refreshing student profile...');
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        logger.warn('No authenticated user found');
-        return;
-      }
-
-      // Update student ID
-      setStudentId(user.id);
+      logger.info('Refreshing student profile via backend API...');
 
       // Fetch and update profile
-      const { data: profileRows } = await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('id', user.id)
-        .limit(1);
-
-      const profile = Array.isArray(profileRows) && profileRows.length > 0
-        ? profileRows[0]
-        : profileRows;
+      const response = await databaseApi.getProfile(studentId);
+      const profile = response.profile;
 
       if (profile?.full_name) {
         setStudentName(profile.full_name);
       }
 
       // Check profile completeness
-      try {
-        const complete = await isProfileComplete('student', user.id);
-        setProfileIncomplete(!complete);
-      } catch (err) {
-        logger.warn('Could not verify profile completeness:', err);
-      }
+      const isComplete = profile?.grade_level || profile?.subjects_interested;
+      setProfileIncomplete(!isComplete);
 
       // Refresh bookings in parallel
       if (!isBookingsFetchingRef.current) {
         isBookingsFetchingRef.current = true;
         try {
-          const bookingsData = await getStudentBookings(user.id);
+          const bookingsData = await databaseApi.getStudentBookings(studentId);
           setMyBookings(bookingsData || []);
         } finally {
           isBookingsFetchingRef.current = false;
@@ -157,92 +129,67 @@ export const useStudentProfile = () => {
     } finally {
       isProfileFetchingRef.current = false;
     }
-  }, []);
+  }, [studentId]);
 
-  // Setup real-time subscriptions for bookings and notifications
+  // Setup polling for bookings and notifications (replaces real-time subscriptions)
   useEffect(() => {
-    let bookingsChannel;
-    let notificationsChannel;
+    let bookingsInterval;
+    let notificationsInterval;
+    let notificationDebounceTimer = null;
+    let lastNotificationCount = 0;
 
-    const setupSubscriptions = async () => {
+    const setupPolling = async () => {
+      if (!studentId) return;
+
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+        logger.info('Setting up polling for bookings and notifications...');
 
-        logger.info('Setting up real-time subscriptions for student...');
-
-        const refreshBookingsForUser = () => {
-          getStudentBookings(user.id).then(updatedBookings => {
-            setMyBookings(updatedBookings || []);
-            logger.info('Bookings updated in real-time');
-          });
-        };
-
-        // Bookings subscription (INSERT + UPDATE events)
-        bookingsChannel = supabase
-          .channel(`bookings:student_${user.id}`)
-          .on(
-            'postgres_changes',
-            { event: 'INSERT', schema: 'public', table: 'bookings', filter: `student_id=eq.${user.id}` },
-            () => {
-              logger.info('New booking received (INSERT)');
-              Toast.show('📅 Your booking was confirmed.');
-              refreshBookingsForUser();
-            }
-          )
-          .on(
-            'postgres_changes',
-            { event: 'UPDATE', schema: 'public', table: 'bookings', filter: `student_id=eq.${user.id}` },
-            (payload) => {
-              logger.info('Booking updated in real-time');
-              if (payload.new?.meeting_id && !payload.old?.meeting_id) {
-                Toast.show('📞 Class is starting! You can now join!');
-              }
-              refreshBookingsForUser();
-            }
-          )
-          .subscribe((status) => logger.info('Bookings channel status:', status));
-
-        // Notifications subscription with debouncing
-        let notificationDebounceTimer = null;
-        let pendingNotification = null;
-        const showNotificationToast = () => {
-          if (pendingNotification) {
-            const n = pendingNotification;
-            Toast.show(n.title ? `${n.title}\n${n.message || ''}` : n.message || 'New notification');
-            pendingNotification = null;
+        // Poll bookings every 8 seconds
+        bookingsInterval = setInterval(async () => {
+          try {
+            const bookingsData = await databaseApi.getStudentBookings(studentId);
+            setMyBookings(bookingsData || []);
+          } catch (error) {
+            logger.error('Error polling bookings:', error);
           }
-        };
+        }, 8000);
 
-        notificationsChannel = supabase
-          .channel(`notifications:student_${user.id}`)
-          .on(
-            'postgres_changes',
-            { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
-            (payload) => {
-              const n = payload?.new;
-              if (!n?.title && !n?.message) return;
-              setUnreadNotificationCount((c) => c + 1);
-              pendingNotification = n;
+        // Poll notifications every 5 seconds
+        notificationsInterval = setInterval(async () => {
+          try {
+            const response = await databaseApi.getUnreadNotifications(studentId, 10);
+            const notificationCount = response?.length || 0;
+
+            // Show toast if new notifications
+            if (notificationCount > lastNotificationCount) {
+              const newCount = notificationCount - lastNotificationCount;
               if (notificationDebounceTimer) clearTimeout(notificationDebounceTimer);
-              notificationDebounceTimer = setTimeout(showNotificationToast, UI_CONFIG.NOTIFICATION_DEBOUNCE_MS);
+              notificationDebounceTimer = setTimeout(() => {
+                Toast.show(`🔔 You have ${newCount} new notification${newCount > 1 ? 's' : ''}`);
+              }, UI_CONFIG.NOTIFICATION_DEBOUNCE_MS);
             }
-          )
-          .subscribe((status) => logger.info('Notifications channel status:', status));
 
-        logger.success('Real-time subscriptions started');
+            lastNotificationCount = notificationCount;
+            setUnreadNotificationCount(notificationCount);
+          } catch (error) {
+            logger.error('Error polling notifications:', error);
+          }
+        }, 5000);
+
+        logger.success('Polling setup complete');
       } catch (error) {
-        logger.error('Error setting up subscriptions:', error);
+        logger.error('Error setting up polling:', error);
       }
     };
 
     if (studentId) {
-      setupSubscriptions();
+      setupPolling();
     }
 
     return () => {
-      if (bookingsChannel) supabase.removeChannel(bookingsChannel);
-      if (notificationsChannel) supabase.removeChannel(notificationsChannel);
+      if (bookingsInterval) clearInterval(bookingsInterval);
+      if (notificationsInterval) clearInterval(notificationsInterval);
+      if (notificationDebounceTimer) clearTimeout(notificationDebounceTimer);
     };
   }, [studentId]);
 

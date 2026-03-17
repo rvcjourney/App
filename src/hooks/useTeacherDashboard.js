@@ -1,13 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { supabase } from '../../supabase';
-import {
-  getTeacherProfile,
-  getTeacherBookings,
-  getTeacherTodayCallHistory,
-  getTeacherEarnings,
-  getTeacherTodayEarnings,
-  getUnreadNotificationCount,
-} from '../database/database';
+import databaseApi from '../database/databaseApi';
 import logger from '../utils/logger';
 import Toast from 'react-native-simple-toast';
 
@@ -80,64 +72,46 @@ export const useTeacherDashboard = () => {
   const isInitializedRef = useRef(false);
 
   // Fetch teacher profile and related data
-  const fetchTeacherProfile = useCallback(async () => {
+  const fetchTeacherProfile = useCallback(async (userId) => {
     try {
       // Only show loading on first load
       if (!isInitializedRef.current) {
         setLoading(true);
       }
-      logger.info('Fetching teacher profile...');
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        logger.warn('No authenticated user found');
+      if (!userId) {
+        logger.warn('No user ID provided');
         return null;
       }
 
-      setTeacherId(user.id);
+      logger.info('Fetching teacher profile via backend API...');
 
-      // Get teacher name from profiles
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('id', user.id)
-        .single();
+      setTeacherId(userId);
+
+      // Get teacher profile from backend
+      const response = await databaseApi.getProfile(userId);
+      const profile = response.profile;
 
       if (profile?.full_name) {
         setTeacherName(profile.full_name);
       }
 
-      // Get teacher details
-      const { data: teacherRows } = await supabase
-        .from('teacher_profiles')
-        .select('*')
-        .eq('id', user.id)
-        .limit(1);
+      if (profile) {
+        setPricePerCall(profile.price_per_call || 500);
+        setRating(profile.rating || 4.8);
+        setFollowers(profile.followers || 0);
+        setSpecializations(profile.specializations || '');
 
-      const teacherData = Array.isArray(teacherRows) && teacherRows.length > 0
-        ? teacherRows[0]
-        : (teacherRows && !Array.isArray(teacherRows) ? teacherRows : null);
-
-      if (teacherData) {
-        setPricePerCall(teacherData.price_per_call || 500);
-        setRating(teacherData.rating || 4.8);
-        setFollowers(teacherData.followers || 0);
-        setSpecializations(teacherData.specializations || '');
-
-        const status = teacherData.availability_status;
+        const status = profile.availability_status;
         if (status === 'online' || status === 'away' || status === 'offline') {
           setTeacherStatus(status);
         }
 
-        const hasContent = (teacherData.specializations || '').trim() || (teacherData.bio || '').trim();
+        const hasContent = (profile.specializations || '').trim() || (profile.bio || '').trim();
         setProfileIncomplete(!hasContent);
       } else {
         setProfileIncomplete(true);
       }
-
-      // Refresh unread notification count
-      const count = await getUnreadNotificationCount(user.id);
-      setUnreadNotificationCount(count);
 
       logger.success('Teacher profile loaded');
 
@@ -147,7 +121,7 @@ export const useTeacherDashboard = () => {
         setLoading(false);
       }
 
-      return user.id;
+      return userId;
     } catch (error) {
       logger.error('Error fetching teacher profile:', error);
       throw error;
