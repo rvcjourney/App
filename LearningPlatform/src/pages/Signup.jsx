@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FaUserPlus } from 'react-icons/fa';
-import { supabase } from '../config/supabase';
 
 const Signup = () => {
   const [fullName, setFullName] = useState('');
@@ -11,6 +10,8 @@ const Signup = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -37,22 +38,27 @@ const Signup = () => {
     }
     setLoading(true);
     try {
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: email.trim(),
-        password,
-        options: { data: { full_name: fullName.trim(), role: 'super_admin' } },
+      const response = await fetch(`${API_URL}/api/auth/signup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fullName: fullName.trim(),
+          email: email.trim(),
+          password,
+        }),
       });
-      if (authError) throw authError;
 
-      await supabase.from('profiles').insert({
-        id: authData.user.id,
-        full_name: fullName.trim(),
-        role: 'super_admin',
-        email_verified: false,
-      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error?.message || data.message || 'Sign up failed');
+      }
+
       setSuccess(true);
     } catch (err) {
-      setError(err.message || 'Sign up failed.');
+      setError(err.message || 'Sign up failed. Please try again.');
     } finally {
       setLoading(false);
     }

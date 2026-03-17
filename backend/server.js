@@ -447,6 +447,209 @@ app.post(
 );
 
 // ==========================================
+// AUTHENTICATION ENDPOINTS (Admin Panel)
+// ==========================================
+
+/**
+ * POST /api/auth/signup
+ *
+ * Create a new super_admin account
+ * Uses SERVICE_ROLE_KEY for secure account creation
+ *
+ * Request Body:
+ * {
+ *   "fullName": "John Doe",
+ *   "email": "admin@example.com",
+ *   "password": "securePassword123"
+ * }
+ *
+ * Response:
+ * {
+ *   "success": true,
+ *   "user": { "id": "uuid", "email": "admin@example.com" },
+ *   "profile": { "id": "uuid", "full_name": "John Doe", "role": "super_admin" }
+ * }
+ */
+app.post(
+  '/api/auth/signup',
+  loginLimiter,
+  body('fullName')
+    .trim()
+    .notEmpty()
+    .withMessage('Full name is required')
+    .isLength({ min: 2, max: 100 })
+    .withMessage('Full name must be between 2 and 100 characters'),
+  body('email')
+    .trim()
+    .isEmail()
+    .withMessage('Valid email is required'),
+  body('password')
+    .isLength({ min: 6 })
+    .withMessage('Password must be at least 6 characters'),
+  validateRequest,
+  async (req, res) => {
+    try {
+      const { fullName, email, password } = req.body;
+
+      logger.info('🔵 Admin signup attempt:', { email });
+
+      // Create user in Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email: email.trim(),
+        password,
+        email_confirm: true,
+        user_metadata: { full_name: fullName.trim(), role: 'super_admin' },
+      });
+
+      if (authError) {
+        logger.warn('🔴 Auth creation error:', { email, error: authError.message });
+        return sendError(res, 400, ERROR_CODES.AUTHENTICATION_FAILED, authError.message || 'Failed to create account');
+      }
+
+      if (!authData?.user?.id) {
+        logger.error('🔴 No user ID returned from auth creation');
+        return sendError(res, 500, ERROR_CODES.INTERNAL_SERVER_ERROR, 'Failed to create account');
+      }
+
+      // Create profile in database
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .insert([{
+          id: authData.user.id,
+          full_name: fullName.trim(),
+          role: 'super_admin',
+          email_verified: true,
+        }])
+        .select('id, full_name, role, email')
+        .single();
+
+      if (profileError) {
+        logger.error('🔴 Profile creation error:', { userId: authData.user.id, error: profileError.message });
+        // Clean up auth user if profile creation fails
+        await supabase.auth.admin.deleteUser(authData.user.id);
+        return sendError(res, 500, ERROR_CODES.INTERNAL_SERVER_ERROR, 'Failed to create user profile');
+      }
+
+      logger.info('✅ Admin account created successfully:', { userId: authData.user.id, email });
+
+      sendSuccess(res, {
+        message: 'Account created successfully',
+        user: {
+          id: authData.user.id,
+          email: authData.user.email,
+        },
+        profile: {
+          id: profileData.id,
+          full_name: profileData.full_name,
+          role: profileData.role,
+        },
+      });
+    } catch (error) {
+      logger.error('🔴 Signup error:', { error: error.message });
+      sendError(res, 500, ERROR_CODES.INTERNAL_SERVER_ERROR, 'Failed to create account');
+    }
+  }
+);
+
+/**
+ * POST /api/auth/login
+ *
+ * Login admin with email and password
+ * Returns user data and profile info
+ *
+ * Request Body:
+ * {
+ *   "email": "admin@example.com",
+ *   "password": "securePassword123"
+ * }
+ *
+ * Response:
+ * {
+ *   "success": true,
+ *   "user": { "id": "uuid", "email": "admin@example.com" },
+ *   "profile": { "id": "uuid", "full_name": "John Doe", "role": "super_admin" },
+ *   "session": { "access_token": "...", "refresh_token": "..." }
+ * }
+ */
+app.post(
+  '/api/auth/login',
+  loginLimiter,
+  body('email')
+    .trim()
+    .isEmail()
+    .withMessage('Valid email is required'),
+  body('password')
+    .notEmpty()
+    .withMessage('Password is required'),
+  validateRequest,
+  async (req, res) => {
+    try {
+      const { email, password } = req.body;
+
+      logger.info('🔵 Admin login attempt:', { email });
+
+      // Authenticate with Supabase
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+
+      if (authError) {
+        logger.warn('🔴 Login failed:', { email, error: authError.message });
+        return sendError(res, 401, ERROR_CODES.AUTHENTICATION_FAILED, 'Invalid email or password');
+      }
+
+      if (!authData?.user?.id) {
+        logger.error('🔴 No user returned from login');
+        return sendError(res, 401, ERROR_CODES.AUTHENTICATION_FAILED, 'Login failed');
+      }
+
+      // Fetch user profile
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, full_name, role, email_verified')
+        .eq('id', authData.user.id)
+        .single();
+
+      if (profileError || !profileData) {
+        logger.warn('🔴 Profile not found:', { userId: authData.user.id });
+        return sendError(res, 401, ERROR_CODES.AUTHENTICATION_FAILED, 'User profile not found');
+      }
+
+      // Check if user is super_admin
+      if (profileData.role !== 'super_admin') {
+        logger.warn('🔴 Non-admin login attempt:', { userId: authData.user.id, role: profileData.role });
+        return sendError(res, 403, ERROR_CODES.AUTHENTICATION_FAILED, 'Only Super Admin can access this platform');
+      }
+
+      logger.info('✅ Admin login successful:', { userId: authData.user.id, email });
+
+      sendSuccess(res, {
+        message: 'Login successful',
+        user: {
+          id: authData.user.id,
+          email: authData.user.email,
+        },
+        profile: {
+          id: profileData.id,
+          full_name: profileData.full_name,
+          role: profileData.role,
+          email_verified: profileData.email_verified,
+        },
+        session: {
+          access_token: authData.session?.access_token,
+          refresh_token: authData.session?.refresh_token,
+          expires_in: authData.session?.expires_in,
+        },
+      });
+    } catch (error) {
+      logger.error('🔴 Login error:', { error: error.message });
+      sendError(res, 500, ERROR_CODES.INTERNAL_SERVER_ERROR, 'Login failed');
+    }
+  }
+);
+
+// ==========================================
 // BOOKING MANAGEMENT ENDPOINTS
 // ==========================================
 // MEETINGS
@@ -1832,12 +2035,16 @@ app.listen(PORT, HOST, () => {
   logger.info(`📍 Server running at: http://localhost:${PORT}`);
   logger.info(`📍 Also reachable at: http://192.168.1.17:${PORT}`);
   logger.info('\n📌 Available Endpoints:');
+  logger.info(`\n🔐 Authentication (Admin Panel - LearningPlatform):`);
+  logger.info(`   POST /api/auth/signup - Create admin account`);
+  logger.info(`   POST /api/auth/login  - Login admin`);
+  logger.info(`\n📱 Video Calls (Mobile App):`);
   logger.info(`   POST /send-otp        - Send OTP to email`);
   logger.info(`   POST /verify-otp      - Verify OTP`);
   logger.info(`   GET  /get-token       - Get fresh token`);
   logger.info(`   GET  /health          - Health check`);
   logger.info(`   POST /validate-token  - Validate token`);
-  logger.info(`\n📋 Admin (LearningPlatform):`);
+  logger.info(`\n📋 Admin (LearningPlatform - Data Management):`);
   logger.info(`   GET  /api/admin/teachers     - List all teachers`);
   logger.info(`   POST /api/admin/teachers/:id - Update teacher (use POST if PATCH blocked by CORS)`);
   logger.info(`   GET  /api/admin/students     - List all students`);
@@ -1871,6 +2078,8 @@ app.use((req, res) => {
     error: 'Not Found',
     message: 'Endpoint does not exist',
     availableEndpoints: [
+      'POST /api/auth/signup',
+      'POST /api/auth/login',
       'POST /send-otp',
       'POST /verify-otp',
       'GET /get-token',

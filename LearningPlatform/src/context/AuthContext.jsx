@@ -106,79 +106,40 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     setAuthError(null);
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      setAuthError(error.message || 'Login failed');
-      throw error;
-    }
-
-    const PROFILE_TIMEOUT_MS = 10000; // Increased timeout to 10 seconds
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
     try {
-      // Fetch profile with timeout
-      const { data: prof, error: profileErr } = await Promise.race([
-        supabase
-          .from('profiles')
-          .select('id, full_name, role')
-          .eq('id', data.user.id)
-          .maybeSingle(),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Profile fetch timed out. Please try again.')), PROFILE_TIMEOUT_MS)
-        ),
-      ]);
+      const response = await fetch(`${API_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email.trim(),
+          password,
+        }),
+      });
 
-      if (profileErr) {
-        console.error('Profile fetch error:', profileErr);
-        setAuthError('Could not load your profile. Please try again.');
-        await supabase.auth.signOut();
-        throw new Error(profileErr.message);
+      const data = await response.json();
+
+      if (!response.ok) {
+        const errorMsg = data.error?.message || data.message || 'Login failed';
+        setAuthError(errorMsg);
+        throw new Error(errorMsg);
       }
 
-      // If profile doesn't exist, create it
-      if (!prof) {
-        console.warn('Profile not found, creating new profile...');
-        const { data: newProfile, error: createErr } = await supabase
-          .from('profiles')
-          .insert([{
-            id: data.user.id,
-            full_name: data.user?.user_metadata?.full_name || 'User',
-            role: 'super_admin', // Default to super_admin for login attempt
-            email_verified: true,
-          }])
-          .select('id, full_name, role')
-          .single();
-
-        if (createErr) {
-          console.error('Profile creation error:', createErr);
-          setAuthError('Could not create your profile. Please try again.');
-          await supabase.auth.signOut();
-          throw new Error(createErr.message);
-        }
-
+      // Backend already validated that user is super_admin
+      if (data.user && data.profile) {
         setUser(data.user);
-        setProfile(newProfile ? { ...newProfile, email: data.user?.email } : null);
+        setProfile({ ...data.profile, email: data.user.email });
         setAuthError(null);
         return data;
+      } else {
+        throw new Error('Invalid response from server');
       }
-
-      // Check if user is super_admin
-      if (prof?.role !== 'super_admin') {
-        console.warn('User does not have super_admin role:', prof?.role);
-        await supabase.auth.signOut();
-        setAuthError('Only Super Admin can access this platform. Your account role: ' + (prof?.role || 'unknown'));
-        throw new Error('Not super admin');
-      }
-
-      setUser(data.user);
-      setProfile(prof ? { ...prof, email: data.user?.email } : null);
-      setAuthError(null);
-      return data;
     } catch (err) {
-      // Only set error if not already set
-      if (!authError) {
-        setAuthError(err?.message || 'Login failed. Please try again.');
-      }
-      await supabase.auth.signOut();
+      const errorMsg = err?.message || 'Login failed. Please try again.';
+      setAuthError(errorMsg);
       throw err;
     }
   };
