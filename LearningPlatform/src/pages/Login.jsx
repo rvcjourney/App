@@ -33,8 +33,8 @@ const Login = () => {
       <div className="container" style={{ maxWidth: '420px' }}>
         <div className="card bg-secondary bg-opacity-25 border border-secondary shadow-lg">
           <div className="card-body p-4 p-sm-5">
-            <h2 className="text-white fw-bold text-center mb-2">Learning Platform</h2>
-            <p className="text-secondary text-center small mb-4">Super Admin only</p>
+            <h2 className="text-white fw-bold text-center mb-2">Connectiqo</h2>
+            <p className="text-secondary text-center small mb-4">Admin Panel</p>
 
             {authError && (
               <div className="alert alert-danger py-2 mb-3" role="alert">
