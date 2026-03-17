@@ -14,6 +14,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-simple-toast';
 import { supabase } from '../../../supabase';
+import databaseApi from '../../database/databaseApi';
+import logger from '../../utils/logger';
 import { API_URL } from '../../api/api';
 import UNIFIED_THEME from '../../constants/unifiedTheme';
 import ThemedText from '../../components/ThemedText';
@@ -60,17 +62,9 @@ export default function AdminDashboard({ navigation }) {
 
   const loadTeachers = async () => {
     try {
-      const { data, error } = await supabase
-        .from('teacher_profiles')
-        .select(`
-          id,
-          price_per_call,
-          profile:profiles(full_name, email)
-        `)
-        .order('profile(full_name)', { ascending: true });
-
-      if (error) throw error;
-      setTeachers(data || []);
+      // Get all teachers via backend API
+      const teachers = await databaseApi.getAllTeachers();
+      setTeachers(teachers || []);
     } catch (error) {
       logger.error('Error loading teachers:', error);
       throw error;

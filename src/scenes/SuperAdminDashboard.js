@@ -12,6 +12,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SCREEN_NAMES } from '../navigators/screenNames';
 import { supabase } from '../../supabase';
+import databaseApi from '../database/databaseApi';
+import logger from '../utils/logger';
 import { getAllUsersForAdmin, getAllBookingsForAdmin } from '../database/database';
 import { API_URL } from '../api/api';
 import Users from '../assets/icons/Users';
@@ -78,13 +80,10 @@ export default function SuperAdminDashboard({ navigation }) {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data: rows } = await supabase
-          .from('profiles')
-          .select('full_name')
-          .eq('id', user.id)
-          .limit(1);
-        const name = (Array.isArray(rows) && rows[0]) ? rows[0].full_name : (rows?.full_name);
-        if (name) setAdminName(name);
+        // Get admin profile via backend API
+        const response = await databaseApi.getProfile(user.id);
+        const profile = response?.profile || {};
+        if (profile?.full_name) setAdminName(profile.full_name);
       }
     } catch (e) {
       logger.error('🔴 SuperAdmin load profile:', e);

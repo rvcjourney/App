@@ -14,6 +14,8 @@ import ChevronRight from '../../assets/icons/ChevronRight';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-simple-toast';
 import { supabase } from '../../../supabase';
+import databaseApi from '../../database/databaseApi';
+import logger from '../../utils/logger';
 import UNIFIED_THEME from '../../constants/unifiedTheme';
 import ThemedText from '../../components/ThemedText';
 
@@ -40,15 +42,12 @@ export default function BankAccountSettings({ navigation }) {
         setLoading(false);
         return;
       }
-      const { data: dataRows, error } = await supabase
-        .from('profiles')
-        .select('account_holder_name, bank_account_number, bank_ifsc_code, bank_name')
-        .eq('id', user.id)
-        .limit(1);
 
-      const data = Array.isArray(dataRows) && dataRows.length > 0 ? dataRows[0] : dataRows;
+      // Get bank details via backend API
+      const response = await databaseApi.getProfile(user.id);
+      const data = response?.profile || {};
 
-      if (!error && data) {
+      if (data) {
         setAccountHolderName(data.account_holder_name || '');
         setAccountNumber(data.bank_account_number || '');
         setIfscCode(data.bank_ifsc_code || '');
@@ -97,17 +96,14 @@ export default function BankAccountSettings({ navigation }) {
         return;
       }
 
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          account_holder_name: (accountHolderName || '').trim(),
-          bank_account_number: (accountNumber || '').replace(/\D/g, ''),
-          bank_ifsc_code: (ifscCode || '').trim().toUpperCase(),
-          bank_name: (bankName || '').trim(),
-        })
-        .eq('id', user.id);
+      // Save bank details via backend API
+      await databaseApi.updateProfile(user.id, {
+        account_holder_name: (accountHolderName || '').trim(),
+        bank_account_number: (accountNumber || '').replace(/\D/g, ''),
+        bank_ifsc_code: (ifscCode || '').trim().toUpperCase(),
+        bank_name: (bankName || '').trim(),
+      });
 
-      if (error) throw error;
       Toast.show('Bank account details saved. You can use them for withdrawals.');
       navigation.goBack();
     } catch (e) {

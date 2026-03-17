@@ -12,10 +12,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-simple-toast';
-import { supabase } from '../../../supabase';
 import { API_URL } from '../../api/api';
 import RazorpayCheckout from 'react-native-razorpay';
-import { releaseAvailabilitySlot } from '../../database/database';
+import databaseApi from '../../database/databaseApi';
+import { supabase } from '../../../supabase';
 import { isNetworkError } from '../../utils/networkUtils';
 import UNIFIED_THEME from '../../constants/unifiedTheme';
 import { PAYMENT_CONFIG } from '../../constants/appConfig';
@@ -251,7 +251,7 @@ export default function StudentCheckout({
       // Release the slot if booking exists (rollback)
       if (booking?.availability_slot_id) {
         logger.info('🔄 Releasing slot due to payment failure:', booking.availability_slot_id);
-        await releaseAvailabilitySlot(booking.availability_slot_id, booking.id);
+        await databaseApi.releaseAvailabilitySlot(booking.availability_slot_id, booking.id);
       }
       
       setPaymentFailedMessage(failureMessage);
@@ -293,13 +293,8 @@ export default function StudentCheckout({
             verifyData.error?.toLowerCase().includes('already verified')) {
           logger.info('ℹ️ Payment already verified, checking booking status...');
           // Payment was already verified - check if booking is confirmed
-          const { data: bookingRows } = await supabase
-            .from('bookings')
-            .select('status, payment_status')
-            .eq('id', booking.id)
-            .limit(1);
-
-          const bookingData = Array.isArray(bookingRows) && bookingRows.length > 0 ? bookingRows[0] : bookingRows;
+          const bookingResponse = await databaseApi.getBookingById(booking.id);
+          const bookingData = bookingResponse?.booking || null;
 
           if (bookingData?.payment_status === 'completed' || bookingData?.status === 'confirmed') {
             logger.info('✅ Booking already confirmed');
@@ -329,7 +324,7 @@ export default function StudentCheckout({
         // If verification fails permanently, release the slot
         if (retryCount >= MAX_RETRIES && booking?.availability_slot_id) {
           logger.info('🔄 Releasing slot due to verification failure:', booking.availability_slot_id);
-          await releaseAvailabilitySlot(booking.availability_slot_id, booking.id);
+          await databaseApi.releaseAvailabilitySlot(booking.availability_slot_id, booking.id);
         }
         
         throw new Error(verifyData.error || 'Payment verification failed');
@@ -358,7 +353,7 @@ export default function StudentCheckout({
       // Release slot if verification failed permanently (after all retries)
       if (retryCount >= MAX_RETRIES && booking?.availability_slot_id) {
         logger.info('🔄 Releasing slot due to verification failure:', booking.availability_slot_id);
-        await releaseAvailabilitySlot(booking.availability_slot_id, booking.id);
+        await databaseApi.releaseAvailabilitySlot(booking.availability_slot_id, booking.id);
       }
       
       // Show payment failed modal for verification errors

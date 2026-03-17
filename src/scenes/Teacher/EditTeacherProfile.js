@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-simple-toast';
 import { supabase } from '../../../supabase';
+import databaseApi from '../../database/databaseApi';
 import logger from '../../utils/logger';
 import { PROFESSIONS } from '../../constants/professions';
 import UNIFIED_THEME from '../../constants/unifiedTheme';
@@ -41,34 +42,20 @@ export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
           setTeacherId(user.id);
           setEmail(user.email || '');
 
-          // Get teacher profile
-          const { data: profileRows } = await supabase
-            .from('profiles')
-            .select('full_name')
-            .eq('id', user.id)
-            .limit(1);
-
-          const profile = Array.isArray(profileRows) && profileRows.length > 0 ? profileRows[0] : profileRows;
+          // Get teacher profile via backend API
+          const response = await databaseApi.getProfile(user.id);
+          const profile = response?.profile || {};
 
           if (profile?.full_name) {
             setFullName(profile.full_name);
           }
 
-          // Get teacher details (maybeSingle in case row not created yet)
-          const { data: teacherRows } = await supabase
-            .from('teacher_profiles')
-            .select('*')
-            .eq('id', user.id)
-            .limit(1);
-          const teacherData = Array.isArray(teacherRows) && teacherRows.length > 0 ? teacherRows[0] : teacherRows;
-
-          if (teacherData) {
-            setBio(teacherData.bio || '');
-            setSpecializations(teacherData.specializations || '');
-            setPricePerCall(String(teacherData.price_per_call || 500));
-            setExperienceYears(String(teacherData.experience_years || ''));
-            setProfession(teacherData.profession || null);
-          }
+          // Set teacher-specific fields
+          setBio(profile.bio || '');
+          setSpecializations(profile.specializations || '');
+          setPricePerCall(String(profile.price_per_call || 500));
+          setExperienceYears(String(profile.experience_years || ''));
+          setProfession(profile.profession || null);
         }
 
       } catch (error) {
@@ -109,36 +96,16 @@ export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
       setSaving(true);
       logger.info('🔵 [EditTeacherProfile] Saving profile...');
 
-      // Update profiles table (full_name)
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ full_name: fullName.trim() })
-        .eq('id', teacherId);
-
-      if (profileError) {
-        logger.error('🔴 Profile update error:', profileError);
-        throw new Error(profileError.message || 'Could not update name');
-      }
-
-      // Upsert teacher_profiles so row is created if missing (e.g. old account)
-      const teacherPayload = {
-        id: teacherId,
+      // Update profile via backend API
+      const updatePayload = {
+        full_name: fullName.trim(),
         bio: bio || '',
         specializations: specializations || '',
         price_per_call: parseInt(pricePerCall, 10) || 500,
         experience_years: parseInt(experienceYears, 10) || 0,
         profession: profession || null,
-        rating: 4.8,
-        followers: 0,
       };
-      const { error: teacherError } = await supabase
-        .from('teacher_profiles')
-        .upsert(teacherPayload, { onConflict: 'id' });
-
-      if (teacherError) {
-        logger.error('🔴 Teacher profile upsert error:', teacherError);
-        throw new Error(teacherError.message || 'Could not save teacher details');
-      }
+      await databaseApi.updateProfile(teacherId, updatePayload);
 
       logger.info('✅ Profile updated successfully');
       Toast.show('✅ Profile updated successfully');

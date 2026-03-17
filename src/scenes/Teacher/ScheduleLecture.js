@@ -10,6 +10,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-simple-toast';
 import { supabase } from '../../../supabase';
+import databaseApi from '../../database/databaseApi';
+import logger from '../../utils/logger';
 import UNIFIED_THEME from '../../constants/unifiedTheme';
 import ThemedText from '../../components/ThemedText';
 
@@ -29,14 +31,9 @@ export default function ScheduleLecture({ navigation, route }) {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          // Get teacher_profiles entry
-          const { data: teacherRows } = await supabase
-            .from('teacher_profiles')
-            .select('id')
-            .eq('id', user.id)
-            .limit(1);
-
-          const teacher = Array.isArray(teacherRows) && teacherRows.length > 0 ? teacherRows[0] : teacherRows;
+          // Get teacher profile via backend API
+          const response = await databaseApi.getProfile(user.id);
+          const teacher = response?.profile || null;
 
           if (teacher) {
             setTeacherId(teacher.id);

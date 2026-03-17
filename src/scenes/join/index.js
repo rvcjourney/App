@@ -40,6 +40,7 @@ import MenuItem from "../meeting/Components/MenuItem";
 import { ROBOTO_FONTS } from "../../styles/fonts";
 import Modal from "react-native-modal";
 import { supabase } from "../../../supabase";
+import databaseApi from "../../database/databaseApi";
 import logger from "../../utils/logger";
 
 export default function Join({ navigation, route }) {
@@ -130,13 +131,9 @@ export default function Join({ navigation, route }) {
           setLoadingTeacherName(true);
           const { data: { user } } = await supabase.auth.getUser();
           if (user) {
-            const { data: profileRows } = await supabase
-              .from('profiles')
-              .select('full_name')
-              .eq('id', user.id)
-              .limit(1);
-
-            const profile = Array.isArray(profileRows) && profileRows.length > 0 ? profileRows[0] : profileRows;
+            // Get teacher name via backend API
+            const response = await databaseApi.getProfile(user.id);
+            const profile = response?.profile || {};
 
             if (profile?.full_name) {
               logger.info('✅ [Join] Teacher name fetched:', profile.full_name);

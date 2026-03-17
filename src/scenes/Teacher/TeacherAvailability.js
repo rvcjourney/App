@@ -11,10 +11,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-simple-toast';
 import { supabase } from '../../../supabase';
-import { getTeacherWeeklyAvailability, setTeacherWeeklyAvailability, generateAvailabilitySlots } from '../../database/database';
+import databaseApi from '../../database/databaseApi';
 import UNIFIED_THEME from '../../constants/unifiedTheme';
 import ThemedText from '../../components/ThemedText';
 import ChevronRight from '../../assets/icons/ChevronRight';
+import logger from '../../utils/logger';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const TIME_SLOTS = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00'];
@@ -43,9 +44,9 @@ export default function TeacherAvailability({ navigation }) {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           setTeacherId(user.id);
-          
+
           // Load schedule
-          const schedule = await getTeacherWeeklyAvailability(user.id);
+          const schedule = await databaseApi.getTeacherWeeklyAvailability(user.id);
           
           // Map schedule to state
           const newAvailability = { ...availability };
@@ -82,7 +83,7 @@ export default function TeacherAvailability({ navigation }) {
 
       // Save each day's availability
       for (let day = 0; day < 7; day++) {
-        await setTeacherWeeklyAvailability(
+        await databaseApi.setTeacherWeeklyAvailability(
           teacherId,
           day,
           availability[day].startTime,
@@ -96,7 +97,7 @@ export default function TeacherAvailability({ navigation }) {
       const futureDate = new Date();
       futureDate.setDate(futureDate.getDate() + 30);
 
-      await generateAvailabilitySlots(
+      await databaseApi.generateAvailabilitySlots(
         teacherId,
         today.toISOString().split('T')[0],
         futureDate.toISOString().split('T')[0],

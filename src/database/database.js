@@ -1,3 +1,16 @@
+/**
+ * ⚠️ DEPRECATED - Use databaseApi.js instead
+ *
+ * This file is deprecated and maintained only for backward compatibility.
+ * All new code should use databaseApi.js which provides the same functions
+ * but routes all operations through the backend API instead of direct Supabase calls.
+ *
+ * This ensures better security, centralized business logic, and control without
+ * needing to redeploy the mobile app.
+ *
+ * Migration Guide: See FRONTEND_SUPABASE_REMOVAL_GUIDE.md
+ */
+
 import { supabase } from '../../supabase';
 import logger from '../utils/logger';
 import { API_URL } from '../api/api';

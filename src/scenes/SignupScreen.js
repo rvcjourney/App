@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { supabase } from '../../supabase';
 import { createTeacherProfile, createStudentProfile } from '../database/database';
+import logger from '../utils/logger';
 import {
   StyleSheet,
   TextInput,
@@ -32,6 +33,15 @@ export default function SignupScreen({ navigation, route }) {
     setNetworkError(false);
 
     try {
+      // NOTE: SignupScreen uses direct Supabase calls (not backend API) because:
+      // - User is not authenticated yet (no session token)
+      // - Backend API requires authentication
+      // - Signup must work independently of backend API availability
+      // - Profile creation happens before RootNavigator receives session
+      //
+      // If backend support for unauthenticated signup is added in future,
+      // this should be migrated to use backend API for consistency.
+
       // Sign up user (options.data so RootNavigator can use role if profile isn't ready yet)
       const { data, error } = await supabase.auth.signUp({
         email,

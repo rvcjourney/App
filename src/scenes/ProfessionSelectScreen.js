@@ -8,6 +8,7 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { supabase } from '../../supabase';
+import databaseApi from '../database/databaseApi';
 import logger from '../utils/logger';
 import { PROFESSIONS } from '../constants/professions';
 import UNIFIED_THEME from '../constants/unifiedTheme';
@@ -44,13 +45,8 @@ export default function ProfessionSelectScreen({ navigation, route }) {
     try {
       const selectedProf = PROFESSIONS.find(p => p.id === selectedProfession);
 
-      // Update teacher_profiles with profession
-      const { error } = await supabase
-        .from('teacher_profiles')
-        .update({ profession: selectedProf.name })
-        .eq('id', userId);
-
-      if (error) throw error;
+      // Update profession via backend API
+      await databaseApi.updateProfile(userId, { profession: selectedProf.name });
 
       logger.success('Profession saved:', selectedProf.name);
       Alert.alert('Success', `You selected ${selectedProf.name}`);

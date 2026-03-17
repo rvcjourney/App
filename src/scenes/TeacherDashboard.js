@@ -13,6 +13,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-simple-toast';
 import { supabase } from '../../supabase';
+import databaseApi from '../database/databaseApi';
 import { SCREEN_NAMES } from '../navigators/screenNames';
 import UNIFIED_THEME from '../constants/unifiedTheme';
 import ThemedText from '../components/ThemedText';
@@ -104,16 +105,7 @@ export default function TeacherDashboard({ navigation }) {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const { error } = await supabase
-        .from('teacher_profiles')
-        .update({ availability_status: newStatus })
-        .eq('id', user.id);
-      if (error) {
-        setTeacherStatus(previousStatus);
-        logger.error('🔴 Status update error:', error);
-        Toast.show(error.message || 'Failed to save status');
-        return;
-      }
+      await databaseApi.updateProfile(user.id, { availability_status: newStatus });
       Toast.show(`Status set to ${newStatus}`);
     } catch (e) {
       setTeacherStatus(previousStatus);
@@ -125,89 +117,9 @@ export default function TeacherDashboard({ navigation }) {
   const statusColor = { online: '#22c55e', away: '#eab308', offline: '#6b7280' };
   const statusLabel = { online: 'Online', away: 'Away', offline: 'Offline' };
 
-  // Real-time: bookings (INSERT + UPDATE) and notifications so changes show quickly
-  useEffect(() => {
-    let bookingsChannel;
-    let notificationsChannel;
-    let notificationDebounceTimer = null;
-    let pendingNotification = null;
-    let bookingsPollInterval = null;
-
-    const setupSubscriptions = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-
-        logger.info('🔵 [TeacherDashboard] Setting up real-time subscriptions...');
-
-        bookingsChannel = supabase
-          .channel(`bookings:teacher_${user.id}`)
-          .on(
-            'postgres_changes',
-            { event: 'INSERT', schema: 'public', table: 'bookings', filter: `teacher_id=eq.${user.id}` },
-            (payload) => {
-              logger.info('📡 New booking (INSERT):', payload?.new?.id);
-              Toast.show('📚 New booking! A student scheduled a session.');
-              dashboard.refreshAll().catch(err => logger.error('Real-time refresh error:', err));
-            }
-          )
-          .on(
-            'postgres_changes',
-            { event: 'UPDATE', schema: 'public', table: 'bookings', filter: `teacher_id=eq.${user.id}` },
-            (payload) => {
-              logger.info('📡 Booking updated (UPDATE):', payload?.new?.id, 'Status:', payload?.new?.status, 'Updated_at:', payload?.new?.updated_at);
-              dashboard.refreshAll().catch(err => logger.error('Real-time refresh error:', err));
-            }
-          )
-          .subscribe((status) => logger.info('📡 Bookings channel:', status));
-
-        // Debounce notification toasts to avoid flood and perceived delay (show latest after 400ms quiet)
-        const showNotificationToast = () => {
-          if (pendingNotification) {
-            const n = pendingNotification;
-            Toast.show(n.title ? `${n.title}\n${n.message || ''}` : n.message || 'New notification');
-            pendingNotification = null;
-          }
-        };
-        notificationsChannel = supabase
-          .channel(`notifications:teacher_${user.id}`)
-          .on(
-            'postgres_changes',
-            { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
-            (payload) => {
-              const n = payload?.new;
-              if (!n?.title && !n?.message) return;
-              setUnreadNotificationCount((c) => c + 1);
-              pendingNotification = n;
-              if (notificationDebounceTimer) clearTimeout(notificationDebounceTimer);
-              notificationDebounceTimer = setTimeout(showNotificationToast, 400);
-            }
-          )
-          .subscribe((status) => logger.info('📡 Notifications channel:', status));
-
-        logger.info('✅ [TeacherDashboard] Real-time subscriptions started');
-      } catch (error) {
-        logger.error('🔴 Error setting up subscriptions:', error);
-      }
-    };
-
-    setupSubscriptions();
-
-    // Fallback: Poll for booking updates every 8 seconds (in case real-time subscriptions are slow)
-    bookingsPollInterval = setInterval(() => {
-      logger.info('🔄 [TeacherDashboard] Polling for booking updates...');
-      dashboard.refreshAll().catch(err => logger.error('Poll refresh error:', err));
-    }, 8000); // 8 seconds - more frequent to catch meeting completions faster
-
-    return () => {
-      // Cleanup all subscriptions and timers
-      if (notificationDebounceTimer) clearTimeout(notificationDebounceTimer);
-      if (bookingsPollInterval) clearInterval(bookingsPollInterval);
-      if (bookingsChannel) supabase.removeChannel(bookingsChannel);
-      if (notificationsChannel) supabase.removeChannel(notificationsChannel);
-      logger.info('✅ [TeacherDashboard] Cleanup: All subscriptions and timers cleared');
-    };
-  }, []);
+  // Note: Real-time updates are handled by the useTeacherDashboard hook with polling
+  // The hook fetches bookings every 8 seconds and notifications automatically
+  // No need for Supabase subscriptions - using polling-based approach
 
   // Full-screen loading until profile is fetched
   if (loading) {

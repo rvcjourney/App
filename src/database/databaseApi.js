@@ -9,6 +9,12 @@ import mobileApi from '../api/mobileApi';
 /**
  * Profile Management
  */
+export const getProfile = async (userId) => {
+  // Generic profile getter that works for both students and teachers
+  const response = await mobileApi.getProfile(userId);
+  return response;
+};
+
 export const getTeacherProfile = async (teacherId) => {
   const response = await mobileApi.getTeacherProfile(teacherId);
   return response.teacher;
@@ -17,6 +23,12 @@ export const getTeacherProfile = async (teacherId) => {
 export const getStudentProfile = async (studentId) => {
   const response = await mobileApi.getProfile(studentId);
   return response.profile;
+};
+
+export const updateProfile = async (userId, updates) => {
+  // Generic profile updater that works for both students and teachers
+  await mobileApi.updateProfile(userId, updates);
+  return true;
 };
 
 export const updateTeacherProfile = async (teacherId, updates) => {

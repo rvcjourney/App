@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, ActivityIndicator, Text } from 'react-native';
 import { supabase } from '../../supabase';
-import { isProfileComplete } from '../database/database';
+import databaseApi from '../database/databaseApi';
 import logger from '../utils/logger';
 import COLORS from '../constants/appColors';
 import AuthStack from './AuthStack';
@@ -74,15 +74,14 @@ export default function RootNavigator() {
       let error = null;
 
       while (attempts < maxAttempts) {
-        const result = await supabase
-          .from('profiles')
-          .select('role, email_verified')
-          .eq('id', userId)
-          .limit(1);
-
-        const rows = result.data;
-        error = result.error;
-        profile = Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
+        try {
+          const response = await databaseApi.getProfile(userId);
+          profile = response?.profile || null;
+          error = null;
+        } catch (err) {
+          error = err;
+          profile = null;
+        }
 
         if (!error && profile?.role) {
           const normalizedRole = (profile.role || '').toLowerCase().replace('learner', 'student') || profile.role;

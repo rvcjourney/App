@@ -13,6 +13,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-simple-toast';
 import { supabase } from '../../../supabase';
+import databaseApi from '../../database/databaseApi';
+import logger from '../../utils/logger';
 import { API_URL } from '../../api/api';
 import UNIFIED_THEME from '../../constants/unifiedTheme';
 import ThemedText from '../../components/ThemedText';
@@ -51,13 +53,9 @@ export default function WithdrawalRequest({ navigation, route }) {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data: profileRows } = await supabase
-          .from('profiles')
-          .select('bank_account_number, bank_ifsc_code, account_holder_name, bank_name')
-          .eq('id', user.id)
-          .limit(1);
-
-        const profile = Array.isArray(profileRows) && profileRows.length > 0 ? profileRows[0] : profileRows;
+        // Get bank details via backend API
+        const response = await databaseApi.getProfile(user.id);
+        const profile = response?.profile || {};
 
         if (profile?.bank_account_number) {
           setSavedBankDetails(profile);
