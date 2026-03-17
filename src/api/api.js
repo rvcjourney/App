@@ -120,7 +120,10 @@ export const validateMeeting = async ({ meetingId, token }) => {
 
   const result = await fetch(url, options)
     .then((response) => response.json()) //result will have meeting id
-    .catch((error) => logger.error("error", error));
+    .catch((error) => {
+      logger.error("error", error);
+      return null;
+    });
 
   return result ? result.roomId === meetingId : false;
 };
@@ -135,6 +138,9 @@ export const fetchSession = async ({ meetingId, token }) => {
 
   const result = await fetch(url, options)
     .then((response) => response.json()) //result will have meeting id
-    .catch((error) => logger.error("error", error));
+    .catch((error) => {
+      logger.error("error", error);
+      return null;
+    });
   return result ? result.data[0] : null;
 };

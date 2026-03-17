@@ -40,11 +40,13 @@ export default function BankAccountSettings({ navigation }) {
         setLoading(false);
         return;
       }
-      const { data, error } = await supabase
+      const { data: dataRows, error } = await supabase
         .from('profiles')
         .select('account_holder_name, bank_account_number, bank_ifsc_code, bank_name')
         .eq('id', user.id)
-        .single();
+        .limit(1);
+
+      const data = Array.isArray(dataRows) && dataRows.length > 0 ? dataRows[0] : dataRows;
 
       if (!error && data) {
         setAccountHolderName(data.account_holder_name || '');

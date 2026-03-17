@@ -51,11 +51,13 @@ export default function WithdrawalRequest({ navigation, route }) {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data: profile } = await supabase
+        const { data: profileRows } = await supabase
           .from('profiles')
           .select('bank_account_number, bank_ifsc_code, account_holder_name, bank_name')
           .eq('id', user.id)
-          .single();
+          .limit(1);
+
+        const profile = Array.isArray(profileRows) && profileRows.length > 0 ? profileRows[0] : profileRows;
 
         if (profile?.bank_account_number) {
           setSavedBankDetails(profile);

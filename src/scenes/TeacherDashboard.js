@@ -129,6 +129,9 @@ export default function TeacherDashboard({ navigation }) {
   useEffect(() => {
     let bookingsChannel;
     let notificationsChannel;
+    let notificationDebounceTimer = null;
+    let pendingNotification = null;
+    let bookingsPollInterval = null;
 
     const setupSubscriptions = async () => {
       try {
@@ -145,7 +148,7 @@ export default function TeacherDashboard({ navigation }) {
             (payload) => {
               logger.info('📡 New booking (INSERT):', payload?.new?.id);
               Toast.show('📚 New booking! A student scheduled a session.');
-              dashboard.refreshAll().catch(err => logger.warn('Real-time refresh error:', err));
+              dashboard.refreshAll().catch(err => logger.error('Real-time refresh error:', err));
             }
           )
           .on(
@@ -153,14 +156,12 @@ export default function TeacherDashboard({ navigation }) {
             { event: 'UPDATE', schema: 'public', table: 'bookings', filter: `teacher_id=eq.${user.id}` },
             (payload) => {
               logger.info('📡 Booking updated (UPDATE):', payload?.new?.id, 'Status:', payload?.new?.status, 'Updated_at:', payload?.new?.updated_at);
-              dashboard.refreshAll().catch(err => logger.warn('Real-time refresh error:', err));
+              dashboard.refreshAll().catch(err => logger.error('Real-time refresh error:', err));
             }
           )
           .subscribe((status) => logger.info('📡 Bookings channel:', status));
 
         // Debounce notification toasts to avoid flood and perceived delay (show latest after 400ms quiet)
-        let notificationDebounceTimer = null;
-        let pendingNotification = null;
         const showNotificationToast = () => {
           if (pendingNotification) {
             const n = pendingNotification;
@@ -191,17 +192,20 @@ export default function TeacherDashboard({ navigation }) {
     };
 
     setupSubscriptions();
-    
+
     // Fallback: Poll for booking updates every 8 seconds (in case real-time subscriptions are slow)
-    const bookingsPollInterval = setInterval(() => {
+    bookingsPollInterval = setInterval(() => {
       logger.info('🔄 [TeacherDashboard] Polling for booking updates...');
-      dashboard.refreshAll().catch(err => logger.warn('Poll refresh error:', err));
+      dashboard.refreshAll().catch(err => logger.error('Poll refresh error:', err));
     }, 8000); // 8 seconds - more frequent to catch meeting completions faster
-    
+
     return () => {
-      clearInterval(bookingsPollInterval);
+      // Cleanup all subscriptions and timers
+      if (notificationDebounceTimer) clearTimeout(notificationDebounceTimer);
+      if (bookingsPollInterval) clearInterval(bookingsPollInterval);
       if (bookingsChannel) supabase.removeChannel(bookingsChannel);
       if (notificationsChannel) supabase.removeChannel(notificationsChannel);
+      logger.info('✅ [TeacherDashboard] Cleanup: All subscriptions and timers cleared');
     };
   }, []);
 

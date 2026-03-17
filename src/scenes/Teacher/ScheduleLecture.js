@@ -30,12 +30,14 @@ export default function ScheduleLecture({ navigation, route }) {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           // Get teacher_profiles entry
-          const { data: teacher } = await supabase
+          const { data: teacherRows } = await supabase
             .from('teacher_profiles')
             .select('id')
             .eq('id', user.id)
-            .single();
-          
+            .limit(1);
+
+          const teacher = Array.isArray(teacherRows) && teacherRows.length > 0 ? teacherRows[0] : teacherRows;
+
           if (teacher) {
             setTeacherId(teacher.id);
           } else {

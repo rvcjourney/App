@@ -275,6 +275,10 @@ export const useTeacherDashboard = () => {
     unreadNotificationCount,
     setUnreadNotificationCount,
 
+    // Status
+    teacherStatus,
+    setTeacherStatus,
+
     // Methods
     fetchTeacherProfile,
     fetchTeacherBookings,

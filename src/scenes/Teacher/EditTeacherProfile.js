@@ -42,11 +42,13 @@ export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
           setEmail(user.email || '');
 
           // Get teacher profile
-          const { data: profile } = await supabase
+          const { data: profileRows } = await supabase
             .from('profiles')
             .select('full_name')
             .eq('id', user.id)
-            .single();
+            .limit(1);
+
+          const profile = Array.isArray(profileRows) && profileRows.length > 0 ? profileRows[0] : profileRows;
 
           if (profile?.full_name) {
             setFullName(profile.full_name);
@@ -82,9 +84,26 @@ export default function EditTeacherProfile({ navigation, onSaveSuccess }) {
 
   const handleSave = async () => {
     try {
+      // Validate name
       if (!fullName.trim()) {
         Alert.alert('Error', 'Name is required');
         return;
+      }
+
+      // Validate price
+      const price = parseInt(pricePerCall);
+      if (isNaN(price) || price < 100 || price > 99999) {
+        Alert.alert('Error', 'Price must be between ₹100 and ₹99,999');
+        return;
+      }
+
+      // Validate experience years if provided
+      if (experienceYears.trim()) {
+        const years = parseInt(experienceYears);
+        if (isNaN(years) || years < 0 || years > 99) {
+          Alert.alert('Error', 'Experience years must be between 0 and 99');
+          return;
+        }
       }
 
       setSaving(true);

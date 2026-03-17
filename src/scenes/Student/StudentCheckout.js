@@ -293,12 +293,14 @@ export default function StudentCheckout({
             verifyData.error?.toLowerCase().includes('already verified')) {
           logger.info('ℹ️ Payment already verified, checking booking status...');
           // Payment was already verified - check if booking is confirmed
-          const { data: bookingData } = await supabase
+          const { data: bookingRows } = await supabase
             .from('bookings')
             .select('status, payment_status')
             .eq('id', booking.id)
-            .single();
-          
+            .limit(1);
+
+          const bookingData = Array.isArray(bookingRows) && bookingRows.length > 0 ? bookingRows[0] : bookingRows;
+
           if (bookingData?.payment_status === 'completed' || bookingData?.status === 'confirmed') {
             logger.info('✅ Booking already confirmed');
             Toast.show('Payment already verified! Booking confirmed.', Toast.SHORT);

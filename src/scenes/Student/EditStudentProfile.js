@@ -78,8 +78,21 @@ export default function EditStudentProfile({ navigation, onSaveSuccess }) {
 
   const handleSave = async () => {
     try {
+      // Validate name
       if (!fullName.trim()) {
         Alert.alert('Error', 'Name is required');
+        return;
+      }
+
+      // Validate grade level if provided
+      if (gradeLevel.trim() && gradeLevel.trim().length > 50) {
+        Alert.alert('Error', 'Grade level must be less than 50 characters');
+        return;
+      }
+
+      // Validate subjects if provided
+      if (subjectsInterested.trim() && subjectsInterested.trim().length > 200) {
+        Alert.alert('Error', 'Subjects must be less than 200 characters');
         return;
       }
 
@@ -331,7 +344,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 0, 110, 0.15)',
     borderRadius: UNIFIED_THEME.borderRadius.lg,
     borderWidth: 2,
-    borderColor: UNIFIED_THEME.colors.text.secondary,
+    borderColor: UNIFIED_THEME.colors.accent.primary,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: UNIFIED_THEME.spacing.md,
@@ -427,7 +440,7 @@ const styles = StyleSheet.create({
 
   saveButton: {
     flex: 1,
-    backgroundColor: UNIFIED_THEME.colors.text.secondary,
+    backgroundColor: UNIFIED_THEME.colors.accent.primary,
     borderRadius: UNIFIED_THEME.borderRadius.round,
     paddingVertical: UNIFIED_THEME.spacing.lg,
     alignItems: 'center',

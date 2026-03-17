@@ -53,11 +53,13 @@ export default function LoginScreen({ navigation, route }) {
       }
 
       // Fetch profile to check role and email verification
-      const { data: profile, error: profileError } = await supabase
+      const { data: profileRows, error: profileError } = await supabase
         .from('profiles')
         .select('role, email_verified')
         .eq('id', data.user.id)
-        .single();
+        .limit(1);
+
+      const profile = Array.isArray(profileRows) && profileRows.length > 0 ? profileRows[0] : profileRows;
 
       if (profileError || !profile) {
         if (isNetworkError(profileError)) {

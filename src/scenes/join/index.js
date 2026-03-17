@@ -130,12 +130,14 @@ export default function Join({ navigation, route }) {
           setLoadingTeacherName(true);
           const { data: { user } } = await supabase.auth.getUser();
           if (user) {
-            const { data: profile } = await supabase
+            const { data: profileRows } = await supabase
               .from('profiles')
               .select('full_name')
               .eq('id', user.id)
-              .single();
-            
+              .limit(1);
+
+            const profile = Array.isArray(profileRows) && profileRows.length > 0 ? profileRows[0] : profileRows;
+
             if (profile?.full_name) {
               logger.info('✅ [Join] Teacher name fetched:', profile.full_name);
               setName(profile.full_name);
