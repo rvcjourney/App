@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../../supabase';
+import databaseApi from '../database/databaseApi';
 import {
   StyleSheet,
   TextInput,
@@ -11,6 +12,7 @@ import { isNetworkError } from '../utils/networkUtils';
 import NetworkErrorModal from '../components/NetworkErrorModal';
 import UNIFIED_THEME from '../constants/unifiedTheme';
 import ThemedText from '../components/ThemedText';
+import logger from '../utils/logger';
 
 export default function LoginScreen({ navigation, route }) {
   const { role } = route.params;
@@ -30,6 +32,8 @@ export default function LoginScreen({ navigation, route }) {
     setNetworkError(false);
 
     try {
+      logger.info('🔵 Login attempt:', { email });
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim().toLowerCase(),
         password,
@@ -52,26 +56,29 @@ export default function LoginScreen({ navigation, route }) {
         return;
       }
 
-      // Fetch profile to check role and email verification
-      const { data: profileRows, error: profileError } = await supabase
-        .from('profiles')
-        .select('role, email_verified')
-        .eq('id', data.user.id)
-        .limit(1);
+      // Fetch profile via backend API (not direct Supabase)
+      logger.info('🔵 Fetching profile via backend API');
+      let profile;
+      try {
+        const response = await databaseApi.getProfile(data.user.id);
+        profile = response.profile;
+      } catch (apiError) {
+        logger.error('🔴 Backend API error, trying direct Supabase:', apiError);
+        // Fallback to direct Supabase if backend fails
+        const { data: profileRows, error: profileError } = await supabase
+          .from('profiles')
+          .select('role, email_verified')
+          .eq('id', data.user.id)
+          .limit(1);
+        profile = Array.isArray(profileRows) && profileRows.length > 0 ? profileRows[0] : profileRows;
+      }
 
-      const profile = Array.isArray(profileRows) && profileRows.length > 0 ? profileRows[0] : profileRows;
-
-      if (profileError || !profile) {
-        if (isNetworkError(profileError)) {
-          setNetworkError(true);
-        } else {
-          await supabase.auth.signOut();
-          const detail = profileError?.message || 'No profile found.';
-          Alert.alert(
-            'Profile Error',
-            `Could not load your profile. ${detail}\n\nIf you just signed up, try closing and reopening the app.`
-          );
-        }
+      if (!profile) {
+        await supabase.auth.signOut();
+        Alert.alert(
+          'Profile Error',
+          'Could not load your profile. If you just signed up, try closing and reopening the app.'
+        );
         setLoading(false);
         return;
       }
@@ -82,10 +89,9 @@ export default function LoginScreen({ navigation, route }) {
       const selectedRole = (role || '').toLowerCase();
       if (profileRole !== 'super_admin' && profileRole !== selectedRole) {
         await supabase.auth.signOut();
-        // const actualLabel = profileRole === 'teacher' ? 'Teacher' : 'Student';
         Alert.alert(
           'Wrong login section',
-          // `You are registered as a ${actualLabel}. Please go back and use the "${actualLabel}" login option.`
+          'Please use the correct login section for your account type.'
         );
         setLoading(false);
         return;
@@ -93,6 +99,7 @@ export default function LoginScreen({ navigation, route }) {
 
       // Check if email is verified
       if (!profile.email_verified) {
+        logger.info('🔵 Email not verified, navigating to OTP');
         // Send OTP for verification
         navigation.navigate('OTPVerification', {
           email,

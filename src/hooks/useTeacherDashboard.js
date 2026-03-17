@@ -132,9 +132,9 @@ export const useTeacherDashboard = () => {
   const fetchTeacherBookings = useCallback(async (userId) => {
     try {
       if (!userId) return;
-      logger.info('Fetching teacher bookings...');
+      logger.info('Fetching teacher bookings via backend API...');
 
-      const bookingsData = await getTeacherBookings(userId);
+      const bookingsData = await databaseApi.getTeacherBookings(userId);
       if (bookingsData && bookingsData.length > 0) {
         const now = new Date();
         const startOfTodayUTC = new Date(
@@ -142,7 +142,7 @@ export const useTeacherDashboard = () => {
         );
 
         const upcoming = bookingsData.filter(b => {
-          const bookedAt = new Date(b.booked_date);
+          const bookedAt = new Date(b.scheduled_time);
           return bookedAt >= startOfTodayUTC && (b.status === 'confirmed' || b.status === 'ongoing');
         });
 
@@ -158,13 +158,24 @@ export const useTeacherDashboard = () => {
     }
   }, []);
 
-  // Fetch today's call history
+  // Fetch today's call history (completed meetings)
   const fetchTodayCallHistory = useCallback(async (userId) => {
     try {
       if (!userId) return;
-      logger.info('Fetching today call history...');
+      logger.info('Fetching today call history via backend API...');
 
-      const historyData = await getTeacherTodayCallHistory(userId);
+      // Get all bookings and filter to completed ones from today
+      const bookingsData = await databaseApi.getTeacherBookings(userId);
+      const now = new Date();
+      const startOfTodayUTC = new Date(
+        Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
+      );
+
+      const historyData = (bookingsData || []).filter(b => {
+        const completedAt = new Date(b.scheduled_time);
+        return completedAt >= startOfTodayUTC && b.status === 'completed';
+      });
+
       setTodayCallHistory(historyData || []);
       logger.success('Call history loaded');
     } catch (error) {
@@ -179,16 +190,18 @@ export const useTeacherDashboard = () => {
     try {
       if (!userId) return;
       setEarningsLoading(true);
-      logger.info('Fetching earnings data...');
+      logger.info('Fetching earnings data via backend API...');
 
-      const earnings = await getTeacherEarnings(userId);
+      const earnings = await databaseApi.getTeacherEarnings(userId);
       if (earnings) {
         setEarningsData(earnings);
+        setTodayEarnings({
+          totalAmount: earnings.todayEarned || 0,
+          sessionsCount: earnings.todaySessionsCount || 0,
+          pendingAmount: earnings.todayPending || 0,
+          pendingCount: earnings.todayPendingCount || 0,
+        });
       }
-
-      // Fetch today's earnings
-      const todayData = await getTeacherTodayEarnings(userId);
-      setTodayEarnings(todayData);
 
       logger.success('Earnings data loaded');
     } catch (error) {
