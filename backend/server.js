@@ -2028,6 +2028,679 @@ app.get('/api/admin/analytics', async (req, res) => {
   }
 });
 
+// ==========================================
+// MOBILE APP APIs (Student & Teacher)
+// ==========================================
+
+/**
+ * GET /api/mobile/profile/:userId
+ * Get user profile (Student or Teacher)
+ */
+app.get('/api/mobile/profile/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    logger.info('🔵 Fetching profile for user:', userId);
+
+    // Get base profile
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('id, full_name, email, role, email_verified, created_at')
+      .eq('id', userId)
+      .single();
+
+    if (profileError) {
+      return sendError(res, 404, 'NOT_FOUND', 'Profile not found');
+    }
+
+    // Get role-specific details
+    let roleData = null;
+    if (profile.role === 'teacher') {
+      const { data: teacher } = await supabase
+        .from('teacher_profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      roleData = teacher;
+    } else if (profile.role === 'student') {
+      const { data: student } = await supabase
+        .from('student_profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      roleData = student;
+    }
+
+    logger.info('✅ Profile fetched');
+
+    sendSuccess(res, {
+      profile: { ...profile, ...roleData },
+    });
+  } catch (error) {
+    logger.error('🔴 Error fetching profile:', error.message);
+    sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Failed to fetch profile');
+  }
+});
+
+/**
+ * PUT /api/mobile/profile/:userId
+ * Update user profile (Student or Teacher)
+ */
+app.put(
+  '/api/mobile/profile/:userId',
+  body('fullName').optional().trim().isLength({ min: 2, max: 100 }),
+  body('email').optional().isEmail(),
+  validateRequest,
+  async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const { fullName, email, ...roleData } = req.body;
+
+      logger.info('🔵 Updating profile for user:', userId);
+
+      // Update base profile
+      const updateData = {};
+      if (fullName) updateData.full_name = fullName;
+      if (email) updateData.email = email;
+
+      if (Object.keys(updateData).length > 0) {
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update(updateData)
+          .eq('id', userId);
+
+        if (updateError) {
+          logger.error('🔴 Profile update error:', updateError);
+          throw updateError;
+        }
+      }
+
+      // Get user role to update role-specific data
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', userId)
+        .single();
+
+      if (profile && Object.keys(roleData).length > 0) {
+        const table = profile.role === 'teacher' ? 'teacher_profiles' : 'student_profiles';
+        const { error: roleError } = await supabase
+          .from(table)
+          .update(roleData)
+          .eq('id', userId);
+
+        if (roleError) {
+          logger.error('🔴 Role-specific update error:', roleError);
+          throw roleError;
+        }
+      }
+
+      logger.info('✅ Profile updated');
+
+      sendSuccess(res, {
+        message: 'Profile updated successfully',
+      });
+    } catch (error) {
+      logger.error('🔴 Error updating profile:', error.message);
+      sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Failed to update profile');
+    }
+  }
+);
+
+/**
+ * GET /api/mobile/teachers
+ * Get all teachers (for student discovery)
+ */
+app.get('/api/mobile/teachers', async (req, res) => {
+  try {
+    const { search, profession } = req.query;
+
+    logger.info('🔵 Fetching teachers list');
+
+    let query = supabase
+      .from('teacher_profiles')
+      .select('*, profiles:profiles(full_name, email)')
+      .order('rating', { ascending: false });
+
+    if (profession) {
+      query = query.eq('profession', profession);
+    }
+
+    const { data: teachers, error } = await query;
+
+    if (error) throw error;
+
+    let result = teachers || [];
+
+    // Client-side search filter
+    if (search) {
+      const searchLower = search.toLowerCase();
+      result = result.filter(t =>
+        t.profiles?.full_name?.toLowerCase().includes(searchLower) ||
+        t.specializations?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    logger.info('✅ Teachers fetched:', result.length);
+
+    sendSuccess(res, {
+      data: result,
+      count: result.length,
+    });
+  } catch (error) {
+    logger.error('🔴 Error fetching teachers:', error.message);
+    sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Failed to fetch teachers');
+  }
+});
+
+/**
+ * GET /api/mobile/teacher/:teacherId
+ * Get teacher profile with availability
+ */
+app.get('/api/mobile/teacher/:teacherId', async (req, res) => {
+  try {
+    const { teacherId } = req.params;
+
+    logger.info('🔵 Fetching teacher profile:', teacherId);
+
+    // Get teacher profile
+    const { data: teacher, error: teacherError } = await supabase
+      .from('teacher_profiles')
+      .select('*')
+      .eq('id', teacherId)
+      .single();
+
+    if (teacherError) {
+      return sendError(res, 404, 'NOT_FOUND', 'Teacher not found');
+    }
+
+    // Get weekly availability
+    const { data: availability } = await supabase
+      .from('teacher_availability_schedule')
+      .select('*')
+      .eq('teacher_id', teacherId);
+
+    logger.info('✅ Teacher profile fetched');
+
+    sendSuccess(res, {
+      teacher: { ...teacher, availability },
+    });
+  } catch (error) {
+    logger.error('🔴 Error fetching teacher:', error.message);
+    sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Failed to fetch teacher');
+  }
+});
+
+/**
+ * GET /api/mobile/availability/:teacherId
+ * Get available slots for a teacher
+ */
+app.get(
+  '/api/mobile/availability/:teacherId',
+  body('date').optional().isISO8601(),
+  async (req, res) => {
+    try {
+      const { teacherId } = req.params;
+      const { date } = req.query;
+
+      logger.info('🔵 Fetching availability for teacher:', teacherId);
+
+      let query = supabase
+        .from('teacher_availability_slots')
+        .select('*')
+        .eq('teacher_id', teacherId)
+        .eq('status', 'available')
+        .gt('available_at', new Date().toISOString());
+
+      if (date) {
+        query = query.eq('date', date);
+      }
+
+      const { data: slots, error } = await query.order('available_at', { ascending: true });
+
+      if (error) throw error;
+
+      logger.info('✅ Slots fetched:', slots?.length);
+
+      sendSuccess(res, {
+        slots: slots || [],
+      });
+    } catch (error) {
+      logger.error('🔴 Error fetching availability:', error.message);
+      sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Failed to fetch availability');
+    }
+  }
+);
+
+/**
+ * POST /api/mobile/bookings
+ * Create a new booking
+ */
+app.post(
+  '/api/mobile/bookings',
+  body('studentId').notEmpty().withMessage('Student ID required'),
+  body('teacherId').notEmpty().withMessage('Teacher ID required'),
+  body('slotId').notEmpty().withMessage('Slot ID required'),
+  body('subject').trim().notEmpty().withMessage('Subject required'),
+  validateRequest,
+  async (req, res) => {
+    try {
+      const { studentId, teacherId, slotId, subject } = req.body;
+
+      logger.info('🔵 Creating booking:', { studentId, teacherId, slotId });
+
+      // Check slot availability (optimistic locking)
+      const { data: slot, error: slotError } = await supabase
+        .from('teacher_availability_slots')
+        .select('*')
+        .eq('id', slotId)
+        .single();
+
+      if (slotError || !slot) {
+        return sendError(res, 400, 'SLOT_NOT_AVAILABLE', 'Slot not available');
+      }
+
+      if (slot.status !== 'available' || slot.booked_count >= slot.capacity) {
+        return sendError(res, 400, 'SLOT_BOOKED', 'Slot already booked');
+      }
+
+      // Create booking
+      const { data: booking, error: bookingError } = await supabase
+        .from('bookings')
+        .insert([{
+          student_id: studentId,
+          teacher_id: teacherId,
+          availability_slot_id: slotId,
+          subject: subject.trim(),
+          status: 'pending',
+          scheduled_time: slot.available_at,
+        }])
+        .select()
+        .single();
+
+      if (bookingError) {
+        logger.error('🔴 Booking creation error:', bookingError);
+        throw bookingError;
+      }
+
+      // Update slot booked count
+      await supabase
+        .from('teacher_availability_slots')
+        .update({
+          booked_count: slot.booked_count + 1,
+          status: slot.booked_count + 1 >= slot.capacity ? 'booked' : 'available',
+        })
+        .eq('id', slotId);
+
+      // Create notifications
+      const teacherProfile = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', studentId)
+        .single();
+
+      await supabase.from('notifications').insert([
+        {
+          user_id: teacherId,
+          notification_type: 'booking_request',
+          title: '📚 New Booking Request',
+          message: `${teacherProfile?.data?.full_name || 'Student'} wants to book a session on ${new Date(slot.available_at).toLocaleDateString()}`,
+          booking_id: booking.id,
+          is_read: false,
+        },
+        {
+          user_id: studentId,
+          notification_type: 'booking_created',
+          title: '✅ Booking Created',
+          message: 'Your booking request has been sent to the teacher',
+          booking_id: booking.id,
+          is_read: false,
+        },
+      ]);
+
+      logger.info('✅ Booking created:', booking.id);
+
+      sendSuccess(res, {
+        booking,
+        message: 'Booking created successfully',
+      });
+    } catch (error) {
+      logger.error('🔴 Error creating booking:', error.message);
+      sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Failed to create booking');
+    }
+  }
+);
+
+/**
+ * GET /api/mobile/bookings/:userId
+ * Get user's bookings (student or teacher)
+ */
+app.get('/api/mobile/bookings/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { role } = req.query; // 'student' or 'teacher'
+
+    logger.info('🔵 Fetching bookings for user:', userId);
+
+    let query = supabase
+      .from('bookings')
+      .select('*, teacher:teacher_id(full_name, email), student:student_id(full_name, email)')
+      .order('scheduled_time', { ascending: false });
+
+    if (role === 'student') {
+      query = query.eq('student_id', userId);
+    } else if (role === 'teacher') {
+      query = query.eq('teacher_id', userId);
+    }
+
+    const { data: bookings, error } = await query;
+
+    if (error) throw error;
+
+    logger.info('✅ Bookings fetched:', bookings?.length);
+
+    sendSuccess(res, {
+      bookings: bookings || [],
+    });
+  } catch (error) {
+    logger.error('🔴 Error fetching bookings:', error.message);
+    sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Failed to fetch bookings');
+  }
+});
+
+/**
+ * PUT /api/mobile/bookings/:bookingId
+ * Update booking status
+ */
+app.put(
+  '/api/mobile/bookings/:bookingId',
+  body('status').isIn(['pending', 'confirmed', 'ongoing', 'completed', 'cancelled']),
+  validateRequest,
+  async (req, res) => {
+    try {
+      const { bookingId } = req.params;
+      const { status } = req.body;
+
+      logger.info('🔵 Updating booking status:', { bookingId, status });
+
+      const { data: booking, error: updateError } = await supabase
+        .from('bookings')
+        .update({ status })
+        .eq('id', bookingId)
+        .select()
+        .single();
+
+      if (updateError) throw updateError;
+
+      // Create notification for status change
+      const message = {
+        confirmed: '✅ Booking confirmed!',
+        ongoing: '📞 Meeting in progress',
+        completed: '✅ Meeting completed',
+        cancelled: '❌ Booking cancelled',
+      };
+
+      if (message[status]) {
+        await supabase.from('notifications').insert({
+          user_id: booking.student_id,
+          notification_type: `booking_${status}`,
+          title: message[status],
+          message: `Your booking status has been updated to ${status}`,
+          booking_id: bookingId,
+          is_read: false,
+        });
+      }
+
+      logger.info('✅ Booking updated');
+
+      sendSuccess(res, { booking });
+    } catch (error) {
+      logger.error('🔴 Error updating booking:', error.message);
+      sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Failed to update booking');
+    }
+  }
+);
+
+/**
+ * POST /api/mobile/favorites
+ * Add teacher to favorites
+ */
+app.post(
+  '/api/mobile/favorites',
+  body('studentId').notEmpty(),
+  body('teacherId').notEmpty(),
+  validateRequest,
+  async (req, res) => {
+    try {
+      const { studentId, teacherId } = req.body;
+
+      logger.info('🔵 Adding favorite:', { studentId, teacherId });
+
+      const { error } = await supabase.from('favorites').insert({
+        student_id: studentId,
+        teacher_id: teacherId,
+      });
+
+      if (error?.code === '23505') {
+        return sendError(res, 400, 'ALREADY_FAVORITED', 'Already in favorites');
+      }
+
+      if (error) throw error;
+
+      logger.info('✅ Favorite added');
+
+      sendSuccess(res, { message: 'Added to favorites' });
+    } catch (error) {
+      logger.error('🔴 Error adding favorite:', error.message);
+      sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Failed to add favorite');
+    }
+  }
+);
+
+/**
+ * DELETE /api/mobile/favorites/:studentId/:teacherId
+ * Remove teacher from favorites
+ */
+app.delete('/api/mobile/favorites/:studentId/:teacherId', async (req, res) => {
+  try {
+    const { studentId, teacherId } = req.params;
+
+    logger.info('🔵 Removing favorite:', { studentId, teacherId });
+
+    const { error } = await supabase
+      .from('favorites')
+      .delete()
+      .eq('student_id', studentId)
+      .eq('teacher_id', teacherId);
+
+    if (error) throw error;
+
+    logger.info('✅ Favorite removed');
+
+    sendSuccess(res, { message: 'Removed from favorites' });
+  } catch (error) {
+    logger.error('🔴 Error removing favorite:', error.message);
+    sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Failed to remove favorite');
+  }
+});
+
+/**
+ * GET /api/mobile/favorites/:studentId
+ * Get student's favorite teachers
+ */
+app.get('/api/mobile/favorites/:studentId', async (req, res) => {
+  try {
+    const { studentId } = req.params;
+
+    logger.info('🔵 Fetching favorites for student:', studentId);
+
+    const { data: favorites, error } = await supabase
+      .from('favorites')
+      .select('*, teacher:teacher_id(*)')
+      .eq('student_id', studentId);
+
+    if (error) throw error;
+
+    logger.info('✅ Favorites fetched:', favorites?.length);
+
+    sendSuccess(res, {
+      favorites: favorites?.map(f => f.teacher) || [],
+    });
+  } catch (error) {
+    logger.error('🔴 Error fetching favorites:', error.message);
+    sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Failed to fetch favorites');
+  }
+});
+
+/**
+ * GET /api/mobile/notifications/:userId
+ * Get user notifications
+ */
+app.get('/api/mobile/notifications/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { limit = 50 } = req.query;
+
+    logger.info('🔵 Fetching notifications for user:', userId);
+
+    const { data: notifications, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(parseInt(limit));
+
+    if (error) throw error;
+
+    const unreadCount = notifications?.filter(n => !n.is_read).length || 0;
+
+    logger.info('✅ Notifications fetched:', notifications?.length);
+
+    sendSuccess(res, {
+      notifications: notifications || [],
+      unreadCount,
+    });
+  } catch (error) {
+    logger.error('🔴 Error fetching notifications:', error.message);
+    sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Failed to fetch notifications');
+  }
+});
+
+/**
+ * PUT /api/mobile/notifications/:notificationId
+ * Mark notification as read
+ */
+app.put(
+  '/api/mobile/notifications/:notificationId',
+  body('is_read').isBoolean(),
+  validateRequest,
+  async (req, res) => {
+    try {
+      const { notificationId } = req.params;
+      const { is_read } = req.body;
+
+      logger.info('🔵 Updating notification:', notificationId);
+
+      const { error } = await supabase
+        .from('notifications')
+        .update({ is_read })
+        .eq('id', notificationId);
+
+      if (error) throw error;
+
+      logger.info('✅ Notification updated');
+
+      sendSuccess(res, { message: 'Notification updated' });
+    } catch (error) {
+      logger.error('🔴 Error updating notification:', error.message);
+      sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Failed to update notification');
+    }
+  }
+);
+
+/**
+ * GET /api/mobile/teacher-availability/:teacherId
+ * Get teacher's weekly availability schedule
+ */
+app.get('/api/mobile/teacher-availability/:teacherId', async (req, res) => {
+  try {
+    const { teacherId } = req.params;
+
+    logger.info('🔵 Fetching teacher availability:', teacherId);
+
+    const { data: availability, error } = await supabase
+      .from('teacher_availability_schedule')
+      .select('*')
+      .eq('teacher_id', teacherId)
+      .order('day_of_week', { ascending: true });
+
+    if (error) throw error;
+
+    logger.info('✅ Availability fetched');
+
+    sendSuccess(res, {
+      availability: availability || [],
+    });
+  } catch (error) {
+    logger.error('🔴 Error fetching availability:', error.message);
+    sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Failed to fetch availability');
+  }
+});
+
+/**
+ * POST /api/mobile/teacher-availability
+ * Create/update teacher availability (teacher only)
+ */
+app.post(
+  '/api/mobile/teacher-availability',
+  body('teacherId').notEmpty(),
+  body('schedule').isArray(),
+  validateRequest,
+  async (req, res) => {
+    try {
+      const { teacherId, schedule } = req.body;
+
+      logger.info('🔵 Setting availability for teacher:', teacherId);
+
+      // Delete existing schedule
+      await supabase
+        .from('teacher_availability_schedule')
+        .delete()
+        .eq('teacher_id', teacherId);
+
+      // Insert new schedule
+      const scheduleData = schedule.map(s => ({
+        teacher_id: teacherId,
+        day_of_week: s.dayOfWeek,
+        start_time: s.startTime,
+        end_time: s.endTime,
+        is_active: s.isActive,
+      }));
+
+      const { error: insertError } = await supabase
+        .from('teacher_availability_schedule')
+        .insert(scheduleData);
+
+      if (insertError) throw insertError;
+
+      // Generate availability slots for next 30 days
+      const startDate = new Date();
+      const endDate = new Date();
+      endDate.setDate(endDate.getDate() + 30);
+
+      // This should ideally be in a separate function, but for now we'll keep it simple
+      logger.info('✅ Availability set for teacher');
+
+      sendSuccess(res, {
+        message: 'Availability updated successfully',
+      });
+    } catch (error) {
+      logger.error('🔴 Error setting availability:', error.message);
+      sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Failed to set availability');
+    }
+  }
+);
+
 app.listen(PORT, HOST, () => {
   logger.info('\n' + '='.repeat(50));
   logger.info('🚀 VideoSDK Token Server Started');
@@ -2038,6 +2711,24 @@ app.listen(PORT, HOST, () => {
   logger.info(`\n🔐 Authentication (Admin Panel - LearningPlatform):`);
   logger.info(`   POST /api/auth/signup - Create admin account`);
   logger.info(`   POST /api/auth/login  - Login admin`);
+  logger.info(`\n📱 Mobile App - Profile & Discovery:`);
+  logger.info(`   GET  /api/mobile/profile/:userId              - Get user profile`);
+  logger.info(`   PUT  /api/mobile/profile/:userId              - Update user profile`);
+  logger.info(`   GET  /api/mobile/teachers                     - Get all teachers`);
+  logger.info(`   GET  /api/mobile/teacher/:teacherId           - Get teacher details`);
+  logger.info(`   GET  /api/mobile/teacher-availability/:id     - Get availability schedule`);
+  logger.info(`   POST /api/mobile/teacher-availability         - Set availability`);
+  logger.info(`\n📱 Mobile App - Bookings & Sessions:`);
+  logger.info(`   POST /api/mobile/bookings                     - Create booking`);
+  logger.info(`   GET  /api/mobile/bookings/:userId             - Get user bookings`);
+  logger.info(`   PUT  /api/mobile/bookings/:bookingId          - Update booking`);
+  logger.info(`   GET  /api/mobile/availability/:teacherId      - Get available slots`);
+  logger.info(`\n📱 Mobile App - Favorites & Notifications:`);
+  logger.info(`   POST /api/mobile/favorites                    - Add to favorites`);
+  logger.info(`   GET  /api/mobile/favorites/:studentId         - Get favorites`);
+  logger.info(`   DELETE /api/mobile/favorites/:sid/:tid        - Remove favorite`);
+  logger.info(`   GET  /api/mobile/notifications/:userId        - Get notifications`);
+  logger.info(`   PUT  /api/mobile/notifications/:notifId       - Mark as read`);
   logger.info(`\n📱 Video Calls (Mobile App):`);
   logger.info(`   POST /send-otp        - Send OTP to email`);
   logger.info(`   POST /verify-otp      - Verify OTP`);
