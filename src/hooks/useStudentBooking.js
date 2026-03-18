@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { getTeacherSlotsByDateRange, bookAvailabilitySlot } from '../database/database';
+import databaseApi from '../database/databaseApi';
 import logger from '../utils/logger';
 
 /**
@@ -42,7 +42,7 @@ export const useStudentBooking = () => {
         throw new Error('Invalid date range provided');
       }
 
-      const slots = await getTeacherSlotsByDateRange(teacherId, startDate, endDate);
+      const slots = await databaseApi.getTeacherAvailableSlots(teacherId, startDate, endDate);
       setAvailableSlots(slots || []);
       logger.success('Available slots loaded:', slots?.length || 0);
     } catch (error) {
@@ -60,8 +60,8 @@ export const useStudentBooking = () => {
       setBookingInProgress(true);
       logger.info('Booking slot:', slotId);
 
-      // Call database function with individual parameters (not object)
-      const result = await bookAvailabilitySlot(
+      // Call backend API to book the slot
+      const result = await databaseApi.bookAvailabilitySlot(
         studentId,
         teacherId,
         slotId,

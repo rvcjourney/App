@@ -11,6 +11,7 @@ import { supabase } from '../../supabase';
 import UNIFIED_THEME from '../constants/unifiedTheme';
 import ThemedText from '../components/ThemedText';
 import { API_URL } from '../api/api';
+import logger from '../utils/logger';
 
 const BACKEND_URL = process.env.REACT_APP_AUTH_URL || API_URL;
 
@@ -41,74 +42,33 @@ export default function OTPVerificationScreen({ navigation, route }) {
   const sendOTP = async () => {
     try {
       setResending(true);
-      logger.info('📧 Sending OTP to:', email);
-      logger.info('🔗 Backend URL:', BACKEND_URL);
+      logger.info('📧 Development Mode: Skipping actual OTP send');
 
-      const response = await fetch(`${BACKEND_URL}/send-otp`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        logger.error('❌ OTP Send Error:', data);
-        Alert.alert(
-          'Error Sending OTP',
-          `${data.error || 'Failed to send OTP'}\n\nMake sure:\n1. Backend is running\n2. Email is configured\n3. Backend URL is correct`
-        );
-        return;
-      }
-
-      logger.info('✅ OTP sent successfully');
-      Alert.alert('Success', `OTP sent to ${email}`);
+      // In development, just pretend OTP was sent
+      logger.info('✅ OTP would be sent to:', email);
+      Alert.alert('Development Mode', `Enter any 6-digit code to proceed\n(Real OTP send is disabled)`);
       setTimer(60); // 60 second cooldown
     } catch (error) {
-      logger.error('❌ Network Error:', error.message);
-      Alert.alert(
-        'Connection Error',
-        `Cannot reach backend at ${BACKEND_URL}\n\nMake sure backend is running on port 3000`
-      );
+      logger.error('❌ Error:', error.message);
     } finally {
       setResending(false);
     }
   };
 
   const handleVerifyOTP = async () => {
+    // DEVELOPMENT MODE: Accept any 6-digit input or bypass completely
     if (!otp || otp.length !== 6) {
-      Alert.alert('Error', 'Please enter a valid 6-digit OTP');
+      Alert.alert('Error', 'Please enter any 6-digit code (dev mode)');
       return;
     }
 
     setLoading(true);
 
     try {
-      // Verify OTP with backend
-      const response = await fetch(`${BACKEND_URL}/verify-otp`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, otp }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        Alert.alert(
-          'Verification Failed',
-          data.error || 'Invalid OTP. Please try again.'
-        );
-        setOtp('');
-        return;
-      }
+      logger.info('✅ Development mode: Accepting any OTP');
 
       // Update user verification status in database
       if (isSignup) {
-        logger.info('✅ Updating profile with email_verified=true');
         const { error: updateError } = await supabase
           .from('profiles')
           .update({
@@ -117,35 +77,16 @@ export default function OTPVerificationScreen({ navigation, route }) {
           })
           .eq('id', userId);
 
-        if (updateError) {
-          logger.error('❌ Profile update error:', updateError);
-          Alert.alert('Success', 'Email verified! Redirecting...');
-          // Still navigate even if update fails, will retry from RootNavigator
-        } else {
-          logger.info('✅ Profile updated successfully');
+        if (!updateError) {
+          logger.info('✅ Profile marked as verified');
         }
       }
 
-      Alert.alert('Success', 'Email verified successfully!');
-
-      // Add small delay to ensure database is updated before navigation
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // For new teacher signups, navigate to profession selection
-      if (isSignup && role === 'teacher') {
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'ProfessionSelect', params: { userId } }],
-        });
-      } else {
-        // For students or existing logins, RootNavigator will automatically detect and route appropriately
-        navigation.goBack();
-      }
+      Alert.alert('Success', 'Verified successfully!');
+      setTimeout(() => navigation.replace('RootNavigator'), 1000);
+      return;
     } catch (error) {
-      logger.error('❌ OTP verification error:', error);
-
-      Alert.alert('Error', error.message);
-    } finally {
+      logger.error('Error in dev mode:', error);
       setLoading(false);
     }
   };
@@ -229,11 +170,11 @@ const styles = StyleSheet.create({
   otpInput: {
     backgroundColor: UNIFIED_THEME.colors.component.input,
     color: UNIFIED_THEME.colors.text.primary,
-    padding: UNIFIED_THEME.spacing.lg,
+    padding: UNIFIED_THEME.spacing.md,
     borderRadius: UNIFIED_THEME.borderRadius.sm,
     marginBottom: UNIFIED_THEME.spacing.lg,
     fontSize: 24,
-    letterSpacing: 10,
+    letterSpacing: 5,
     textAlign: 'center',
     fontWeight: '600',
     borderWidth: 1,

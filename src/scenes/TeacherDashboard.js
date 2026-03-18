@@ -42,6 +42,7 @@ export default function TeacherDashboard({ navigation }) {
     loading,
     teacherStatus,
     profileIncomplete,
+    setProfileIncomplete,
     earningsData,
     earningsLoading,
     todayEarnings,
@@ -353,13 +354,13 @@ export default function TeacherDashboard({ navigation }) {
   if (activeTab === 'earnings') {
     const currentData =
       earningsFilter === 'weekly'
-        ? earningsData.weekly
+        ? earningsData?.weekly
         : earningsFilter === 'monthly'
-          ? earningsData.monthly
-          : earningsData.yearly;
+          ? earningsData?.monthly
+          : earningsData?.yearly;
 
-    const totalEarnings = currentData.reduce((sum, item) => sum + item.amount, 0);
-    const maxAmount = Math.max(...currentData.map(item => item.amount), 1); // Ensure at least 1 to avoid division by zero
+    const totalEarnings = (currentData || []).reduce((sum, item) => sum + (item?.amount || 0), 0);
+    const maxAmount = Math.max(...(currentData || []).map(item => item?.amount || 0), 1); // Ensure at least 1 to avoid division by zero
 
     return (
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -408,15 +409,15 @@ export default function TeacherDashboard({ navigation }) {
           {/* Chart */}
           <View style={styles.chartContainer}>
             <View style={styles.chartBars}>
-              {currentData.map((item, index) => (
+              {(currentData || []).map((item, index) => (
                 <View key={index} style={styles.barContainer}>
                   <View
                     style={[
                       styles.bar,
-                      { height: (item.amount / maxAmount) * 150 },
+                      { height: ((item?.amount || 0) / maxAmount) * 150 },
                     ]}
                   />
-                  <ThemedText variant="body" size="xs" color="muted">{item.day || item.month}</ThemedText>
+                  <ThemedText variant="body" size="xs" color="muted">{item?.day || item?.month}</ThemedText>
                 </View>
               ))}
             </View>

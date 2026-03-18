@@ -63,8 +63,16 @@ export default function StudentDashboard({ navigation }) {
         try {
           logger.info('Initializing StudentDashboard...');
 
-          // Fetch student profile and bookings
-          const userId = await studentProfile.fetchStudentProfile();
+          // Get current user from Supabase session
+          const { data: { user }, error: userError } = await supabase.auth.getUser();
+          if (userError || !user?.id) {
+            logger.error('Failed to get current user:', userError);
+            Toast.show('Authentication error');
+            return;
+          }
+
+          // Fetch student profile and bookings with current user ID
+          const userId = await studentProfile.fetchStudentProfile(user.id);
           if (userId) {
             await studentProfile.fetchStudentBookings(userId);
           }

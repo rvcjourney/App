@@ -2,12 +2,14 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import databaseApi from '../database/databaseApi';
 import logger from '../utils/logger';
 import Toast from 'react-native-simple-toast';
+import { supabase } from '../../supabase';
 
 /**
  * Custom hook to manage teacher dashboard state
  * Encapsulates profile, bookings, earnings, and notification state
  */
 export const useTeacherDashboard = () => {
+  const [userId, setUserId] = useState(null);
   // Teacher Profile
   const [teacherId, setTeacherId] = useState(null);
   const [teacherName, setTeacherName] = useState('Teacher Name');
@@ -70,6 +72,21 @@ export const useTeacherDashboard = () => {
   // Prevent concurrent refreshAll calls and track first load
   const isRefreshingRef = useRef(false);
   const isInitializedRef = useRef(false);
+
+  // Get current user ID from Supabase auth
+  useEffect(() => {
+    const getAuthUser = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user?.id) {
+          setUserId(session.user.id);
+        }
+      } catch (error) {
+        logger.error('useTeacherDashboard: Failed to get user ID:', error);
+      }
+    };
+    getAuthUser();
+  }, []);
 
   // Fetch teacher profile and related data
   const fetchTeacherProfile = useCallback(async (userId) => {
@@ -213,6 +230,11 @@ export const useTeacherDashboard = () => {
 
   // Refresh all data (deduplicated to prevent concurrent calls)
   const refreshAll = useCallback(async () => {
+    // Skip if no user ID yet
+    if (!userId) {
+      return;
+    }
+
     // Skip if already refreshing
     if (isRefreshingRef.current) {
       logger.warn('Dashboard refresh already in progress, skipping duplicate request');
@@ -221,21 +243,26 @@ export const useTeacherDashboard = () => {
 
     isRefreshingRef.current = true;
     try {
-      const userId = await fetchTeacherProfile();
-      if (userId) {
-        await Promise.all([
-          fetchTeacherBookings(userId),
-          fetchTodayCallHistory(userId),
-          fetchEarnings(userId),
-        ]);
-      }
+      await fetchTeacherProfile(userId);
+      await Promise.all([
+        fetchTeacherBookings(userId),
+        fetchTodayCallHistory(userId),
+        fetchEarnings(userId),
+      ]);
     } catch (error) {
       logger.error('Error refreshing dashboard:', error);
       throw error;
     } finally {
       isRefreshingRef.current = false;
     }
-  }, [fetchTeacherProfile, fetchTeacherBookings, fetchTodayCallHistory, fetchEarnings]);
+  }, [userId, fetchTeacherProfile, fetchTeacherBookings, fetchTodayCallHistory, fetchEarnings]);
+
+  // Initialize dashboard when userId becomes available
+  useEffect(() => {
+    if (userId && !isInitializedRef.current) {
+      refreshAll();
+    }
+  }, [userId, refreshAll]);
 
   return {
     // Profile
@@ -247,6 +274,7 @@ export const useTeacherDashboard = () => {
     specializations,
     teacherStatus,
     profileIncomplete,
+    setProfileIncomplete,
     loading,
 
     // Bookings

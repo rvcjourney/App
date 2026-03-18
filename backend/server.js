@@ -115,6 +115,56 @@ app.use(cors({
 
 app.use(express.json());
 app.use(requestLogger); // Log all requests
+
+// Health and diagnostic endpoints - BEFORE rate limiter
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    service: 'VideoSDK Token Server',
+  });
+});
+
+app.get('/test-db', async (req, res) => {
+  try {
+    logger.info('🔵 Testing database connectivity...');
+
+    // Test 1: Check if bookings table exists
+    const { data: bookings, error: bookingsError } = await supabase
+      .from('bookings')
+      .select('*')
+      .limit(1);
+
+    logger.info('Bookings query result:', { bookingsError, count: bookings?.length });
+
+    // Test 2: Check profiles
+    const { data: profiles, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, full_name, role, email_verified')
+      .limit(5);
+
+    logger.info('Profiles query result:', { profilesError, count: profiles?.length });
+
+    res.json({
+      status: 'Database Test Results',
+      bookings: {
+        error: bookingsError ? { code: bookingsError.code, message: bookingsError.message } : null,
+        count: bookings?.length || 0,
+      },
+      profiles: {
+        error: profilesError ? { code: profilesError.code, message: profilesError.message } : null,
+        data: profiles || [],
+      },
+    });
+  } catch (error) {
+    logger.error('🔴 Database test error:', error.message);
+    res.status(500).json({
+      status: 'Error',
+      error: error.message,
+    });
+  }
+});
+
 app.use(generalLimiter); // Apply general rate limiting to all routes
 
 // ==========================================
@@ -245,6 +295,9 @@ app.post(
     try {
       const { email } = req.body;
 
+      logger.info('🔵 Attempting to send OTP to:', email);
+      logger.info('📧 Email config - USER:', EMAIL_USER, 'SERVICE:', EMAIL_SERVICE);
+
       const otp = generateOTP();
       const expiryTime = Date.now() + 10 * 60 * 1000; // 10 minutes
 
@@ -255,18 +308,27 @@ app.post(
         attempts: 0,
       });
 
-      // Send OTP via email
-      await sendOTPEmail(email, otp);
+      logger.info('📝 OTP generated and stored:', otp, 'for email:', email);
 
-      logger.info('OTP sent successfully', { email });
+      // Send OTP via email
+      try {
+        const emailResult = await sendOTPEmail(email, otp);
+        logger.info('✅ Email sent successfully:', emailResult.messageId);
+      } catch (emailError) {
+        logger.error('❌ Email sending failed:', emailError.message);
+        logger.error('📌 Email error details:', emailError.code, emailError.response);
+        throw emailError;
+      }
+
+      logger.info('✅ OTP sent successfully', { email });
 
       sendSuccess(res, {
         message: 'OTP sent to your email',
         expiresIn: '10 minutes',
       });
     } catch (error) {
-      logger.error('Failed to send OTP', { email: req.body.email, error: error.message });
-      sendError(res, 500, ERROR_CODES.INTERNAL_SERVER_ERROR, 'Failed to send OTP');
+      logger.error('❌ Failed to send OTP', { email: req.body.email, error: error.message, errorCode: error.code });
+      sendError(res, 500, ERROR_CODES.INTERNAL_SERVER_ERROR, `Failed to send OTP: ${error.message}`);
     }
   }
 );
@@ -386,24 +448,6 @@ app.get('/get-token', (req, res) => {
   }
 });
 
-/**
- * GET /health
- * 
- * Health check endpoint
- * 
- * Response:
- * {
- *   "status": "ok",
- *   "timestamp": "2026-01-25T10:30:00.000Z"
- * }
- */
-app.get('/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    service: 'VideoSDK Token Server',
-  });
-});
 
 /**
  * POST /validate-token
@@ -520,7 +564,7 @@ app.post(
           role: 'super_admin',
           email_verified: true,
         }])
-        .select('id, full_name, role, email')
+        .select('id, full_name, role, email_verified')
         .single();
 
       if (profileError) {
@@ -1837,7 +1881,7 @@ app.get('/api/admin/dashboard', async (req, res) => {
         const chunkSize = 50;
         const chunks = [];
         for (let i = 0; i < teacherIds.length; i += chunkSize) chunks.push(teacherIds.slice(i, i + chunkSize));
-        const results = await Promise.all(chunks.map((chunk) => supabase.from('profiles').select('id, full_name, email').in('id', chunk)));
+        const results = await Promise.all(chunks.map((chunk) => supabase.from('profiles').select('id, full_name').in('id', chunk)));
         results.forEach((r) => { if (Array.isArray(r.data)) r.data.forEach((p) => { profileMap[p.id] = p; }); });
         withdrawals = list.map((w) => ({ ...w, sender: profileMap[w.teacher_id] || null }));
       }
@@ -1884,7 +1928,7 @@ app.get('/api/admin/withdrawals', async (req, res) => {
         const chunkSize = 50;
         const chunks = [];
         for (let i = 0; i < teacherIds.length; i += chunkSize) chunks.push(teacherIds.slice(i, i + chunkSize));
-        const results = await Promise.all(chunks.map((chunk) => supabase.from('profiles').select('id, full_name, email').in('id', chunk)));
+        const results = await Promise.all(chunks.map((chunk) => supabase.from('profiles').select('id, full_name').in('id', chunk)));
         results.forEach((res) => { if (Array.isArray(res.data)) res.data.forEach((p) => { profileMap[p.id] = p; }); });
       } catch (e) {
         logger.warn('⚠️ Profiles for withdrawals:', e.message);
@@ -2045,13 +2089,19 @@ app.get('/api/mobile/profile/:userId', async (req, res) => {
     // Get base profile
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('id, full_name, email, role, email_verified, created_at')
+      .select('id, full_name, role, email_verified, created_at')
       .eq('id', userId)
       .single();
 
     if (profileError) {
-      return sendError(res, 404, 'NOT_FOUND', 'Profile not found');
+      logger.error('🔴 Profile query error:', profileError);
+      logger.error('   User ID:', userId);
+      logger.error('   Error code:', profileError.code);
+      logger.error('   Error message:', profileError.message);
+      return sendError(res, 404, 'NOT_FOUND', `Profile not found. Error: ${profileError.message}`);
     }
+
+    logger.info('✅ Profile fetched, role:', profile?.role, 'full_name:', profile?.full_name);
 
     // Get role-specific details
     let roleData = null;
@@ -2071,13 +2121,14 @@ app.get('/api/mobile/profile/:userId', async (req, res) => {
       roleData = student;
     }
 
-    logger.info('✅ Profile fetched');
-
+    const responseProfile = { ...profile, ...roleData };
+    logger.info('🟢 Returning profile with role:', responseProfile.role);
     sendSuccess(res, {
-      profile: { ...profile, ...roleData },
+      profile: responseProfile,
     });
   } catch (error) {
     logger.error('🔴 Error fetching profile:', error.message);
+    logger.error('Stack trace:', error.stack);
     sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Failed to fetch profile');
   }
 });
@@ -2159,7 +2210,7 @@ app.get('/api/mobile/teachers', async (req, res) => {
 
     let query = supabase
       .from('teacher_profiles')
-      .select('*, profiles:profiles(full_name, email)')
+      .select('*, profiles:profiles(full_name)')
       .order('rating', { ascending: false });
 
     if (profession) {
@@ -2249,14 +2300,14 @@ app.get(
         .from('teacher_availability_slots')
         .select('*')
         .eq('teacher_id', teacherId)
-        .eq('status', 'available')
-        .gt('available_at', new Date().toISOString());
+        .eq('slot_status', 'available')
+        .gt('start_time', new Date().toISOString());
 
       if (date) {
-        query = query.eq('date', date);
+        query = query.eq('available_date', date);
       }
 
-      const { data: slots, error } = await query.order('available_at', { ascending: true });
+      const { data: slots, error } = await query.order('start_time', { ascending: true });
 
       if (error) throw error;
 
@@ -2313,7 +2364,7 @@ app.post(
           availability_slot_id: slotId,
           subject: subject.trim(),
           status: 'pending',
-          scheduled_time: slot.available_at,
+          booked_date: slot.start_time,
         }])
         .select()
         .single();
@@ -2344,7 +2395,7 @@ app.post(
           user_id: teacherId,
           notification_type: 'booking_request',
           title: '📚 New Booking Request',
-          message: `${teacherProfile?.data?.full_name || 'Student'} wants to book a session on ${new Date(slot.available_at).toLocaleDateString()}`,
+          message: `${teacherProfile?.data?.full_name || 'Student'} wants to book a session on ${new Date(slot.start_time).toLocaleDateString()}`,
           booking_id: booking.id,
           is_read: false,
         },
@@ -2380,12 +2431,11 @@ app.get('/api/mobile/bookings/:userId', async (req, res) => {
     const { userId } = req.params;
     const { role } = req.query; // 'student' or 'teacher'
 
-    logger.info('🔵 Fetching bookings for user:', userId);
+    logger.info('🔵 Fetching bookings for user:', userId, 'role:', role);
 
     let query = supabase
       .from('bookings')
-      .select('*, teacher:teacher_id(full_name, email), student:student_id(full_name, email)')
-      .order('scheduled_time', { ascending: false });
+      .select('*');
 
     if (role === 'student') {
       query = query.eq('student_id', userId);
@@ -2393,9 +2443,20 @@ app.get('/api/mobile/bookings/:userId', async (req, res) => {
       query = query.eq('teacher_id', userId);
     }
 
+    query = query.order('booked_date', { ascending: true }); // Show upcoming bookings first
+
     const { data: bookings, error } = await query;
 
-    if (error) throw error;
+    if (error) {
+      logger.error('🔴 Supabase error fetching bookings:', {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        userId,
+        role,
+      });
+      throw error;
+    }
 
     logger.info('✅ Bookings fetched:', bookings?.length);
 
@@ -2403,7 +2464,7 @@ app.get('/api/mobile/bookings/:userId', async (req, res) => {
       bookings: bookings || [],
     });
   } catch (error) {
-    logger.error('🔴 Error fetching bookings:', error.message);
+    logger.error('🔴 Error fetching bookings:', error.message, error.code);
     sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Failed to fetch bookings');
   }
 });

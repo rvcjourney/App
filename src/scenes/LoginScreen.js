@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { supabase } from '../../supabase';
-import databaseApi from '../database/databaseApi';
 import {
   StyleSheet,
   TextInput,
@@ -56,63 +55,10 @@ export default function LoginScreen({ navigation, route }) {
         return;
       }
 
-      // Fetch profile via backend API (not direct Supabase)
-      logger.info('🔵 Fetching profile via backend API');
-      let profile;
-      try {
-        const response = await databaseApi.getProfile(data.user.id);
-        profile = response.profile;
-      } catch (apiError) {
-        logger.error('🔴 Backend API error, trying direct Supabase:', apiError);
-        // Fallback to direct Supabase if backend fails
-        const { data: profileRows, error: profileError } = await supabase
-          .from('profiles')
-          .select('role, email_verified')
-          .eq('id', data.user.id)
-          .limit(1);
-        profile = Array.isArray(profileRows) && profileRows.length > 0 ? profileRows[0] : profileRows;
-      }
-
-      if (!profile) {
-        await supabase.auth.signOut();
-        Alert.alert(
-          'Profile Error',
-          'Could not load your profile. If you just signed up, try closing and reopening the app.'
-        );
-        setLoading(false);
-        return;
-      }
-
-      // Ensure user is logging in from the correct section (teacher vs student)
-      // Super admin can log in from either Student or Teacher entry point
-      const profileRole = (profile.role || '').toLowerCase();
-      const selectedRole = (role || '').toLowerCase();
-      if (profileRole !== 'super_admin' && profileRole !== selectedRole) {
-        await supabase.auth.signOut();
-        Alert.alert(
-          'Wrong login section',
-          'Please use the correct login section for your account type.'
-        );
-        setLoading(false);
-        return;
-      }
-
-      // Check if email is verified
-      if (!profile.email_verified) {
-        logger.info('🔵 Email not verified, navigating to OTP');
-        // Send OTP for verification
-        navigation.navigate('OTPVerification', {
-          email,
-          fullName: '',
-          role,
-          userId: data.user.id,
-          isSignup: false,
-        });
-      } else {
-        // Email already verified
-        // RootNavigator will automatically detect the new session and route accordingly
-        // No need to navigate - auth state change will trigger re-render
-      }
+      // Login successful - RootNavigator will handle role fetching and validation
+      logger.info('✅ Login successful, user ID:', data.user.id);
+      // RootNavigator's auth state listener will detect the new session and route accordingly
+      setLoading(false);
     } catch (err) {
       if (isNetworkError(err)) {
         setNetworkError(true);

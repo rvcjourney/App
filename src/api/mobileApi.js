@@ -4,13 +4,26 @@
  * Replaces direct Supabase calls for better control and security
  */
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+import { Platform } from 'react-native';
+
+// Detect environment and set correct API URL
+// Android emulator: localhost resolves to emulator itself, use 10.0.2.2 for host
+// iOS simulator: localhost works directly
+// Physical device: use actual host IP
+const API_URL = process.env.REACT_APP_API_URL || 'http://192.168.43.2:3000';
+// Alternative configs:
+// const API_URL = (Platform.OS === 'android' ? 'http://10.0.2.2:3000' : 'http://localhost:3000');
+
+console.log('🔧 mobileApi.js - API_URL configured:', API_URL);
 
 /**
  * Make authenticated API request
  */
 const makeRequest = async (endpoint, method = 'GET', body = null, headers = {}) => {
+  const fullUrl = `${API_URL}${endpoint}`;
   try {
+    console.log(`📤 API Request: ${method} ${fullUrl}`);
+
     const options = {
       method,
       headers: {
@@ -23,16 +36,25 @@ const makeRequest = async (endpoint, method = 'GET', body = null, headers = {}) 
       options.body = JSON.stringify(body);
     }
 
-    const response = await fetch(`${API_URL}${endpoint}`, options);
-    const data = await response.json();
+    const response = await fetch(fullUrl, options);
 
+    // Check if response is ok BEFORE parsing
     if (!response.ok) {
-      throw new Error(data.error?.message || data.message || 'Request failed');
+      let errorMessage = `HTTP ${response.status}`;
+      try {
+        const data = await response.json();
+        errorMessage = data.error?.message || data.message || errorMessage;
+      } catch (e) {
+        // If response is not JSON, use status text
+        errorMessage = response.statusText || errorMessage;
+      }
+      throw new Error(errorMessage);
     }
 
+    const data = await response.json();
     return data;
   } catch (error) {
-    console.error(`API Error [${method} ${endpoint}]:`, error);
+    console.error(`❌ API Error [${method} ${fullUrl}]:`, error.message);
     throw error;
   }
 };

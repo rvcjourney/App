@@ -1,6 +1,6 @@
 import React from "react";
 import { createStackNavigator } from "@react-navigation/stack";
-import StudentDashboard from "./StudentDashboard";
+import StudentDashboard from "./StudentDashboard"; // Restored to actual dashboard
 import EditStudentProfile from "./Student/EditStudentProfile";
 import Join from "./join";
 import Meeting from "./meeting";

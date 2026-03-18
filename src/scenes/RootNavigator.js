@@ -15,7 +15,7 @@ export default function RootNavigator() {
   const [role, setRole] = useState(null);
   const [loading, setLoading] = useState(true);
   const [emailVerified, setEmailVerified] = useState(null);
-  const [profileComplete, setProfileComplete] = useState(null);
+  const [profileComplete, setProfileComplete] = useState(true); // Default to true, skip profile check for now
 
   // Initialize auth session
   useEffect(() => {
@@ -78,14 +78,22 @@ export default function RootNavigator() {
           const response = await databaseApi.getProfile(userId);
           profile = response?.profile || null;
           error = null;
+          logger.info('RootNavigator: Profile response:', JSON.stringify(profile));
+          logger.info('RootNavigator: user_metadata.role:', user?.user_metadata?.role);
         } catch (err) {
           error = err;
           profile = null;
         }
 
-        if (!error && profile?.role) {
-          const normalizedRole = (profile.role || '').toLowerCase().replace('learner', 'student') || profile.role;
-          logger.success('RootNavigator: Role fetched:', profile.role, '->', normalizedRole, 'Verified:', profile.email_verified);
+        if (!error && profile) {
+          // Use role from profile, or fallback to user_metadata
+          const profileRole = profile.role;
+          const metaRole = user?.user_metadata?.role;
+          logger.info('RootNavigator: profile.role=', profileRole, 'user_metadata.role=', metaRole);
+          const finalRole = profileRole || metaRole || 'student';
+          const normalizedRole = (finalRole || '').toLowerCase().replace('learner', 'student') || 'student';
+          logger.success('RootNavigator: Final role:', finalRole, 'Normalized to:', normalizedRole, 'Email verified:', profile.email_verified);
+          logger.info('RootNavigator: Full profile object:', JSON.stringify(profile));
           setRole(normalizedRole);
           setEmailVerified(profile.email_verified || false);
           return;
@@ -126,18 +134,19 @@ export default function RootNavigator() {
   };
 
   // When session + role + emailVerified are set, check if role-specific profile is complete
-  useEffect(() => {
-    if (!session?.user?.id || !role || emailVerified !== true) return;
-    let cancelled = false;
-    isProfileComplete(role, session.user.id)
-      .then((complete) => {
-        if (!cancelled) setProfileComplete(complete);
-      })
-      .catch(() => {
-        if (!cancelled) setProfileComplete(false);
-      });
-    return () => { cancelled = true; };
-  }, [session?.user?.id, role, emailVerified]);
+  // TODO: Implement profile completeness check
+  // useEffect(() => {
+  //   if (!session?.user?.id || !role || emailVerified !== true) return;
+  //   let cancelled = false;
+  //   isProfileComplete(role, session.user.id)
+  //     .then((complete) => {
+  //       if (!cancelled) setProfileComplete(complete);
+  //     })
+  //     .catch(() => {
+  //       if (!cancelled) setProfileComplete(false);
+  //     });
+  //   return () => { cancelled = true; };
+  // }, [session?.user?.id, role, emailVerified]);
 
   // Loading state
   if (loading) {
@@ -156,7 +165,7 @@ export default function RootNavigator() {
 
   // Authenticated but role/verification not loaded yet
   if (!role || emailVerified === null) {
-    logger.info('RootNavigator: Session exists, waiting for role and verification status');
+    logger.info('RootNavigator: Waiting... role:', role, 'emailVerified:', emailVerified);
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.ADMIN_BG }}>
         <ActivityIndicator size="large" color={COLORS.ADMIN_INDICATOR} />
@@ -186,20 +195,7 @@ export default function RootNavigator() {
     );
   }
 
-  // Wait for profile-completion check (done in useEffect above)
-  if (profileComplete === null) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.ADMIN_BG }}>
-        <ActivityIndicator size="large" color={COLORS.ADMIN_INDICATOR} />
-        <Text style={{ color: COLORS.TEXT, marginTop: 10 }}>Loading...</Text>
-      </View>
-    );
-  }
-
-  // When profile is incomplete we still show the dashboard; snackbar there prompts "Go to edit profile"
-  if (profileComplete === false) {
-    logger.info('RootNavigator: Profile incomplete, showing dashboard with snackbar prompt');
-  }
+  // Profile completion check is skipped for now (handled in dashboard components)
 
   // Authenticated, verified - show role-based stack (snackbar on dashboard if profile incomplete)
   logger.info('RootNavigator: Showing stack for role:', role);

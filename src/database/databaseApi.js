@@ -98,8 +98,10 @@ export const getTeacherWeeklyAvailability = async (teacherId) => {
   return response.availability || [];
 };
 
-export const getTeacherAvailableSlots = async (teacherId, date) => {
-  const response = await mobileApi.getAvailableSlots(teacherId, date);
+export const getTeacherAvailableSlots = async (teacherId, startDate, endDate) => {
+  // Backend filters for slots > current time automatically
+  // For now, we just pass startDate (backend doesn't support date ranges yet)
+  const response = await mobileApi.getAvailableSlots(teacherId, startDate);
   return response.slots || [];
 };
 
@@ -227,6 +229,8 @@ export const requestWithdrawal = async (teacherId, amount, bankDetails) => {
 
 export default {
   // Profile
+  getProfile,
+  updateProfile,
   getTeacherProfile,
   getStudentProfile,
   updateTeacherProfile,
